@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { catalogoMilokira } from "./data/inventario";
+import { plantasMilokira } from "./data/inventario";
 import PlantCard from "./components/plant-card";
 import Image from "next/image";
 
@@ -9,7 +9,7 @@ export default function Home() {
   const [categoriaActiva, setCategoriaActiva] = useState("Todas");
   const categorias = ["Todas", "Cactus", "Suculentas", "Interior"];
 
-  const plantasFiltradas = catalogoMilokira.filter((planta) => {
+  const plantasFiltradas = plantasMilokira.filter((planta) => {
     if (categoriaActiva === "Todas") return true;
     return planta.categoria === categoriaActiva;
   });
