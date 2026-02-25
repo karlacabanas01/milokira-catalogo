@@ -6,12 +6,20 @@ import PlantCard from "./components/plant-card";
 import Image from "next/image";
 
 export default function Home() {
-  const [categoriaActiva, setCategoriaActiva] = useState("Todas");
-  const categorias = ["Todas", "Cactus", "Suculentas", "Interior"];
+  const [categoriaActiva, setCategoriaActiva] = useState("TODAS");
+  const categorias = [
+    "TODAS",
+    "CACTUS",
+    "SUCULENTAS",
+    "JARDINES",
+    "INTERIOR",
+    "EXTERIOR",
+  ];
 
   const plantasFiltradas = plantasMilokira.filter((planta) => {
-    if (categoriaActiva === "Todas") return true;
-    return planta.categoria === categoriaActiva;
+    if (categoriaActiva === "TODAS") return true;
+
+    return planta.categoria.toUpperCase() === categoriaActiva.toUpperCase();
   });
 
   return (
@@ -31,6 +39,10 @@ export default function Home() {
         <h2 className="text-center text-milokira-verde font-black mt-6 tracking-[5px] uppercase text-2xl sm:text-3xl md:text-4xl drop-shadow-md">
           Catálogo de Plantas
         </h2>
+        <p className="text-center text-gray-600 font-medium mt-4 max-w-xl mx-auto text-sm sm:text-base leading-relaxed px-4 drop-shadow-sm">
+          Un proyecto nacido del amor por las plantas y la inspiración de
+          nuestros tres peludos: Milo, Loki y Kira 🐾.
+        </p>
       </div>
 
       <div className="flex flex-wrap justify-center gap-4 mb-16 mt-8">
@@ -72,6 +84,58 @@ export default function Home() {
           </p>
         )}
       </div>
+      {/* FOOTER DE INFORMACIÓN Y LOGÍSTICA */}
+      <footer className="mt-20 mb-4 w-full max-w-5xl mx-auto">
+        <div className="bg-white/70 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-sm border border-milokira-lila/30 flex flex-col md:flex-row items-center justify-between gap-8 transition-all hover:shadow-md hover:border-milokira-lila/50 duration-500">
+          {/* Columna Izquierda: Logística */}
+          <div className="text-center md:text-left space-y-3 text-sm text-gray-600 font-medium">
+            <h3 className="text-milokira-verde font-bold text-base mb-4 uppercase tracking-[2px]">
+              Envíos y Entregas
+            </h3>
+
+            <p className="flex items-center justify-center md:justify-start gap-2">
+              <span className="text-lg">📍</span>
+              Ubicados en Talca, sector Bicentenario.
+            </p>
+
+            <p className="flex items-center justify-center md:justify-start gap-2">
+              <span className="text-lg">🛵</span>
+              <span>
+                Delivery <strong className="text-milokira-verde">GRATIS</strong>{" "}
+                en el sector (valor adicional a otras zonas).
+              </span>
+            </p>
+
+            <p className="flex items-center justify-center md:justify-start gap-2">
+              <span className="text-lg">📦</span>
+              Envíos a regiones por pagar.
+            </p>
+          </div>
+
+          {/* Columna Derecha: Créditos y Marca */}
+          <div className="flex flex-col items-center md:items-end text-center md:text-right border-t md:border-t-0 md:border-l border-milokira-lila/30 pt-6 md:pt-0 md:pl-8">
+            <p className="text-gray-800 font-black tracking-widest uppercase text-lg mb-1">
+              Milokira
+            </p>
+            <p className="text-xs text-gray-500 mb-4">Cultivado con amor 🌿</p>
+
+            {/* Tu firma de desarrolladora */}
+            <div className="bg-milokira-crema px-4 py-2 rounded-full border border-milokira-verde/20">
+              <p className="text-xs text-gray-500 font-medium">
+                Página creada por{" "}
+                <a
+                  href="https://github.com/karlacabanas01"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-milokira-verde font-bold hover:text-milokira-lila transition-colors duration-300"
+                >
+                  karcabcas
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }
