@@ -1,4 +1,4 @@
-// src/components/PlantCard.js
+import { useState } from "react";
 
 const formatearPrecio = (precio) => {
   const montoFormateado = new Intl.NumberFormat("es-CL", {
@@ -13,15 +13,12 @@ const formatearPrecio = (precio) => {
 
 export default function PlantCard({ planta }) {
   const { nombre, descripcion, imagenUrl, precio, categoria } = planta;
+  const [isLoading, setIsLoading] = useState(true);
 
-  // NUEVA FUNCIÓN: Maneja el clic y abre WhatsApp
   const manejarCompra = () => {
     const numeroWhatsApp = "56994955949";
-
     const mensaje = `¡Hola! 🌿 Estaba viendo el catálogo de Milokira y me interesa mucho la planta *${nombre}*. ¿Aún la tienen disponible?`;
-
     const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
-
     window.open(urlWhatsApp, "_blank");
   };
 
@@ -31,12 +28,23 @@ export default function PlantCard({ planta }) {
         {categoria}
       </div>
 
-      <div className="relative h-64 overflow-hidden bg-milokira-crema shrink-0">
+      <div className="relative h-64 overflow-hidden bg-milokira-crema shrink-0 group">
+        {/* {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-200 animate-pulse z-10">
+            <div className="w-8 h-8 border-4 border-gray-300 border-t-gray-500 rounded-full animate-spin"></div>
+          </div>
+        )} */}
+
+        {/* AQUÍ ESTÁ EL CAMBIO: Se agregó loading="lazy" */}
         <img
           src={imagenUrl}
           alt={nombre}
-          className="w-full h-full object-cover object-center transform transition-transform duration-700 ease-in-out group-hover:scale-110"
+          loading="lazy"
+          onLoad={() => setIsLoading(false)}
+          className={`w-full h-full object-cover object-center transform transition-all duration-700 ease-in-out group-hover:scale-110 
+          ${isLoading ? "opacity-0" : "opacity-100"}`}
         />
+
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
       </div>
 
@@ -54,7 +62,6 @@ export default function PlantCard({ planta }) {
             {formatearPrecio(precio)}
           </div>
 
-          {/* BOTÓN ACTUALIZADO con el evento onClick */}
           <button
             onClick={manejarCompra}
             className="relative z-10 overflow-hidden px-4 py-2 rounded font-bold text-xs uppercase tracking-[1px] cursor-pointer outline outline-[1px] outline-milokira-verde text-milokira-verde transition-all duration-500 hover:text-white hover:shadow-md before:content-[''] before:absolute before:-left-[20px] before:top-0 before:h-full before:bg-milokira-verde before:skew-x-[45deg] before:-z-10 before:w-0 hover:before:w-[200%] before:transition-[width] before:duration-500"

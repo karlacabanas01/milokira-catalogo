@@ -9,7 +9,7 @@ export const plantasMilokira = [
       "Sus hojas tienen patrones y colores tan vibrantes que parecen pintados a mano. Ideal para dar luz a tus espacios.",
     categoria: "INTERIOR",
     precio: { valor: 2000, tipo: "desde" },
-    imagenUrl: "/img/coleo.jpeg",
+    imagenUrl: "/img/coleo.webp",
   },
   {
     id: 2,
@@ -18,7 +18,7 @@ export const plantasMilokira = [
       "Un clásico infaltable. Sus flores rosadas son súper resistentes y alegran cualquier balcón o terraza.",
     categoria: "EXTERIOR",
     precio: { valor: 2000, tipo: "desde" },
-    imagenUrl: "/img/cardenal.jpeg",
+    imagenUrl: "/img/cardenal.webp",
   },
   {
     id: 3,
@@ -27,7 +27,7 @@ export const plantasMilokira = [
       "Aporta un toque tropical inconfundible. Excelente para terrazas o espacios amplios.",
     categoria: "EXTERIOR",
     precio: { valor: 3000 },
-    imagenUrl: "/img/palmera.jpeg",
+    imagenUrl: "/img/palmera.webp",
   },
   {
     id: 4,
@@ -36,7 +36,7 @@ export const plantasMilokira = [
       "Súper resistente y excelente purificadora de aire. Produce lindos hijuelos colgantes.",
     categoria: "INTERIOR",
     precio: { valor: 1000, tipo: "desde" },
-    imagenUrl: "/img/malamadre.jpeg",
+    imagenUrl: "/img/malamadre.webp",
   },
   {
     id: 5,
@@ -45,7 +45,7 @@ export const plantasMilokira = [
       "Variedad de tonos verdes intensos. Perfecta para macetas colgantes en espacios iluminados.",
     categoria: "INTERIOR",
     precio: { valor: 1000, tipo: "desde" },
-    imagenUrl: "/img/malamadre-verde.jpeg",
+    imagenUrl: "/img/malamadre-verde.webp",
   },
   // {
   //   id: 6,
@@ -54,7 +54,7 @@ export const plantasMilokira = [
   //     "Un arbusto generoso que se llena de flores blancas. Ideal para el jardín o maceteros grandes al sol.",
   //   categoria: "EXTERIOR",
   //   precio: { valor: 5000, tipo: "aprox" },
-  //   imagenUrl: "/img/Margarita.jpeg",
+  //   imagenUrl: "/img/Margarita.webp",
   // },
   {
     id: 7,
@@ -63,7 +63,7 @@ export const plantasMilokira = [
       "Planta colgante de hojas redondas y brillantes. Se dice que atrae la prosperidad al hogar.",
     categoria: "INTERIOR",
     precio: { valor: 1000 },
-    imagenUrl: "/img/dolar.jpeg",
+    imagenUrl: "/img/dolar.webp",
   },
   {
     id: 8,
@@ -72,7 +72,7 @@ export const plantasMilokira = [
       "De hojas gruesas y brillantes. Súper amigable para interiores con luz indirecta moderada.",
     categoria: "INTERIOR",
     precio: { valor: 2000, tipo: "Desde" },
-    imagenUrl: "/img/cucharita.jpeg",
+    imagenUrl: "/img/cucharita.webp",
   },
   {
     id: 9,
@@ -81,7 +81,7 @@ export const plantasMilokira = [
       "Variedad muy resistente que regala una floración preciosa y abundante.",
     categoria: "EXTERIOR",
     precio: { valor: 4000, tipo: "fijo" },
-    imagenUrl: "/img/begonia-hardy.jpeg",
+    imagenUrl: "/img/begonia-hardy.webp",
   },
   {
     id: 10,
@@ -90,7 +90,7 @@ export const plantasMilokira = [
       "Hojas asimétricas con puntitos plateados y hermosas caídas de flores. Un espectáculo visual.",
     categoria: "INTERIOR",
     precio: { valor: 4000, tipo: "fijo" },
-    imagenUrl: "/img/begonia-alas.jpeg",
+    imagenUrl: "/img/begonia-alas.webp",
   },
   {
     id: 11,
@@ -99,7 +99,7 @@ export const plantasMilokira = [
       "La 'planta de hierro'. Es virtualmente indestructible y sobrevive en rincones con poca luz.",
     categoria: "INTERIOR",
     precio: { valor: 2000, tipo: "Desde" },
-    imagenUrl: "/img/Aspidistra.jpeg",
+    imagenUrl: "/img/Aspidistra.webp",
   },
   {
     id: 12,
@@ -108,7 +108,7 @@ export const plantasMilokira = [
       "Planta de un intenso color púrpura. Crece rápido y aporta una caída hermosa a las macetas.",
     categoria: "INTERIOR",
     precio: { valor: 2000, tipo: "desde" },
-    imagenUrl: "/img/Amor de hombre.jpeg",
+    imagenUrl: "/img/Amor de hombre.webp",
   },
   {
     id: 13,
@@ -117,7 +117,7 @@ export const plantasMilokira = [
       "Delicada enredadera con pequeñas hojitas en forma de corazón. Perfecta para repisas altas.",
     categoria: "INTERIOR",
     precio: { valor: 5000, tipo: "fijo" },
-    imagenUrl: "/img/Collar de corazones.jpeg",
+    imagenUrl: "/img/Collar de corazones.webp",
   },
 
   // ==========================================
@@ -130,7 +130,7 @@ export const plantasMilokira = [
       "Suculenta de forma geométrica perfecta que se camufla maravillosamente en entornos rústicos.",
     categoria: "SUCULENTAS",
     precio: { valor: 1000, tipo: "desde" },
-    imagenUrl: "/img/estrella-rocas.jpeg",
+    imagenUrl: "/img/estrella-rocas.webp",
   },
   {
     id: 15,
@@ -139,7 +139,7 @@ export const plantasMilokira = [
       "Cactus de bosque sin espinas que regala una floración espectacular y colorida.",
     categoria: "CACTUS",
     precio: { valor: 1000, tipo: "desde" },
-    imagenUrl: "/img/cangrejo.jpeg",
+    imagenUrl: "/img/cangrejo.webp",
   },
   {
     id: 16,
@@ -148,7 +148,7 @@ export const plantasMilokira = [
       "Pequeña y elegante, con hojas puntiagudas y marcas blancas que parecen un estampado.",
     categoria: "SUCULENTAS",
     precio: { valor: 1000, tipo: "desde" },
-    imagenUrl: "/img/Haworthia.jpeg",
+    imagenUrl: "/img/Haworthia.webp",
   },
   {
     id: 17,
@@ -157,7 +157,7 @@ export const plantasMilokira = [
       "Suculenta de crecimiento vertical muy original. Ideal para dar altura a tus arreglos.",
     categoria: "SUCULENTAS",
     precio: { valor: 2000, tipo: "fijo" },
-    imagenUrl: "/img/cordon-san-jose.jpeg",
+    imagenUrl: "/img/cordon-san-jose.webp",
   },
   {
     id: 18,
@@ -166,7 +166,7 @@ export const plantasMilokira = [
       "Suculenta colgante muy divertida; sus hojitas tienen exactamente la forma de pequeños plátanos.",
     categoria: "SUCULENTAS",
     precio: { valor: 1000, tipo: "fijo" },
-    imagenUrl: "/img/cadena-platanos.jpeg",
+    imagenUrl: "/img/cadena-platanos.webp",
   },
   {
     id: 19,
@@ -175,7 +175,7 @@ export const plantasMilokira = [
       "Una maravilla botánica. Sus hojas presentan manchas oscuras atigradas que la hacen única.",
     categoria: "SUCULENTAS",
     precio: { valor: 1000, tipo: "desde" },
-    imagenUrl: "/img/lirio-leopardo.jpeg",
+    imagenUrl: "/img/lirio-leopardo.webp",
   },
   {
     id: 20,
@@ -184,7 +184,7 @@ export const plantasMilokira = [
       "Variedad de siempreviva con puntas rojizas. Ideal para techos verdes o maceteros anchos.",
     categoria: "SUCULENTAS",
     precio: { valor: 2000, tipo: "desde" },
-    imagenUrl: "/img/hierba-puntera.jpeg",
+    imagenUrl: "/img/hierba-puntera.webp",
   },
   {
     id: 21,
@@ -193,7 +193,7 @@ export const plantasMilokira = [
       "Famosa por sus agrupaciones de flores vibrantes. Perfecta para dar color a espacios luminosos.",
     categoria: "SUCULENTAS",
     precio: { valor: 2000, tipo: "fijo" },
-    imagenUrl: "/img/Aranto y Kalonche.jpeg",
+    imagenUrl: "/img/Aranto y Kalonche.webp",
   },
   {
     id: 22,
@@ -202,7 +202,7 @@ export const plantasMilokira = [
       "Ejemplar maduro de la clásica suculenta de la abundancia. Un verdadero arbolito para tu hogar.",
     categoria: "SUCULENTAS",
     precio: { valor: 8000 },
-    imagenUrl: "/img/jade-grande.jpeg",
+    imagenUrl: "/img/jade-grande.webp",
   },
   {
     id: 23,
@@ -211,7 +211,7 @@ export const plantasMilokira = [
       "Ideal para iniciar tu colección o para regalar prosperidad a tus seres queridos.",
     categoria: "SUCULENTAS",
     precio: { valor: 1000, tipo: "desde" },
-    imagenUrl: "/img/jade-pequeno.jpeg",
+    imagenUrl: "/img/jade-pequeno.webp",
   },
   {
     id: 24,
@@ -220,7 +220,7 @@ export const plantasMilokira = [
       "Versión exclusiva de la clásica planta rosario, con tonos crema y rosados intercalados.",
     categoria: "SUCULENTAS",
     precio: { valor: 2000, tipo: "fijo" },
-    imagenUrl: "/img/rosario-variegado.jpeg",
+    imagenUrl: "/img/rosario-variegado.webp",
   },
   {
     id: 25,
@@ -229,7 +229,7 @@ export const plantasMilokira = [
       "Sus tallos morados y hojas alargadas toman un color rojo intenso cuando reciben buen sol.",
     categoria: "SUCULENTAS",
     precio: { valor: 2000, tipo: "fijo" },
-    imagenUrl: "/img/rosario-rubies.jpeg",
+    imagenUrl: "/img/rosario-rubies.webp",
   },
   {
     id: 26,
@@ -238,7 +238,7 @@ export const plantasMilokira = [
       "Forma preciosas rosetas en las puntas de sus ramas, dando la apariencia de un árbol bonsái suculento.",
     categoria: "SUCULENTAS",
     precio: { valor: 2000, tipo: "fijo" },
-    imagenUrl: "/img/aeonium.jpeg",
+    imagenUrl: "/img/aeonium.webp",
   },
   {
     id: 27,
@@ -247,7 +247,7 @@ export const plantasMilokira = [
       "Cactus redondo y clásico, resalta por el tono dorado de sus espinas. Súper resistente.",
     categoria: "CACTUS",
     precio: { valor: 2000, tipo: "fijo" },
-    imagenUrl: "/img/cactus-amarillo.jpeg",
+    imagenUrl: "/img/cactus-amarillo.webp",
   },
   {
     id: 28,
@@ -256,7 +256,7 @@ export const plantasMilokira = [
       "Cactus colgante de tallos largos. Queda bellísimo en macetas de pared o colgantes.",
     categoria: "CACTUS",
     precio: { valor: 1000, tipo: "desde" },
-    imagenUrl: "/img/cola de raton.jpeg",
+    imagenUrl: "/img/cola de raton.webp",
   },
 
   // ==========================================
@@ -270,7 +270,7 @@ export const plantasMilokira = [
       "Arreglo dinámico con variedad de suculentas. Lleno de texturas diferentes.",
     categoria: "JARDINES",
     precio: { valor: 5000 },
-    imagenUrl: "/img/jardines/jardin-loki1.jpeg",
+    imagenUrl: "/img/jardines/jardin-loki1.webp",
   },
   {
     id: 30,
@@ -279,7 +279,7 @@ export const plantasMilokira = [
       "Arreglo alegre con especies de rápido crecimiento en maceta mediana.",
     categoria: "JARDINES",
     precio: { valor: 3000, tipo: "fijo" },
-    imagenUrl: "/img/jardines/jardin-milo1.jpeg",
+    imagenUrl: "/img/jardines/jardin-milo1.webp",
   },
   {
     id: 31,
@@ -288,7 +288,7 @@ export const plantasMilokira = [
       "Composición grande con especies mejor adaptadas. Abundante y lleno de vida.",
     categoria: "JARDINES",
     precio: { valor: 7000, tipo: "aprox" },
-    imagenUrl: "/img/jardines/jardin-suculentas-l.jpeg",
+    imagenUrl: "/img/jardines/jardin-suculentas-l.webp",
   },
   {
     id: 32,
@@ -297,7 +297,7 @@ export const plantasMilokira = [
       "Nuestra pieza extra grande de 10.000 pesos. Robusto, inmenso y diseñado para destacar.",
     categoria: "JARDINES",
     precio: { valor: 10000, tipo: "fijo" },
-    imagenUrl: "/img/jardines/jardin-suculentas-xl.jpeg",
+    imagenUrl: "/img/jardines/jardin-suculentas-xl.webp",
   },
   {
     id: 33,
@@ -306,7 +306,7 @@ export const plantasMilokira = [
       "Arreglo montado en maceta alargada. Queda espectacular como separador de ambientes o en repisas.",
     categoria: "JARDINES",
     precio: { valor: 3000, tipo: "desde" },
-    imagenUrl: "/img/jardines/mix suculentas.jpeg",
+    imagenUrl: "/img/jardines/mix suculentas.webp",
   },
   {
     id: 34,
@@ -315,7 +315,7 @@ export const plantasMilokira = [
       "Composición minimalista y equilibrada con tres suculentas que se complementan a la perfección.",
     categoria: "JARDINES",
     precio: { valor: 2000, tipo: "fijo" },
-    imagenUrl: "/img/jardines/trio-1.jpeg",
+    imagenUrl: "/img/jardines/trio-1.webp",
   },
   {
     id: 35,
@@ -324,7 +324,7 @@ export const plantasMilokira = [
       "Una excelente opción para empezar. Sencillo, hermoso y muy fácil de cuidar.",
     categoria: "JARDINES",
     precio: { valor: 2000, tipo: "fijo" },
-    imagenUrl: "/img/jardines/trio-2.jpeg",
+    imagenUrl: "/img/jardines/trio-2.webp",
   },
   {
     id: 36,
@@ -333,6 +333,6 @@ export const plantasMilokira = [
       "Tercera variante de nuestro clásico trío de suculentas. Ideal para decorar tu escritorio.",
     categoria: "JARDINES",
     precio: { valor: 2000, tipo: "fijo" },
-    imagenUrl: "/img/jardines/trio-3.jpeg",
+    imagenUrl: "/img/jardines/trio-3.webp",
   },
 ];
