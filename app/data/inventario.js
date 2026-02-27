@@ -35,7 +35,7 @@ export const plantasMilokira = [
     descripcion:
       "Súper resistente y excelente purificadora de aire. Produce lindos hijuelos colgantes.",
     categoria: "INTERIOR",
-    precio: { valor: 3500, tipo: "desde" },
+    precio: { valor: 1000, tipo: "desde" },
     imagenUrl: "/img/malamadre.jpeg",
   },
   {
@@ -44,18 +44,18 @@ export const plantasMilokira = [
     descripcion:
       "Variedad de tonos verdes intensos. Perfecta para macetas colgantes en espacios iluminados.",
     categoria: "INTERIOR",
-    precio: { valor: 3500, tipo: "desde" },
+    precio: { valor: 1000, tipo: "desde" },
     imagenUrl: "/img/malamadre-verde.jpeg",
   },
-  {
-    id: 6,
-    nombre: "Margarita Arbusto",
-    descripcion:
-      "Un arbusto generoso que se llena de flores blancas. Ideal para el jardín o maceteros grandes al sol.",
-    categoria: "EXTERIOR",
-    precio: { valor: 5000, tipo: "aprox" },
-    imagenUrl: "/img/Margarita.jpeg",
-  },
+  // {
+  //   id: 6,
+  //   nombre: "Margarita Arbusto",
+  //   descripcion:
+  //     "Un arbusto generoso que se llena de flores blancas. Ideal para el jardín o maceteros grandes al sol.",
+  //   categoria: "EXTERIOR",
+  //   precio: { valor: 5000, tipo: "aprox" },
+  //   imagenUrl: "/img/Margarita.jpeg",
+  // },
   {
     id: 7,
     nombre: "Dólar Verde",
@@ -71,7 +71,7 @@ export const plantasMilokira = [
     descripcion:
       "De hojas gruesas y brillantes. Súper amigable para interiores con luz indirecta moderada.",
     categoria: "INTERIOR",
-    precio: { valor: 4000, tipo: "fijo" },
+    precio: { valor: 2000, tipo: "Desde" },
     imagenUrl: "/img/cucharita.jpeg",
   },
   {
@@ -80,7 +80,7 @@ export const plantasMilokira = [
     descripcion:
       "Variedad muy resistente que regala una floración preciosa y abundante.",
     categoria: "EXTERIOR",
-    precio: { valor: 4500, tipo: "fijo" },
+    precio: { valor: 4000, tipo: "fijo" },
     imagenUrl: "/img/begonia-hardy.jpeg",
   },
   {
@@ -89,7 +89,7 @@ export const plantasMilokira = [
     descripcion:
       "Hojas asimétricas con puntitos plateados y hermosas caídas de flores. Un espectáculo visual.",
     categoria: "INTERIOR",
-    precio: { valor: 6000, tipo: "fijo" },
+    precio: { valor: 4000, tipo: "fijo" },
     imagenUrl: "/img/begonia-alas.jpeg",
   },
   {
@@ -98,7 +98,7 @@ export const plantasMilokira = [
     descripcion:
       "La 'planta de hierro'. Es virtualmente indestructible y sobrevive en rincones con poca luz.",
     categoria: "INTERIOR",
-    precio: { valor: 7000, tipo: "fijo" },
+    precio: { valor: 2000, tipo: "Desde" },
     imagenUrl: "/img/Aspidistra.jpeg",
   },
   {
@@ -174,7 +174,7 @@ export const plantasMilokira = [
     descripcion:
       "Una maravilla botánica. Sus hojas presentan manchas oscuras atigradas que la hacen única.",
     categoria: "SUCULENTAS",
-    precio: { valor: 2000, tipo: "desde" },
+    precio: { valor: 1000, tipo: "desde" },
     imagenUrl: "/img/lirio-leopardo.jpeg",
   },
   {
@@ -210,7 +210,7 @@ export const plantasMilokira = [
     descripcion:
       "Ideal para iniciar tu colección o para regalar prosperidad a tus seres queridos.",
     categoria: "SUCULENTAS",
-    precio: { valor: 2000, tipo: "desde" },
+    precio: { valor: 1000, tipo: "desde" },
     imagenUrl: "/img/jade-pequeno.jpeg",
   },
   {
@@ -301,7 +301,7 @@ export const plantasMilokira = [
   },
   {
     id: 33,
-    nombre: "Mix Suculentas",
+    nombre: "Mix Suculentas Rectangular",
     descripcion:
       "Arreglo montado en maceta alargada. Queda espectacular como separador de ambientes o en repisas.",
     categoria: "JARDINES",
