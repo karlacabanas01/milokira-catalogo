@@ -29,18 +29,18 @@ export default function PlantCard({ planta }) {
       </div>
 
       <div className="relative h-64 overflow-hidden bg-milokira-crema shrink-0 group">
-        {/* {isLoading && (
+        {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-200 animate-pulse z-10">
             <div className="w-8 h-8 border-4 border-gray-300 border-t-gray-500 rounded-full animate-spin"></div>
           </div>
-        )} */}
+        )}
 
-        {/* AQUÍ ESTÁ EL CAMBIO: Se agregó loading="lazy" */}
         <img
           src={imagenUrl}
           alt={nombre}
           loading="lazy"
           onLoad={() => setIsLoading(false)}
+          onError={() => setIsLoading(false)} // NUEVO: Evita el spinner infinito si falla la imagen
           className={`w-full h-full object-cover object-center transform transition-all duration-700 ease-in-out group-hover:scale-110 
           ${isLoading ? "opacity-0" : "opacity-100"}`}
         />
