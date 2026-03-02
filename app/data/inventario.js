@@ -156,7 +156,7 @@ export const plantasMilokira = [
     descripcion:
       "Suculenta de crecimiento vertical muy original. Ideal para dar altura a tus arreglos.",
     categoria: "SUCULENTAS",
-    precio: { valor: 2000, tipo: "fijo" },
+    precio: { valor: 2000, tipo: "fijo", disponible: false },
     imagenUrl: "/img/cordon-san-jose.webp",
   },
   {
@@ -237,7 +237,7 @@ export const plantasMilokira = [
     descripcion:
       "Forma preciosas rosetas en las puntas de sus ramas, dando la apariencia de un árbol bonsái suculento.",
     categoria: "SUCULENTAS",
-    precio: { valor: 2000, tipo: "fijo" },
+    precio: { valor: 2000, tipo: "fijo", disponible: false },
     imagenUrl: "/img/aeonium.webp",
   },
   {
@@ -305,7 +305,7 @@ export const plantasMilokira = [
     descripcion:
       "Arreglo montado en maceta alargada. Queda espectacular como separador de ambientes o en repisas.",
     categoria: "JARDINES",
-    precio: { valor: 3000, tipo: "desde" },
+    precio: { valor: 3000, tipo: "desde", disponible: false },
     imagenUrl: "/img/jardines/mix suculentas.webp",
   },
   {
