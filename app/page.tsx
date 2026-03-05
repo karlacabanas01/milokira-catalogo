@@ -1,12 +1,56 @@
 "use client";
 
-import { useState } from "react";
-import { plantasMilokira } from "./data/inventario";
+import { useEffect, useState } from "react";
 import PlantCard from "./components/plant-card";
+import AgregarPlantaModal from "./components/agregar-planta-modal";
+
 import Image from "next/image";
+import { collection, onSnapshot } from "firebase/firestore";
+import { db } from "./firebaseConfig";
+
+interface Planta {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  imagenUrl: string;
+  categoria: string;
+  precio: {
+    valor: number;
+    tipo: string;
+    disponible: boolean;
+  };
+}
 
 export default function Home() {
+  const [plantas, setPlantas] = useState<Planta[]>([]);
   const [categoriaActiva, setCategoriaActiva] = useState("TODAS");
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, "Plantas"),
+      (snapshot) => {
+        const listaFirebase = snapshot.docs.map(
+          (doc) =>
+            ({
+              id: doc.id,
+              ...doc.data(),
+            }) as Planta,
+        );
+
+        setPlantas(listaFirebase);
+        setIsLoadingData(false);
+      },
+      (error) => {
+        console.error("Error en Firebase: ", error);
+        setIsLoadingData(false);
+      },
+    );
+
+    return () => unsubscribe();
+  }, []);
+
   const categorias = [
     "TODAS",
     "CACTUS",
@@ -16,22 +60,83 @@ export default function Home() {
     "EXTERIOR",
   ];
 
-  const plantasFiltradas = plantasMilokira.filter((planta) => {
+  const plantasFiltradas = plantas.filter((planta) => {
     if (categoriaActiva === "TODAS") return true;
-
-    return planta.categoria.toUpperCase() === categoriaActiva.toUpperCase();
+    return planta.categoria?.toUpperCase() === categoriaActiva.toUpperCase();
   });
+
+  const SkeletonCard = () => (
+    <div className="bg-white rounded-xl overflow-hidden shadow-sm h-[420px] border-2 border-transparent relative flex flex-col">
+      <div className="h-64 bg-gray-200 animate-pulse shrink-0"></div>
+      <div className="p-5 flex flex-col flex-grow justify-between">
+        <div>
+          <div className="h-6 bg-gray-200 rounded animate-pulse mb-3 w-3/4"></div>
+          <div className="h-4 bg-gray-200 rounded animate-pulse mb-2 w-full"></div>
+          <div className="h-4 bg-gray-200 rounded animate-pulse mb-6 w-2/3"></div>
+        </div>
+        <div className="flex items-center justify-between mt-auto">
+          <div className="h-6 bg-gray-200 rounded animate-pulse w-1/3"></div>
+          <div className="h-8 bg-gray-200 rounded animate-pulse w-1/4"></div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // SEGURIDAD
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [logoClicks, setLogoClicks] = useState(0);
+
+  // FUNCIÓN SECRETA PARA ACTIVAR EL MODO ADMIN
+  const handleLogoClick = () => {
+    const nuevosClics = logoClicks + 1;
+    setLogoClicks(nuevosClics);
+
+    // Si haces 5 clics seguidos en el logo...
+    if (nuevosClics === 5) {
+      const password = prompt("🔒 Ingresa la clave secreta de Milokira:");
+
+      // PASSWORD "kira2026"
+      if (password === "kira2026") {
+        setIsAdmin(true);
+        alert("¡Modo Administrador Activado! Ya puedes agregar plantas. 🌿");
+      } else {
+        alert("Clave incorrecta. Intento bloqueado.");
+      }
+
+      setLogoClicks(0);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-milokira-crema patron-muro p-8 font-sans">
+      {isAdmin && (
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="fixed bottom-6 right-6 z-50 bg-milokira-verde text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 hover:bg-green-700 transition-all duration-300 text-2xl pb-1"
+          title="Agregar nueva planta"
+        >
+          +
+        </button>
+      )}
+
+      <AgregarPlantaModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+
+      <div className="fixed bottom-4 right-4 z-100"></div>
       <div className="flex justify-center items-center flex-col mb-8 mt-4">
-        <div className="bg-milokira-crema/90 backdrop-blur-sm p-5 rounded-[30px] shadow-lg shadow-milokira-lila/20 border border-white/50 transition-transform hover:scale-105 duration-500">
+        <div
+          onClick={handleLogoClick}
+          className="bg-milokira-crema/90 backdrop-blur-sm p-5 rounded-[30px] shadow-lg shadow-milokira-lila/20 border border-white/50 transition-transform hover:scale-105 duration-500 cursor-pointer select-none"
+        >
           <Image
             src="/img/logo.png"
             alt="Logo Milokira Plantitas"
             width={220}
             height={90}
             className="object-contain"
+            style={{ height: "auto" }}
             priority
           />
         </div>
@@ -51,16 +156,9 @@ export default function Home() {
             key={categoria}
             onClick={() => setCategoriaActiva(categoria)}
             className={`
-              /* ESTILOS BASE MÁS PEQUEÑOS */
-              relative z-10 overflow-hidden px-4 py-2 rounded-md font-bold uppercase tracking-[2px] text-xs sm:text-sm cursor-pointer outline outline-[1.5px] outline-milokira-verde transition-all duration-1000 bg-transparent
-              
-              /* ESTILOS HOVER GENERALES (Escala más suave) */
+              relative z-10 overflow-hidden px-4 py-2 rounded-md font-bold uppercase tracking-[2px] text-xs sm:text-sm cursor-pointer outline-[1.5px] outline-milokira-verde transition-all duration-1000 bg-transparent
               hover:text-white hover:scale-105 hover:shadow-md hover:shadow-milokira-verde/40
-              
-              /* ESTILOS DEL PSEUDO-ELEMENTO */
-              before:content-[''] before:absolute before:-left-[50px] before:top-0 before:h-full before:bg-milokira-verde before:skew-x-[45deg] before:-z-10 before:transition-[width] before:duration-1000
-              
-              /* LÓGICA DE ESTADO */
+              before:content-[''] before:absolute before:-left-12.5 before:top-0 before:h-full before:bg-milokira-verde before:skew-x-45 before:-z-10 before:transition-[width] before:duration-1000
               ${
                 categoriaActiva === categoria
                   ? "text-white scale-105 shadow-md shadow-milokira-verde/40 before:w-[250%] outline-milokira-verde"
@@ -74,20 +172,26 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-        {plantasFiltradas.length > 0 ? (
-          plantasFiltradas.map((planta, index) => (
-            <PlantCard key={planta.id} planta={planta} prioridad={index < 6} />
-          ))
-        ) : (
-          <p className="col-span-full text-center text-gray-500 py-10">
+        {isLoadingData &&
+          Array(6)
+            .fill(0)
+            .map((_, index) => <SkeletonCard key={`skeleton-${index}`} />)}
+
+        {!isLoadingData &&
+          plantasFiltradas.length > 0 &&
+          plantasFiltradas.map((planta) => (
+            <PlantCard key={planta.id} planta={planta} />
+          ))}
+
+        {!isLoadingData && plantasFiltradas.length === 0 && (
+          <p className="col-span-full text-center text-gray-500 py-10 font-medium text-lg">
             No hay plantitas en esta categoría por ahora. 🌵
           </p>
         )}
       </div>
-      {/* FOOTER DE INFORMACIÓN Y LOGÍSTICA */}
+
       <footer className="mt-20 mb-4 w-full max-w-5xl mx-auto">
         <div className="bg-white/70 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-sm border border-milokira-lila/30 flex flex-col md:flex-row items-center justify-between gap-8 transition-all hover:shadow-md hover:border-milokira-lila/50 duration-500">
-          {/* Columna Izquierda: Logística */}
           <div className="text-center md:text-left space-y-3 text-sm text-gray-600 font-medium">
             <h3 className="text-milokira-verde font-bold text-base mb-4 uppercase tracking-[2px]">
               Envíos y Entregas
@@ -95,7 +199,7 @@ export default function Home() {
 
             <p className="flex items-center justify-center md:justify-start gap-2">
               <span className="text-lg">📍</span>
-              Ubicados en Talca, sector Bicentenario.
+              <span>Ubicados en Talca, sector Bicentenario.</span>
             </p>
 
             <p className="flex items-center justify-center md:justify-start gap-2">
@@ -108,18 +212,16 @@ export default function Home() {
 
             <p className="flex items-center justify-center md:justify-start gap-2">
               <span className="text-lg">📦</span>
-              Envíos a regiones por pagar.
+              <span>Envíos a regiones por pagar.</span>
             </p>
           </div>
 
-          {/* Columna Derecha: Créditos y Marca */}
           <div className="flex flex-col items-center md:items-end text-center md:text-right border-t md:border-t-0 md:border-l border-milokira-lila/30 pt-6 md:pt-0 md:pl-8">
             <p className="text-gray-800 font-black tracking-widest uppercase text-lg mb-1">
               Milokira
             </p>
             <p className="text-xs text-gray-500 mb-4">Cultivado con amor 🌿</p>
 
-            {/* Tu firma de desarrolladora */}
             <div className="bg-milokira-crema px-4 py-2 rounded-full border border-milokira-verde/20">
               <p className="text-xs text-gray-500 font-medium">
                 Página creada por{" "}

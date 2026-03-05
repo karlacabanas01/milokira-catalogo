@@ -336,3 +336,112 @@ export const plantasMilokira = [
     imagenUrl: "/img/jardines/trio-3.webp",
   },
 ];
+
+export const plantasColeccion = [
+  [
+    {
+      nombre: "Dólar Azul Planta",
+      descripcion:
+        "Hermosa planta de hojas redondeadas con un tono azulado plateado único. Perfecta para interiores iluminados y muy buscada por coleccionistas.",
+      categoria: "INTERIOR",
+      precio: { valor: 3000, tipo: "desde", disponible: true },
+      imagenUrl: "/img/dolar-azul.webp",
+    },
+    {
+      nombre: "Philodendron Lemon Lime",
+      descripcion:
+        "Sus hojas en forma de corazón destacan por su vibrante color verde neón. Es de fácil cuidado y aporta muchísima luz a cualquier rincón.",
+      categoria: "COLECCION",
+      precio: { valor: 4500, tipo: "fijo", disponible: true },
+      imagenUrl: "/img/philodendron-lemon.webp",
+    },
+    {
+      nombre: "Syngonium Rosado",
+      descripcion:
+        "Una variedad preciosa con hojas en tonos rosas pastel y verde. Ideal para dar un toque romántico y de color a tus espacios interiores.",
+      categoria: "COLECCION",
+      precio: { valor: 3500, tipo: "desde", disponible: true },
+      imagenUrl: "/img/syngonium-rosado.webp",
+    },
+    {
+      nombre: "Maranta Kerchoveana Variegata",
+      descripcion:
+        "Planta de la oración con un patrón variegado espectacular. Sus hojas se pliegan por la noche, dando vida a tu colección.",
+      categoria: "COLECCION",
+      precio: { valor: 6000, tipo: "fijo", disponible: true },
+      imagenUrl: "/img/maranta-variegata.webp",
+    },
+    {
+      nombre: "Jardín Loki 1",
+      descripcion:
+        "Arreglo dinámico con variedad de suculentas. Lleno de texturas diferentes, inspirado en la personalidad juguetona de nuestro Loki.",
+      categoria: "JARDINES",
+      precio: { valor: 4000, tipo: "fijo", disponible: true },
+      imagenUrl: "/img/jardines/loki-1.webp",
+    },
+    {
+      nombre: "Jardín Loki 2",
+      descripcion:
+        "Segunda variante de nuestro popular arreglo Loki. Combinación perfecta de colores y especies resistentes.",
+      categoria: "JARDINES",
+      precio: { valor: 4000, tipo: "fijo", disponible: true },
+      imagenUrl: "/img/jardines/loki-2.webp",
+    },
+    {
+      nombre: "Jardín Loki 3",
+      descripcion:
+        "Tercera edición de la serie Loki. Un pequeño ecosistema en maceta ideal para regalar o decorar.",
+      categoria: "JARDINES",
+      precio: { valor: 4000, tipo: "fijo", disponible: true },
+      imagenUrl: "/img/jardines/loki-3.webp",
+    },
+    {
+      nombre: "Jardín Loki 4",
+      descripcion:
+        "Cuarta versión de nuestro arreglo Loki, con una selección especial de suculentas de temporada.",
+      categoria: "JARDINES",
+      precio: { valor: 4000, tipo: "fijo", disponible: true },
+      imagenUrl: "/img/jardines/loki-4.webp",
+    },
+    {
+      nombre: "Jardín Rectangular 1",
+      descripcion:
+        "Composición alargada ideal para centros de mesa o repisas estrechas. Aporta elegancia natural.",
+      categoria: "JARDINES",
+      precio: { valor: 3000, tipo: "aprox", disponible: true },
+      imagenUrl: "/img/jardines/rectangular-1.webp",
+    },
+    {
+      nombre: "Jardín Rectangular 2",
+      descripcion:
+        "Segunda variante de nuestro arreglo rectangular. Minimalista, moderno y lleno de vida.",
+      categoria: "JARDINES",
+      precio: { valor: 3000, tipo: "aprox", disponible: true },
+      imagenUrl: "/img/jardines/rectangular-2.webp",
+    },
+    {
+      nombre: "Jardín Milo 1",
+      descripcion:
+        "Arreglo alegre y robusto, con especies de crecimiento armónico. Inspirado en la nobleza de Milo.",
+      categoria: "JARDINES",
+      precio: { valor: 3000, tipo: "fijo", disponible: true },
+      imagenUrl: "/img/jardines/milo-1.webp",
+    },
+    {
+      nombre: "Jardín Milo 2",
+      descripcion:
+        "Versión alternativa del arreglo Milo, destacando por sus contrastes de verde oscuro y claro.",
+      categoria: "JARDINES",
+      precio: { valor: 3000, tipo: "fijo", disponible: true },
+      imagenUrl: "/img/jardines/milo-2.webp",
+    },
+    {
+      nombre: "Jardín Milo 3",
+      descripcion:
+        "Tercera variante de la familia Milo. Una composición tierna y muy fácil de cuidar.",
+      categoria: "JARDINES",
+      precio: { valor: 3000, tipo: "fijo", disponible: true },
+      imagenUrl: "/img/jardines/milo-3.webp",
+    },
+  ],
+];
