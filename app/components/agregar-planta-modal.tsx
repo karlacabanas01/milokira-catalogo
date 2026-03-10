@@ -1,15 +1,33 @@
-import { useState } from "react";
-import { collection, addDoc, doc, setDoc } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { collection, doc, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebaseConfig";
+// Importamos iconos modernos
+import { X, Leaf, Save, TerminalSquare } from "lucide-react";
+
+// Tipamos la planta recibida
+interface Planta {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  imagenUrl: string;
+  categoria: string;
+  precio: {
+    valor: number;
+    tipo: string;
+    disponible: boolean;
+  };
+}
 
 interface AgregarPlantaModalProps {
   isOpen: boolean;
   onClose: () => void;
+  plantaAEditar?: Planta | null;
 }
 
 export default function AgregarPlantaModal({
   isOpen,
   onClose,
+  plantaAEditar,
 }: AgregarPlantaModalProps) {
   const [cargando, setCargando] = useState(false);
   const [pestaña, setPestaña] = useState<"manual" | "script">("manual");
@@ -19,10 +37,37 @@ export default function AgregarPlantaModal({
     nombre: "",
     descripcion: "",
     categoria: "INTERIOR",
-    imagenUrl: "/img/",
+    imagenUrl: "",
     precioValor: "",
     precioTipo: "fijo",
+    disponible: "true",
   });
+
+  useEffect(() => {
+    if (plantaAEditar) {
+      setFormData({
+        nombre: plantaAEditar.nombre,
+        descripcion: plantaAEditar.descripcion,
+        categoria: plantaAEditar.categoria || "INTERIOR",
+        imagenUrl: plantaAEditar.imagenUrl || "",
+        precioValor: plantaAEditar.precio.valor.toString(),
+        precioTipo: plantaAEditar.precio.tipo || "fijo",
+        disponible:
+          plantaAEditar.precio.disponible !== false ? "true" : "false",
+      });
+      setPestaña("manual");
+    } else {
+      setFormData({
+        nombre: "",
+        descripcion: "",
+        categoria: "INTERIOR",
+        imagenUrl: "",
+        precioValor: "",
+        precioTipo: "fijo",
+        disponible: "true",
+      });
+    }
+  }, [plantaAEditar, isOpen]);
 
   if (!isOpen) return null;
 
@@ -35,12 +80,12 @@ export default function AgregarPlantaModal({
     setFormData({ ...formData, [name]: value });
   };
 
-  // --- LÓGICA PARA SUBIR UNA SOLA PLANTA ---
   const handleSubmitManual = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setCargando(true);
+
     try {
-      const nuevaPlanta = {
+      const dataParaSubir = {
         nombre: formData.nombre,
         descripcion: formData.descripcion,
         categoria: formData.categoria,
@@ -48,33 +93,50 @@ export default function AgregarPlantaModal({
         precio: {
           valor: Number(formData.precioValor),
           tipo: formData.precioTipo,
-          disponible: true,
+          disponible: formData.disponible === "true",
         },
       };
-      await addDoc(collection(db, "Plantas"), nuevaPlanta);
-      alert("¡Plantita agregada! 🌿");
+
+      if (plantaAEditar) {
+        await updateDoc(doc(db, "Plantas", plantaAEditar.id), dataParaSubir);
+        alert("¡Planta actualizada con éxito! 🌿");
+      } else {
+        const idAmigable = formData.nombre
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/\s+/g, "-");
+
+        await setDoc(doc(db, "Plantas", idAmigable), dataParaSubir);
+        alert("¡Nueva plantita agregada! 🌱");
+      }
+
       onClose();
     } catch (error) {
       console.error(error);
-      alert("Error al subir");
+      alert("Error al guardar los datos en Firebase.");
     } finally {
       setCargando(false);
     }
   };
 
-  // --- LÓGICA PARA EJECUTAR EL SCRIPT (CARGA MASIVA) ---
   const ejecutarScript = async () => {
     if (!scriptTexto.trim()) return;
     setCargando(true);
-
     try {
       const jsonLimpiado = scriptTexto
         .replace(/(\w+):/g, '"$1":')
         .replace(/'/g, '"');
       const plantasNuevas = JSON.parse(jsonLimpiado);
-
       for (const planta of plantasNuevas) {
-        const dataParaSubir = {
+        const idAmigable =
+          planta.id ||
+          planta.nombre
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/\s+/g, "-");
+        await setDoc(doc(db, "Plantas", idAmigable), {
           nombre: planta.nombre,
           descripcion: planta.descripcion,
           categoria: planta.categoria,
@@ -82,151 +144,207 @@ export default function AgregarPlantaModal({
           precio: {
             valor: planta.precio.valor,
             tipo: planta.precio.tipo || "fijo",
-            disponible:
-              planta.precio.disponible !== undefined
-                ? planta.precio.disponible
-                : true,
+            disponible: true,
           },
-        };
-
-        // ESTA ES LA LÍNEA MÁGICA: Usa el ID que viene en el JSON
-        const idAmigable = planta.id;
-
-        // ESTO DEBE SER setDoc (NO addDoc)
-        await setDoc(doc(db, "Plantas", idAmigable), dataParaSubir);
+        });
       }
-
-      alert(
-        `✅ ¡Éxito! Se agregaron ${plantasNuevas.length} plantas con IDs personalizados.`,
-      );
+      alert(`✅ ¡Éxito!`);
       setScriptTexto("");
       onClose();
     } catch (error) {
-      console.error("Error en script:", error);
-      alert("Error: Asegúrate de que el formato sea JSON válido.");
+      alert("Error: Revisa el formato JSON.");
     } finally {
       setCargando(false);
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-milokira-crema rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border-2 border-milokira-lila/50">
-        {/* Cabecera y Selector de Pestañas */}
-        <div className="bg-milokira-lila/80 p-2 flex flex-col">
-          <div className="flex justify-between items-center p-2">
-            <h2 className="text-white font-bold uppercase text-sm tracking-widest">
-              Panel Admin Milokira
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-white hover:text-red-200 font-bold text-xl"
-            >
-              &times;
-            </button>
-          </div>
+  // Clases compartidas para los inputs para mantener el diseño limpio
+  const inputEstilo =
+    "w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-sm text-stone-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-milokira-lila/40 focus:border-milokira-lila transition-all shadow-sm";
+  const labelEstilo =
+    "text-[11px] font-bold text-stone-500 mb-1.5 block uppercase tracking-wider";
 
-          <div className="flex bg-black/10 rounded-lg p-1">
-            <button
-              onClick={() => setPestaña("manual")}
-              className={`flex-1 py-1 text-xs font-bold rounded-md transition-all ${pestaña === "manual" ? "bg-white text-milokira-verde shadow" : "text-white/70"}`}
-            >
-              MANUAL
-            </button>
-            <button
-              onClick={() => setPestaña("script")}
-              className={`flex-1 py-1 text-xs font-bold rounded-md transition-all ${pestaña === "script" ? "bg-white text-milokira-verde shadow" : "text-white/70"}`}
-            >
-              SCRIPT (MASIVO)
-            </button>
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-stone-900/40 backdrop-blur-sm p-4">
+      {/* Contenedor principal: Blanco neutro con una sutil línea superior morada */}
+      <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-stone-100 border-t-4 border-t-milokira-lila">
+        {/* Cabecera neutra */}
+        <div className="px-6 py-5 border-b border-stone-100 flex justify-between items-center">
+          <div className="flex items-center gap-2 text-stone-800">
+            <Leaf className="text-milokira-verde" size={20} strokeWidth={2.5} />
+            <h2 className="font-bold text-lg tracking-wide">
+              {plantaAEditar ? "Editar Planta" : "Nueva Planta"}
+            </h2>
           </div>
+          <button
+            onClick={onClose}
+            className="text-stone-400 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-full transition-colors"
+          >
+            <X size={20} strokeWidth={2.5} />
+          </button>
         </div>
 
-        {/* CONTENIDO PESTAÑA MANUAL */}
+        {/* Pestañas (Solo visibles si no estamos editando) */}
+        {!plantaAEditar && (
+          <div className="px-6 pt-4 pb-2">
+            <div className="flex bg-stone-100 p-1 rounded-xl">
+              <button
+                onClick={() => setPestaña("manual")}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                  pestaña === "manual"
+                    ? "bg-white text-milokira-lila shadow-sm"
+                    : "text-stone-500 hover:text-stone-700"
+                }`}
+              >
+                Formulario
+              </button>
+              <button
+                onClick={() => setPestaña("script")}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                  pestaña === "script"
+                    ? "bg-white text-milokira-lila shadow-sm"
+                    : "text-stone-500 hover:text-stone-700"
+                }`}
+              >
+                Carga Masiva
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Formulario Manual */}
         {pestaña === "manual" ? (
-          <form onSubmit={handleSubmitManual} className="p-6 space-y-4">
-            {/* ... (Aquí va todo el formulario que ya teníamos antes) ... */}
+          <form
+            onSubmit={handleSubmitManual}
+            className="px-6 pb-6 pt-2 space-y-5"
+          >
             <div className="grid grid-cols-2 gap-4">
-              <input
-                required
-                name="nombre"
-                placeholder="Nombre"
-                onChange={handleChange}
-                className="p-2 border rounded"
-              />
-              <input
-                required
-                name="imagenUrl"
-                placeholder="Ruta Imagen"
-                onChange={handleChange}
-                defaultValue="/img/"
-                className="p-2 border rounded"
-              />
+              <div>
+                <label className={labelEstilo}>Nombre</label>
+                <input
+                  required
+                  name="nombre"
+                  value={formData.nombre}
+                  onChange={handleChange}
+                  className={inputEstilo}
+                  placeholder="Ej. Ficus Lyrata"
+                />
+              </div>
+              <div>
+                <label className={labelEstilo}>Ruta Imagen</label>
+                <input
+                  name="imagenUrl"
+                  value={formData.imagenUrl}
+                  onChange={handleChange}
+                  className={inputEstilo}
+                  placeholder="/img/planta.webp"
+                />
+              </div>
             </div>
-            <textarea
-              required
-              name="descripcion"
-              placeholder="Descripción"
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-              rows={2}
-            ></textarea>
-            <div className="grid grid-cols-3 gap-2">
-              <select
-                name="categoria"
-                onChange={handleChange}
-                className="p-2 border rounded bg-white"
-              >
-                <option value="INTERIOR">Interior</option>
-                <option value="EXTERIOR">Exterior</option>
-                <option value="SUCULENTAS">Suculentas</option>
-                <option value="CACTUS">Cactus</option>
-                <option value="JARDINES">Jardines</option>
-              </select>
-              <input
+
+            <div>
+              <label className={labelEstilo}>Descripción</label>
+              <textarea
                 required
-                name="precioValor"
-                type="number"
-                placeholder="Precio"
+                name="descripcion"
+                value={formData.descripcion}
                 onChange={handleChange}
-                className="p-2 border rounded"
-              />
-              <select
-                name="precioTipo"
-                onChange={handleChange}
-                className="p-2 border rounded bg-white"
-              >
-                <option value="fijo">Fijo</option>
-                <option value="desde">Desde</option>
-                <option value="aprox">Aprox</option>
-              </select>
+                className={`${inputEstilo} resize-none`}
+                rows={2}
+                placeholder="Detalles de la planta..."
+              ></textarea>
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelEstilo}>Categoría</label>
+                <select
+                  name="categoria"
+                  value={formData.categoria}
+                  onChange={handleChange}
+                  className={inputEstilo}
+                >
+                  <option value="INTERIOR">Interior</option>
+                  <option value="EXTERIOR">Exterior</option>
+                  <option value="SUCULENTAS">Suculentas</option>
+                  <option value="CACTUS">Cactus</option>
+                  <option value="JARDINES">Jardines</option>
+                  <option value="COLECCION">Colección</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelEstilo}>Estado</label>
+                <select
+                  name="disponible"
+                  value={formData.disponible}
+                  onChange={handleChange}
+                  className={`${inputEstilo} font-medium`}
+                >
+                  <option value="true">🟢 Disponible</option>
+                  <option value="false">🔴 Agotado</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pb-2">
+              <div>
+                <label className={labelEstilo}>Precio ($)</label>
+                <input
+                  required
+                  type="number"
+                  name="precioValor"
+                  value={formData.precioValor}
+                  onChange={handleChange}
+                  className={inputEstilo}
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className={labelEstilo}>Tipo de precio</label>
+                <select
+                  name="precioTipo"
+                  value={formData.precioTipo}
+                  onChange={handleChange}
+                  className={inputEstilo}
+                >
+                  <option value="fijo">Fijo</option>
+                  <option value="desde">Desde</option>
+                  <option value="aprox">Aprox</option>
+                </select>
+              </div>
+            </div>
+
             <button
               disabled={cargando}
-              className="w-full bg-milokira-verde text-white font-bold py-3 rounded uppercase text-sm hover:opacity-90"
+              className="w-full bg-stone-800 text-white font-bold py-3.5 rounded-xl uppercase tracking-wider text-sm hover:bg-milokira-lila transition-all duration-300 shadow-md disabled:opacity-70 flex justify-center items-center gap-2"
             >
-              {cargando ? "Subiendo..." : "Guardar Planta"}
+              <Save size={18} />
+              {cargando
+                ? "Guardando..."
+                : plantaAEditar
+                  ? "Actualizar Planta"
+                  : "Guardar Planta"}
             </button>
           </form>
         ) : (
-          /* CONTENIDO PESTAÑA SCRIPT */
-          <div className="p-6 space-y-4">
-            <p className="text-xs text-gray-500 italic">
-              Pega aquí el arreglo de objetos. Asegúrate de que use comillas
-              dobles en las propiedades o formato JSON.
+          /* Pestaña Script */
+          <div className="px-6 pb-6 pt-2 space-y-4">
+            <p className="text-sm text-stone-500">
+              Pega el arreglo JSON con los datos de las plantas.
             </p>
             <textarea
               value={scriptTexto}
               onChange={(e) => setScriptTexto(e.target.value)}
-              placeholder='[ { "nombre": "Planta 1", "precio": { "valor": 2000 } ... } ]'
-              className="w-full h-64 p-3 font-mono text-xs border border-gray-300 rounded focus:outline-milokira-verde"
-            ></textarea>
+              className="w-full h-56 p-4 font-mono text-xs bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-milokira-lila/40 transition-all text-stone-700 shadow-inner resize-none"
+              placeholder='[ { "nombre": "...", "precio": ... } ]'
+            />
             <button
               onClick={ejecutarScript}
               disabled={cargando || !scriptTexto}
-              className="w-full bg-milokira-verde text-white font-bold py-3 rounded uppercase text-sm hover:bg-green-700 disabled:opacity-50"
+              className="w-full bg-stone-800 text-white font-bold py-3.5 rounded-xl uppercase tracking-wider text-sm hover:bg-milokira-lila transition-all duration-300 shadow-md disabled:opacity-70 flex justify-center items-center gap-2"
             >
-              {cargando ? "Procesando Script..." : "🚀 Ejecutar Carga Masiva"}
+              <TerminalSquare size={18} />
+              Ejecutar Script
             </button>
           </div>
         )}

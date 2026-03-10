@@ -58,12 +58,15 @@ export default function Home() {
     "JARDINES",
     "INTERIOR",
     "EXTERIOR",
+    "COLECCION",
   ];
 
   const plantasFiltradas = plantas.filter((planta) => {
     if (categoriaActiva === "TODAS") return true;
     return planta.categoria?.toUpperCase() === categoriaActiva.toUpperCase();
   });
+
+  const [plantaAEditar, setPlantaAEditar] = useState<Planta | null>(null);
 
   const SkeletonCard = () => (
     <div className="bg-white rounded-xl overflow-hidden shadow-sm h-[420px] border-2 border-transparent relative flex flex-col">
@@ -95,8 +98,7 @@ export default function Home() {
     if (nuevosClics === 5) {
       const password = prompt("🔒 Ingresa la clave secreta de Milokira:");
 
-      // PASSWORD "kira2026"
-      if (password === "kira2026") {
+      if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
         setIsAdmin(true);
         alert("¡Modo Administrador Activado! Ya puedes agregar plantas. 🌿");
       } else {
@@ -111,7 +113,10 @@ export default function Home() {
     <main className="min-h-screen bg-milokira-crema patron-muro p-8 font-sans">
       {isAdmin && (
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setPlantaAEditar(null);
+            setIsModalOpen(true);
+          }}
           className="fixed bottom-6 right-6 z-50 bg-milokira-verde text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 hover:bg-green-700 transition-all duration-300 text-2xl pb-1"
           title="Agregar nueva planta"
         >
@@ -121,7 +126,11 @@ export default function Home() {
 
       <AgregarPlantaModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setPlantaAEditar(null);
+        }}
+        plantaAEditar={plantaAEditar}
       />
 
       <div className="fixed bottom-4 right-4 z-100"></div>
@@ -180,14 +189,17 @@ export default function Home() {
         {!isLoadingData &&
           plantasFiltradas.length > 0 &&
           plantasFiltradas.map((planta) => (
-            <PlantCard key={planta.id} planta={planta} />
+            // 3. NUEVO: Le pasamos isAdmin y la función onEdit a la tarjeta
+            <PlantCard
+              key={planta.id}
+              planta={planta}
+              isAdmin={isAdmin}
+              onEdit={() => {
+                setPlantaAEditar(planta);
+                setIsModalOpen(true);
+              }}
+            />
           ))}
-
-        {!isLoadingData && plantasFiltradas.length === 0 && (
-          <p className="col-span-full text-center text-gray-500 py-10 font-medium text-lg">
-            No hay plantitas en esta categoría por ahora. 🌵
-          </p>
-        )}
       </div>
 
       <footer className="mt-20 mb-4 w-full max-w-5xl mx-auto">

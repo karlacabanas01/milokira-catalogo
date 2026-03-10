@@ -1,6 +1,32 @@
 import Image from "next/image";
+import { useState } from "react";
+import { doc, deleteDoc } from "firebase/firestore";
+import { db } from "../firebaseConfig";
+// 1. IMPORTAMOS LOS ICONOS NUEVOS
+import { Pencil, Trash2 } from "lucide-react";
 
-const formatearPrecio = (precio) => {
+interface Precio {
+  valor: number;
+  tipo: string;
+  disponible: boolean;
+}
+
+interface Planta {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  imagenUrl: string;
+  categoria: string;
+  precio: Precio;
+}
+
+interface PlantCardProps {
+  readonly planta: Planta;
+  readonly isAdmin: boolean;
+  readonly onEdit: () => void;
+}
+
+const formatearPrecio = (precio: Precio): string => {
   if (precio.disponible === false) return "Agotado por ahora";
 
   const montoFormateado = new Intl.NumberFormat("es-CL", {
@@ -13,8 +39,9 @@ const formatearPrecio = (precio) => {
   return montoFormateado;
 };
 
-export default function PlantCard({ planta }) {
-  const { nombre, descripcion, imagenUrl, precio, categoria } = planta;
+export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
+  const { id, nombre, descripcion, imagenUrl, precio, categoria } = planta;
+  const [isLoading, setIsLoading] = useState(true);
   const estaDisponible = precio.disponible !== false;
 
   const manejarCompra = () => {
@@ -23,6 +50,22 @@ export default function PlantCard({ planta }) {
     const mensaje = `¡Hola! 🌿 Estaba viendo el catálogo de Milokira y me interesa mucho la planta *${nombre}*. ¿Aún la tienen disponible?`;
     const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
     window.open(urlWhatsApp, "_blank");
+  };
+
+  const manejarEliminar = async () => {
+    const confirmar = window.confirm(
+      `¿Estás segura de que quieres eliminar a ${nombre} del catálogo?`,
+    );
+
+    if (confirmar) {
+      try {
+        await deleteDoc(doc(db, "Plantas", id));
+        // alert("Planta eliminada correctamente."); // Opcional: Firebase onSnapshot ya actualiza la UI
+      } catch (error) {
+        console.error("Error al eliminar:", error);
+        alert("Hubo un error al eliminar la planta.");
+      }
+    }
   };
 
   return (
@@ -42,6 +85,7 @@ export default function PlantCard({ planta }) {
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className={`object-cover transition-transform duration-700 ${estaDisponible ? "group-hover:scale-110" : ""}`}
+            onLoad={() => setIsLoading(false)}
           />
         ) : (
           <div className="w-full h-full bg-stone-100 flex flex-col items-center justify-center">
@@ -52,11 +96,39 @@ export default function PlantCard({ planta }) {
           </div>
         )}
 
+        {/* Carga (Skeleton) para la imagen */}
+        {imagenUrl && isLoading && (
+          <div className="absolute inset-0 bg-stone-100 animate-pulse z-10"></div>
+        )}
+
         <div
           className={`absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent ${estaDisponible ? "opacity-60" : "opacity-80"}`}
         ></div>
 
-        <span className="absolute top-3 left-3 bg-white/80 backdrop-blur-sm text-[10px] font-bold px-2 py-1 rounded-full text-stone-600 uppercase tracking-tighter">
+        {/* NUEVOS BOTONES DE ADMIN MÁS ELEGANTES */}
+        {isAdmin && (
+          <div className="absolute top-3 left-3 z-20 flex gap-1.5">
+            {/* Botón Editar - Celeste suave al hover */}
+            <button
+              onClick={onEdit}
+              className="bg-white/80 backdrop-blur-xs text-stone-500 p-2 rounded-full shadow-md hover:bg-sky-50 hover:text-sky-600 transition-all duration-300 border border-stone-100"
+              title="Editar planta"
+            >
+              <Pencil size={16} strokeWidth={2.5} />
+            </button>
+
+            {/* Botón Eliminar - Rojo/Rosa suave al hover */}
+            <button
+              onClick={manejarEliminar}
+              className="bg-white/80 backdrop-blur-xs text-stone-500 p-2 rounded-full shadow-md hover:bg-rose-50 hover:text-rose-600 transition-all duration-300 border border-stone-100"
+              title="Eliminar planta"
+            >
+              <Trash2 size={16} strokeWidth={2.5} />
+            </button>
+          </div>
+        )}
+
+        <span className="absolute top-3 right-3 z-10 bg-white/80 backdrop-blur-sm text-[10px] font-bold px-2 py-1 rounded-full text-stone-600 uppercase tracking-tighter shadow-sm border border-stone-100">
           {categoria}
         </span>
       </div>
