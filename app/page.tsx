@@ -7,6 +7,7 @@ import AgregarPlantaModal from "./components/agregar-planta-modal";
 import Image from "next/image";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "./firebaseConfig";
+import Link from "next/link";
 
 interface Planta {
   id: string;
@@ -149,6 +150,17 @@ export default function Home() {
             priority
           />
         </div>
+
+        {isAdmin && (
+          <div className="mt-6 animate-fade-in">
+            <Link href="/admin">
+              <button className="bg-indigo-600 text-white px-6 py-2.5 rounded-full flex items-center justify-center shadow-md hover:scale-105 hover:bg-indigo-700 transition-all duration-300 font-bold tracking-wide gap-2 border-2 border-indigo-400/50">
+                <span className="text-lg">📊</span>
+                <span>Ir al Panel de Control</span>
+              </button>
+            </Link>
+          </div>
+        )}
 
         <h2 className="text-center text-milokira-verde font-black mt-6 tracking-[5px] uppercase text-2xl sm:text-3xl md:text-4xl drop-shadow-md">
           Catálogo de Plantas
