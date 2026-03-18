@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
-import { collection, doc, setDoc, updateDoc } from "firebase/firestore";
-import { db } from "../firebaseConfig";
+// 1. IMPORTAMOS STORAGE Y FIRESTORE
+import { doc, setDoc, updateDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "../firebaseConfig"; // Asegúrate de exportar 'storage' en tu config
+
 // Importamos iconos modernos
 import { X, Leaf, Save, TerminalSquare } from "lucide-react";
 
@@ -30,6 +33,7 @@ export default function AgregarPlantaModal({
   plantaAEditar,
 }: AgregarPlantaModalProps) {
   const [cargando, setCargando] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false); // NUEVO: Estado para la subida de foto
   const [pestaña, setPestaña] = useState<"manual" | "script">("manual");
   const [scriptTexto, setScriptTexto] = useState("");
 
@@ -78,6 +82,51 @@ export default function AgregarPlantaModal({
   ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  // NUEVA FUNCIÓN: Manejar la subida de la imagen a Storage
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    console.log("1. Archivo seleccionado:", file.name, "Tamaño:", file.size);
+
+    try {
+      const safeName = formData.nombre
+        ? formData.nombre
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/\s+/g, "-")
+        : "planta";
+
+      const extension = file.name.split(".").pop();
+      const fileName = `${safeName}-${Date.now()}.${extension}`;
+
+      console.log("2. Nombre final generado:", fileName);
+      console.log("3. Conectando con Firebase Storage...");
+
+      const storageRef = ref(storage, `plantas/${fileName}`);
+
+      console.log(
+        "4. Subiendo bytes al servidor (esto puede demorar si el internet es lento o la foto muy pesada)...",
+      );
+      await uploadBytes(storageRef, file);
+
+      console.log("5. ¡Bytes subidos! Pidiendo el link público...");
+      const downloadUrl = await getDownloadURL(storageRef);
+
+      console.log("6. ¡Éxito! El link es:", downloadUrl);
+      setFormData((prev) => ({ ...prev, imagenUrl: downloadUrl }));
+    } catch (error: any) {
+      // AQUÍ ESTÁ LA CLAVE: Imprimiremos el error exacto que da Firebase
+      console.error("🚨 ERROR FATAL DE FIREBASE:", error.code, error.message);
+      alert(`Error al subir: ${error.message}`);
+    } finally {
+      setIsUploadingImage(false);
+      console.log("7. Proceso terminado (isUploadingImage = false)");
+    }
   };
 
   const handleSubmitManual = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -158,7 +207,7 @@ export default function AgregarPlantaModal({
     }
   };
 
-  // Clases compartidas para los inputs para mantener el diseño limpio
+  // Clases compartidas para los inputs
   const inputEstilo =
     "w-full p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-sm text-stone-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-milokira-lila/40 focus:border-milokira-lila transition-all shadow-sm";
   const labelEstilo =
@@ -166,9 +215,7 @@ export default function AgregarPlantaModal({
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-stone-900/40 backdrop-blur-sm p-4">
-      {/* Contenedor principal: Blanco neutro con una sutil línea superior morada */}
       <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-stone-100 border-t-4 border-t-milokira-lila">
-        {/* Cabecera neutra */}
         <div className="px-6 py-5 border-b border-stone-100 flex justify-between items-center">
           <div className="flex items-center gap-2 text-stone-800">
             <Leaf className="text-milokira-verde" size={20} strokeWidth={2.5} />
@@ -184,7 +231,6 @@ export default function AgregarPlantaModal({
           </button>
         </div>
 
-        {/* Pestañas (Solo visibles si no estamos editando) */}
         {!plantaAEditar && (
           <div className="px-6 pt-4 pb-2">
             <div className="flex bg-stone-100 p-1 rounded-xl">
@@ -212,7 +258,6 @@ export default function AgregarPlantaModal({
           </div>
         )}
 
-        {/* Formulario Manual */}
         {pestaña === "manual" ? (
           <form
             onSubmit={handleSubmitManual}
@@ -230,15 +275,52 @@ export default function AgregarPlantaModal({
                   placeholder="Ej. Ficus Lyrata"
                 />
               </div>
+
+              {/* NUEVO INPUT DE IMAGEN CON VISTA PREVIA */}
               <div>
-                <label className={labelEstilo}>Ruta Imagen</label>
-                <input
-                  name="imagenUrl"
-                  value={formData.imagenUrl}
-                  onChange={handleChange}
-                  className={inputEstilo}
-                  placeholder="/img/planta.webp"
-                />
+                <label className={labelEstilo}>Imagen de la Planta</label>
+                <div className="flex flex-col gap-2 mt-1">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={isUploadingImage}
+                      className="block w-full text-[11px] text-stone-500
+                        file:mr-2 file:py-1.5 file:px-3
+                        file:rounded-lg file:border-0
+                        file:text-[11px] file:font-bold
+                        file:bg-milokira-lila/10 file:text-milokira-lila
+                        hover:file:bg-milokira-lila/20 transition-all cursor-pointer
+                        disabled:opacity-50"
+                    />
+                    {isUploadingImage && (
+                      <span className="text-[10px] text-amber-500 font-bold animate-pulse whitespace-nowrap">
+                        ⏳
+                      </span>
+                    )}
+                  </div>
+
+                  {formData.imagenUrl && (
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-stone-200 shadow-sm group">
+                      <img
+                        src={formData.imagenUrl}
+                        alt="Vista previa"
+                        className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({ ...prev, imagenUrl: "" }))
+                        }
+                        className="absolute top-0.5 right-0.5 bg-rose-500 text-white p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Quitar imagen"
+                      >
+                        <X size={10} strokeWidth={3} />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -315,7 +397,7 @@ export default function AgregarPlantaModal({
             </div>
 
             <button
-              disabled={cargando}
+              disabled={cargando || isUploadingImage}
               className="w-full bg-stone-800 text-white font-bold py-3.5 rounded-xl uppercase tracking-wider text-sm hover:bg-milokira-lila transition-all duration-300 shadow-md disabled:opacity-70 flex justify-center items-center gap-2"
             >
               <Save size={18} />
@@ -327,7 +409,6 @@ export default function AgregarPlantaModal({
             </button>
           </form>
         ) : (
-          /* Pestaña Script */
           <div className="px-6 pb-6 pt-2 space-y-4">
             <p className="text-sm text-stone-500">
               Pega el arreglo JSON con los datos de las plantas.

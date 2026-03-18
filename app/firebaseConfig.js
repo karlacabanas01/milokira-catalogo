@@ -6,7 +6,7 @@ const firebaseConfig = {
   apiKey: "MTm228YiYcD9Lu8Mo1g0",
   authDomain: "milokira-plantas.firebaseapp.com",
   projectId: "milokira-plantas",
-  storageBucket: "milokira-plantas.appspot.com",
+  storageBucket: "milokira-plantas.firebasestorage.app",
   messagingSenderId: "...",
   appId: "...",
 };
