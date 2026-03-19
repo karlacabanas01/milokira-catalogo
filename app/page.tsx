@@ -67,7 +67,9 @@ export default function Home() {
   const plantasFiltradas = plantas.filter((planta) => {
     const coincideCategoria =
       categoriaActiva === "TODAS" ||
-      planta.categorias?.some(c => c.toUpperCase() === categoriaActiva.toUpperCase());
+      planta.categorias?.some(
+        (c) => c.toUpperCase() === categoriaActiva.toUpperCase(),
+      );
     const coincideBusqueda =
       busqueda.trim() === "" ||
       planta.nombre.toLowerCase().includes(busqueda.toLowerCase());
@@ -181,7 +183,10 @@ export default function Home() {
       <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mt-8 mb-6 px-4 sm:px-8 max-w-6xl mx-auto">
         <div className="relative w-full group">
           <div className="absolute inset-0 bg-milokira-lila/20 rounded-full blur-md opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-milokira-verde/60 group-focus-within:text-milokira-verde transition-colors duration-300" size={18} />
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-milokira-verde/60 group-focus-within:text-milokira-verde transition-colors duration-300"
+            size={18}
+          />
           <input
             type="text"
             value={busqueda}
@@ -271,7 +276,7 @@ export default function Home() {
               <p className="text-xs text-gray-500 font-medium">
                 Página creada por{" "}
                 <a
-                  href="https://github.com/karlacabanas01"
+                  href="https://my-portfolio-three-eta-88.vercel.app/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-milokira-verde font-bold hover:text-milokira-lila transition-colors duration-300"
