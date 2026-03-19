@@ -158,7 +158,7 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
         await setDoc(doc(db, "Plantas", nuevoId), {
           ...payload,
           descripcion: "",
-          categoria: "INTERIOR",
+          categorias: ["INTERIOR"],
           imagenUrl: "",
           precio: { valor: data.price, tipo: "fijo", disponible: true },
         });

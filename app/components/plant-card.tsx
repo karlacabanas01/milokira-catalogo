@@ -16,7 +16,7 @@ interface Planta {
   nombre: string;
   descripcion: string;
   imagenUrl: string;
-  categoria: string;
+  categorias: string[];
   precio: Precio;
 }
 
@@ -40,7 +40,7 @@ const formatearPrecio = (precio: Precio): string => {
 };
 
 export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
-  const { id, nombre, descripcion, imagenUrl, precio, categoria } = planta;
+  const { id, nombre, descripcion, imagenUrl, precio, categorias } = planta;
   const [isLoading, setIsLoading] = useState(true);
   const estaDisponible = precio.disponible !== false;
 
@@ -74,7 +74,7 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
       ${
         estaDisponible
           ? "hover:shadow-xl hover:shadow-milokira-lila/30 border-transparent hover:border-milokira-lila/50 group"
-          : "grayscale opacity-70 border-gray-100 bg-gray-50 pointer-events-none"
+          : `${isAdmin ? "" : "grayscale pointer-events-none"} opacity-70 border-gray-100 bg-gray-50`
       }`}
     >
       <div className="relative w-full h-64 overflow-hidden rounded-t-2xl bg-[#fdfaf5]">
@@ -113,7 +113,7 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
             {/* Botón Editar - Celeste suave al hover */}
             <button
               onClick={onEdit}
-              className="bg-white/80 backdrop-blur-xs text-stone-500 p-2 rounded-full shadow-md hover:bg-sky-50 hover:text-sky-600 transition-all duration-300 border border-stone-100"
+              className="bg-teal-50 backdrop-blur-xs text-teal-500 p-2 rounded-full shadow-md hover:bg-teal-100 hover:text-teal-700 transition-all duration-300 border border-teal-200"
               title="Editar planta"
             >
               <Pencil size={16} strokeWidth={2.5} />
@@ -122,7 +122,7 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
             {/* Botón Eliminar - Rojo/Rosa suave al hover */}
             <button
               onClick={manejarEliminar}
-              className="bg-white/80 backdrop-blur-xs text-stone-500 p-2 rounded-full shadow-md hover:bg-rose-50 hover:text-rose-600 transition-all duration-300 border border-stone-100"
+              className="bg-red-50 backdrop-blur-xs text-red-400 p-2 rounded-full shadow-md hover:bg-red-100 hover:text-red-600 transition-all duration-300 border border-red-200"
               title="Eliminar planta"
             >
               <Trash2 size={16} strokeWidth={2.5} />
@@ -130,19 +130,24 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
           </div>
         )}
 
-        <span className="absolute top-3 right-3 z-10 bg-white/80 backdrop-blur-sm text-[10px] font-bold px-2 py-1 rounded-full text-stone-600 uppercase tracking-tighter shadow-sm border border-stone-100">
-          {categoria}
-        </span>
+        <div className="absolute top-3 right-3 z-10 flex flex-wrap gap-1 justify-end max-w-[60%]">
+          {categorias?.map((cat) => (
+            <span key={cat} className="bg-white/80 backdrop-blur-sm text-[10px] font-bold px-2 py-1 rounded-full text-stone-600 uppercase tracking-tighter shadow-sm border border-stone-100">
+              {cat}
+            </span>
+          ))}
+        </div>
       </div>
 
       <div className="p-5 flex flex-col flex-grow">
         <h3
-          className={`text-xl font-bold mb-2 leading-tight ${estaDisponible ? "text-gray-800" : "text-gray-400"}`}
+          className={`text-xl font-bold mb-2 leading-tight line-clamp-2 ${estaDisponible ? "text-gray-800" : "text-gray-400"}`}
+          title={nombre}
         >
           {nombre}
         </h3>
         <p
-          className={`text-sm mb-6 line-clamp-2 flex-grow ${estaDisponible ? "text-gray-500" : "text-gray-400"}`}
+          className={`text-sm mb-6 line-clamp-3 flex-grow ${estaDisponible ? "text-gray-500" : "text-gray-400"}`}
         >
           {descripcion}
         </p>

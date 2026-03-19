@@ -10,7 +10,7 @@ interface Planta {
   nombre: string;
   descripcion: string;
   imagenUrl: string;
-  categoria: string;
+  categorias: string[];
   precio: {
     valor: number;
     tipo: string;
@@ -22,7 +22,8 @@ interface PlantaScript {
   id?: string;
   nombre: string;
   descripcion: string;
-  categoria: string;
+  categorias?: string[];
+  categoria?: string;
   imagenUrl: string;
   precio: {
     valor: number;
@@ -49,7 +50,7 @@ export default function AgregarPlantaModal({
   const [formData, setFormData] = useState({
     nombre: "",
     descripcion: "",
-    categoria: "INTERIOR",
+    categorias: ["INTERIOR"] as string[],
     imagenUrl: "",
     precioValor: "",
     precioTipo: "fijo",
@@ -61,7 +62,7 @@ export default function AgregarPlantaModal({
       setFormData({
         nombre: plantaAEditar.nombre,
         descripcion: plantaAEditar.descripcion,
-        categoria: plantaAEditar.categoria || "INTERIOR",
+        categorias: plantaAEditar.categorias?.length ? plantaAEditar.categorias : ["INTERIOR"],
         imagenUrl: plantaAEditar.imagenUrl || "",
         precioValor: plantaAEditar.precio.valor.toString(),
         precioTipo: plantaAEditar.precio.tipo || "fijo",
@@ -73,7 +74,7 @@ export default function AgregarPlantaModal({
       setFormData({
         nombre: "",
         descripcion: "",
-        categoria: "INTERIOR",
+        categorias: ["INTERIOR"],
         imagenUrl: "",
         precioValor: "",
         precioTipo: "fijo",
@@ -145,7 +146,7 @@ export default function AgregarPlantaModal({
       const dataParaSubir = {
         nombre: formData.nombre,
         descripcion: formData.descripcion,
-        categoria: formData.categoria,
+        categorias: formData.categorias,
         imagenUrl: formData.imagenUrl,
         precio: {
           valor: Number(formData.precioValor),
@@ -196,7 +197,7 @@ export default function AgregarPlantaModal({
         await setDoc(doc(db, "Plantas", idAmigable), {
           nombre: planta.nombre,
           descripcion: planta.descripcion,
-          categoria: planta.categoria,
+          categorias: planta.categorias || (planta.categoria ? [planta.categoria] : ["INTERIOR"]),
           imagenUrl: planta.imagenUrl,
           precio: {
             valor: planta.precio.valor,
@@ -345,35 +346,47 @@ export default function AgregarPlantaModal({
               ></textarea>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={labelEstilo}>Categoría</label>
-                <select
-                  name="categoria"
-                  value={formData.categoria}
-                  onChange={handleChange}
-                  className={inputEstilo}
-                >
-                  <option value="INTERIOR">Interior</option>
-                  <option value="EXTERIOR">Exterior</option>
-                  <option value="SUCULENTAS">Suculentas</option>
-                  <option value="CACTUS">Cactus</option>
-                  <option value="JARDINES">Jardines</option>
-                  <option value="COLECCION">Colección</option>
-                </select>
+            <div>
+              <label className={labelEstilo}>Categorías</label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {["INTERIOR", "EXTERIOR", "SUCULENTAS", "CACTUS", "JARDINES", "COLECCION"].map((cat) => {
+                  const isSelected = formData.categorias.includes(cat);
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => {
+                          const next = isSelected
+                            ? prev.categorias.filter((c) => c !== cat)
+                            : [...prev.categorias, cat];
+                          return { ...prev, categorias: next.length > 0 ? next : [cat] };
+                        });
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all ${
+                        isSelected
+                          ? "bg-milokira-lila/20 border-milokira-lila text-milokira-lila"
+                          : "bg-stone-50 border-stone-200 text-stone-400 hover:border-stone-300"
+                      }`}
+                    >
+                      {cat === "COLECCION" ? "Colección" : cat.charAt(0) + cat.slice(1).toLowerCase()}
+                    </button>
+                  );
+                })}
               </div>
-              <div>
-                <label className={labelEstilo}>Estado</label>
-                <select
-                  name="disponible"
-                  value={formData.disponible}
-                  onChange={handleChange}
-                  className={`${inputEstilo} font-medium`}
-                >
-                  <option value="true">🟢 Disponible</option>
-                  <option value="false">🔴 Agotado</option>
-                </select>
-              </div>
+            </div>
+
+            <div>
+              <label className={labelEstilo}>Estado</label>
+              <select
+                name="disponible"
+                value={formData.disponible}
+                onChange={handleChange}
+                className={`${inputEstilo} font-medium`}
+              >
+                <option value="true">🟢 Disponible</option>
+                <option value="false">🔴 Agotado</option>
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-4 pb-2">

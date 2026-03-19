@@ -15,7 +15,7 @@ interface Planta {
   nombre: string;
   descripcion: string;
   imagenUrl: string;
-  categoria: string;
+  categorias: string[];
   precio: {
     valor: number;
     tipo: string;
@@ -67,7 +67,7 @@ export default function Home() {
   const plantasFiltradas = plantas.filter((planta) => {
     const coincideCategoria =
       categoriaActiva === "TODAS" ||
-      planta.categoria?.toUpperCase() === categoriaActiva.toUpperCase();
+      planta.categorias?.some(c => c.toUpperCase() === categoriaActiva.toUpperCase());
     const coincideBusqueda =
       busqueda.trim() === "" ||
       planta.nombre.toLowerCase().includes(busqueda.toLowerCase());
@@ -178,8 +178,8 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="flex justify-center mt-8 mb-6 px-2">
-        <div className="relative w-full max-w-md group">
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mt-8 mb-6 px-4 sm:px-8 max-w-6xl mx-auto">
+        <div className="relative w-full group">
           <div className="absolute inset-0 bg-milokira-lila/20 rounded-full blur-md opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-milokira-verde/60 group-focus-within:text-milokira-verde transition-colors duration-300" size={18} />
           <input
@@ -192,7 +192,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-16 px-2">
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-16 px-4 sm:px-8 max-w-6xl mx-auto">
         {categorias.map((categoria) => (
           <button
             key={categoria}
