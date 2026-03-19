@@ -1,13 +1,10 @@
 import { useState, useEffect } from "react";
-// 1. IMPORTAMOS STORAGE Y FIRESTORE
 import { doc, setDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "../firebaseConfig"; // Asegúrate de exportar 'storage' en tu config
+import { db, storage } from "../firebaseConfig";
 
-// Importamos iconos modernos
 import { X, Leaf, Save, TerminalSquare } from "lucide-react";
 
-// Tipamos la planta recibida
 interface Planta {
   id: string;
   nombre: string;
@@ -18,6 +15,18 @@ interface Planta {
     valor: number;
     tipo: string;
     disponible: boolean;
+  };
+}
+
+interface PlantaScript {
+  id?: string;
+  nombre: string;
+  descripcion: string;
+  categoria: string;
+  imagenUrl: string;
+  precio: {
+    valor: number;
+    tipo?: string;
   };
 }
 
@@ -33,7 +42,7 @@ export default function AgregarPlantaModal({
   plantaAEditar,
 }: AgregarPlantaModalProps) {
   const [cargando, setCargando] = useState(false);
-  const [isUploadingImage, setIsUploadingImage] = useState(false); // NUEVO: Estado para la subida de foto
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [pestaña, setPestaña] = useState<"manual" | "script">("manual");
   const [scriptTexto, setScriptTexto] = useState("");
 
@@ -84,7 +93,6 @@ export default function AgregarPlantaModal({
     setFormData({ ...formData, [name]: value });
   };
 
-  // NUEVA FUNCIÓN: Manejar la subida de la imagen a Storage
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -119,10 +127,10 @@ export default function AgregarPlantaModal({
 
       console.log("6. ¡Éxito! El link es:", downloadUrl);
       setFormData((prev) => ({ ...prev, imagenUrl: downloadUrl }));
-    } catch (error: any) {
-      // AQUÍ ESTÁ LA CLAVE: Imprimiremos el error exacto que da Firebase
-      console.error("🚨 ERROR FATAL DE FIREBASE:", error.code, error.message);
-      alert(`Error al subir: ${error.message}`);
+    } catch (error: unknown) {
+      const firebaseError = error as { code?: string; message?: string };
+      console.error("🚨 ERROR FATAL DE FIREBASE:", firebaseError.code, firebaseError.message);
+      alert(`Error al subir: ${firebaseError.message ?? "Error desconocido"}`);
     } finally {
       setIsUploadingImage(false);
       console.log("7. Proceso terminado (isUploadingImage = false)");
@@ -176,7 +184,7 @@ export default function AgregarPlantaModal({
       const jsonLimpiado = scriptTexto
         .replace(/(\w+):/g, '"$1":')
         .replace(/'/g, '"');
-      const plantasNuevas = JSON.parse(jsonLimpiado);
+      const plantasNuevas: PlantaScript[] = JSON.parse(jsonLimpiado);
       for (const planta of plantasNuevas) {
         const idAmigable =
           planta.id ||

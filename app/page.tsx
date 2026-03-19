@@ -8,6 +8,7 @@ import Image from "next/image";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import Link from "next/link";
+import { Search } from "lucide-react";
 
 interface Planta {
   id: string;
@@ -25,6 +26,7 @@ interface Planta {
 export default function Home() {
   const [plantas, setPlantas] = useState<Planta[]>([]);
   const [categoriaActiva, setCategoriaActiva] = useState("TODAS");
+  const [busqueda, setBusqueda] = useState("");
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -63,8 +65,13 @@ export default function Home() {
   ];
 
   const plantasFiltradas = plantas.filter((planta) => {
-    if (categoriaActiva === "TODAS") return true;
-    return planta.categoria?.toUpperCase() === categoriaActiva.toUpperCase();
+    const coincideCategoria =
+      categoriaActiva === "TODAS" ||
+      planta.categoria?.toUpperCase() === categoriaActiva.toUpperCase();
+    const coincideBusqueda =
+      busqueda.trim() === "" ||
+      planta.nombre.toLowerCase().includes(busqueda.toLowerCase());
+    return coincideCategoria && coincideBusqueda;
   });
 
   const [plantaAEditar, setPlantaAEditar] = useState<Planta | null>(null);
@@ -111,7 +118,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-milokira-crema patron-muro p-8 font-sans">
+    <main className="min-h-screen bg-milokira-crema patron-muro px-4 py-8 sm:px-8 font-sans overflow-x-hidden">
       {isAdmin && (
         <button
           onClick={() => {
@@ -171,7 +178,21 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-4 mb-16 mt-8">
+      <div className="flex justify-center mt-8 mb-6 px-2">
+        <div className="relative w-full max-w-md group">
+          <div className="absolute inset-0 bg-milokira-lila/20 rounded-full blur-md opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-milokira-verde/60 group-focus-within:text-milokira-verde transition-colors duration-300" size={18} />
+          <input
+            type="text"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar plantita..."
+            className="relative w-full pl-11 pr-4 py-3 bg-white/70 backdrop-blur-sm border-2 border-milokira-verde/20 rounded-full text-sm text-gray-700 font-medium placeholder:text-milokira-verde/40 placeholder:font-normal focus:outline-none focus:border-milokira-verde/50 focus:bg-white/90 shadow-sm hover:shadow-md hover:border-milokira-verde/30 transition-all duration-300"
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-16 px-2">
         {categorias.map((categoria) => (
           <button
             key={categoria}

@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 @theme {
   --color-milokira-crema: #f7f4eb;
   --color-milokira-lila: #ecd4ff;

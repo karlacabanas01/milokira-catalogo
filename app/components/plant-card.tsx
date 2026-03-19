@@ -98,7 +98,9 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
 
         {/* Carga (Skeleton) para la imagen */}
         {imagenUrl && isLoading && (
-          <div className="absolute inset-0 bg-stone-100 animate-pulse z-10"></div>
+          <div className="absolute inset-0 bg-milokira-crema z-10 flex items-center justify-center">
+            <div className="w-10 h-10 border-[3px] border-milokira-lila/30 border-t-milokira-verde rounded-full animate-spin" />
+          </div>
         )}
 
         <div
