@@ -43,6 +43,8 @@ export type OrderType = {
   total_amount: number;
   status: string;
   created_at: string;
+  delivery_type?: "delivery" | "retiro";
+  delivery_fee?: number;
   items: {
     product_id?: string;
     nombre?: string;
@@ -321,6 +323,19 @@ export default function AdminPage() {
                           <p className="text-amber-100 font-bold text-sm sm:text-base truncate">
                             {order.customer_name}
                           </p>
+                          {order.delivery_type && (
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wide shrink-0 ${
+                                order.delivery_type === "delivery"
+                                  ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
+                                  : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                              }`}
+                            >
+                              {order.delivery_type === "delivery"
+                                ? "Delivery"
+                                : "Retiro"}
+                            </span>
+                          )}
                         </div>
                         <span className="text-[10px] sm:text-xs text-zinc-500 flex items-center gap-1">
                           <Clock size={10} className="sm:w-3 sm:h-3" />{" "}
@@ -365,6 +380,17 @@ export default function AdminPage() {
                             </li>
                           ))}
                         </ul>
+
+                        {order.delivery_type === "delivery" &&
+                          order.delivery_fee != null &&
+                          order.delivery_fee > 0 && (
+                            <div className="flex justify-between text-xs sm:text-sm text-indigo-400 mb-3 sm:mb-4 pt-1 border-t border-zinc-800/50">
+                              <span>Delivery</span>
+                              <span>
+                                ${order.delivery_fee.toLocaleString()}
+                              </span>
+                            </div>
+                          )}
 
                         {/* Botones de acción del pedido */}
                         <div className="flex gap-2">
