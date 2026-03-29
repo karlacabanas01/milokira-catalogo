@@ -94,6 +94,33 @@ export default function AgregarPlantaModal({
     setFormData({ ...formData, [name]: value });
   };
 
+  const convertToWebP = (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("No se pudo crear el contexto del canvas"));
+          return;
+        }
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error("Error al convertir la imagen a WebP"));
+          },
+          "image/webp",
+          0.85,
+        );
+      };
+      img.onerror = () => reject(new Error("Error al cargar la imagen"));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -110,18 +137,16 @@ export default function AgregarPlantaModal({
             .replace(/\s+/g, "-")
         : "planta";
 
-      const extension = file.name.split(".").pop();
-      const fileName = `${safeName}-${Date.now()}.${extension}`;
+      const fileName = `${safeName}-${Date.now()}.webp`;
 
-      console.log("2. Nombre final generado:", fileName);
-      console.log("3. Conectando con Firebase Storage...");
+      console.log("2. Convirtiendo imagen a WebP...");
+      const webpBlob = await convertToWebP(file);
+      console.log("3. Imagen convertida. Tamaño original:", file.size, "→ WebP:", webpBlob.size);
 
       const storageRef = ref(storage, `plantas/${fileName}`);
 
-      console.log(
-        "4. Subiendo bytes al servidor (esto puede demorar si el internet es lento o la foto muy pesada)...",
-      );
-      await uploadBytes(storageRef, file);
+      console.log("4. Subiendo al servidor...");
+      await uploadBytes(storageRef, webpBlob, { contentType: "image/webp" });
 
       console.log("5. ¡Bytes subidos! Pidiendo el link público...");
       const downloadUrl = await getDownloadURL(storageRef);
