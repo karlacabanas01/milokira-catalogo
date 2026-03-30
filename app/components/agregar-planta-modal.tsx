@@ -94,26 +94,34 @@ export default function AgregarPlantaModal({
     setFormData({ ...formData, [name]: value });
   };
 
-  const convertToWebP = (file: File): Promise<Blob> => {
+  const convertToWebP = (file: File, maxWidth = 800): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
         const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = width;
+        canvas.height = height;
         const ctx = canvas.getContext("2d");
         if (!ctx) {
           reject(new Error("No se pudo crear el contexto del canvas"));
           return;
         }
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, width, height);
         canvas.toBlob(
           (blob) => {
             if (blob) resolve(blob);
             else reject(new Error("Error al convertir la imagen a WebP"));
           },
           "image/webp",
-          0.85,
+          0.8,
         );
       };
       img.onerror = () => reject(new Error("Error al cargar la imagen"));
