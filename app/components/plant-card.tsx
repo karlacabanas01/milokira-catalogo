@@ -86,6 +86,7 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className={`object-cover transition-transform duration-700 ${estaDisponible ? "group-hover:scale-110" : ""}`}
             onLoad={() => setIsLoading(false)}
+            onError={() => setIsLoading(false)}
           />
         ) : (
           <div className="w-full h-full bg-stone-100 flex flex-col items-center justify-center">
