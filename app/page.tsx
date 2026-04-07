@@ -76,17 +76,23 @@ export default function Home() {
     "COLECCION",
   ];
 
-  const plantasFiltradas = plantas.filter((planta) => {
-    const coincideCategoria =
-      categoriaActiva === "TODAS" ||
-      planta.categorias?.some(
-        (c) => c.toUpperCase() === categoriaActiva.toUpperCase(),
-      );
-    const coincideBusqueda =
-      busqueda.trim() === "" ||
-      planta.nombre.toLowerCase().includes(busqueda.toLowerCase());
-    return coincideCategoria && coincideBusqueda;
-  });
+  const plantasFiltradas = plantas
+    .filter((planta) => {
+      const coincideCategoria =
+        categoriaActiva === "TODAS" ||
+        planta.categorias?.some(
+          (c) => c.toUpperCase() === categoriaActiva.toUpperCase(),
+        );
+      const coincideBusqueda =
+        busqueda.trim() === "" ||
+        planta.nombre.toLowerCase().includes(busqueda.toLowerCase());
+      return coincideCategoria && coincideBusqueda;
+    })
+    .sort((a, b) => {
+      const aDisponible = a.precio.disponible !== false ? 0 : 1;
+      const bDisponible = b.precio.disponible !== false ? 0 : 1;
+      return aDisponible - bDisponible;
+    });
 
   const [plantaAEditar, setPlantaAEditar] = useState<Planta | null>(null);
 
