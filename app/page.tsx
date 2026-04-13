@@ -16,6 +16,7 @@ interface Planta {
   descripcion: string;
   imagenUrl: string;
   categorias: string[];
+  stock?: number;
   precio: {
     valor: number;
     tipo: string;
@@ -78,6 +79,8 @@ export default function Home() {
 
   const plantasFiltradas = plantas
     .filter((planta) => {
+      const estaDisponible =
+        planta.precio?.disponible !== false && (planta.stock ?? 1) > 0;
       const coincideCategoria =
         categoriaActiva === "TODAS" ||
         planta.categorias?.some(
@@ -86,13 +89,16 @@ export default function Home() {
       const coincideBusqueda =
         busqueda.trim() === "" ||
         planta.nombre.toLowerCase().includes(busqueda.toLowerCase());
-      return coincideCategoria && coincideBusqueda;
+      return estaDisponible && coincideCategoria && coincideBusqueda;
     })
-    .sort((a, b) => {
-      const aDisponible = a.precio.disponible !== false ? 0 : 1;
-      const bDisponible = b.precio.disponible !== false ? 0 : 1;
-      return aDisponible - bDisponible;
-    });
+    .sort((a, b) =>
+      a.nombre
+        .trim()
+        .slice(0, 3)
+        .localeCompare(b.nombre.trim().slice(0, 3), "es", {
+          sensitivity: "base",
+        }),
+    );
 
   const [plantaAEditar, setPlantaAEditar] = useState<Planta | null>(null);
 
@@ -138,7 +144,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-milokira-crema patron-muro px-4 pb-8 sm:px-8 font-sans overflow-x-hidden">
+    <main className="min-h-screen bg-milokira-crema patron-muro px-2 pb-8 font-sans overflow-x-hidden">
       {isAdmin && (
         <button
           onClick={() => {
@@ -162,7 +168,7 @@ export default function Home() {
       />
 
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-40 bg-milokira-crema/80 backdrop-blur-xl border-b border-milokira-verde/10 shadow-sm shadow-milokira-lila/10 px-4 sm:px-8">
+      <nav className="fixed top-0 left-0 right-0 z-40 bg-milokira-crema/80 backdrop-blur-xl border-b border-milokira-verde/10 shadow-sm shadow-milokira-lila/10 px-2">
         <div className="max-w-6xl mx-auto flex items-center justify-between py-3 sm:py-4">
           <div
             onClick={handleLogoClick}
@@ -328,7 +334,7 @@ export default function Home() {
           ))}
       </div>
 
-      <footer className="mt-20 bg-white/70 backdrop-blur-md border-t border-milokira-lila/30 -mx-4 sm:-mx-8 px-4 sm:px-8">
+      <footer className="mt-20 bg-white/70 backdrop-blur-md border-t border-milokira-lila/30 -mx-2 px-2">
         <div className="max-w-6xl mx-auto py-8 sm:py-12">
           <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
             {/* Info de envíos */}

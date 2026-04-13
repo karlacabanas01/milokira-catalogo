@@ -211,23 +211,43 @@ export default function AdminPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-zinc-100 pb-20 sm:pb-32 font-sans selection:bg-emerald-500/30">
-      <div className="sticky top-0 z-20 bg-black/80 backdrop-blur-xl border-b border-zinc-800">
-        <div className="px-3 sm:px-4 py-3 sm:py-4 max-w-md mx-auto relative flex items-center justify-center min-h-[60px] sm:min-h-[64px]">
-          <Link href="/" className="absolute left-3 sm:left-4">
-            <button className="flex items-center gap-1 sm:gap-1.5 text-zinc-400 hover:text-white bg-zinc-900/50 hover:bg-zinc-800 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all text-xs sm:text-sm font-medium border border-zinc-800 hover:border-zinc-700">
-              <ArrowLeft size={14} className="sm:w-4 sm:h-4" />
+    <main className="relative min-h-screen bg-zinc-950 text-zinc-100 pb-20 sm:pb-32 font-sans selection:bg-emerald-500/30 overflow-x-hidden">
+      {/* Fondo decorativo con gradientes */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute -top-40 -left-40 w-125 h-125 bg-emerald-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 -right-40 w-125 h-125 bg-indigo-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 w-100 h-100 bg-teal-500/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="sticky top-0 z-20 bg-zinc-950/70 backdrop-blur-2xl border-b border-zinc-800/60">
+        <div className="px-4 sm:px-8 py-4 w-full max-w-400 mx-auto flex items-center justify-between gap-4">
+          <Link href="/" className="shrink-0">
+            <button className="group flex items-center gap-2 text-zinc-400 hover:text-white bg-zinc-900/60 hover:bg-zinc-800/80 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all text-xs sm:text-sm font-semibold border border-zinc-800 hover:border-zinc-700">
+              <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
               <span className="hidden xs:inline">Volver</span>
             </button>
           </Link>
 
-          <h1 className="text-xl sm:text-2xl font-black bg-linear-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent tracking-tight truncate px-12">
-            Milokira<span className="text-white">App</span>
-          </h1>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-linear-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-900/40 shrink-0">
+              <Package size={18} className="text-white sm:w-5 sm:h-5" strokeWidth={2.5} />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl font-black tracking-tight truncate">
+                Milokira<span className="bg-linear-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">App</span>
+              </h1>
+              <p className="text-[10px] sm:text-xs text-zinc-500 font-medium hidden sm:block">Panel de administración</p>
+            </div>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
+            <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400" />
+            <span className="text-xs text-zinc-400 font-medium">En línea</span>
+          </div>
         </div>
       </div>
 
-      <div className="p-3 sm:p-4 max-w-md mx-auto space-y-5 sm:space-y-6 mt-2">
+      <div className="relative z-10 p-4 sm:p-8 w-full max-w-400 mx-auto space-y-6 sm:space-y-8 mt-2">
         {loading ? (
           <div className="text-center py-4 text-zinc-500 text-sm">
             Cargando datos...
@@ -241,71 +261,80 @@ export default function AdminPage() {
         )}
 
         {/* Botones de acción principales */}
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mt-6 sm:mt-8">
-          <button
-            onClick={() => setIsSaleModalOpen(true)}
-            className="py-4 sm:py-5 bg-zinc-900 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-300 font-bold hover:bg-zinc-800 hover:border-emerald-500/30 transition-all active:scale-[0.98]"
-          >
-            <div className="p-2 sm:p-2.5 bg-emerald-500/10 rounded-xl text-emerald-500">
-              <TrendingUp size={20} className="sm:w-[22px] sm:h-[22px]" />
-            </div>
-            <span className="text-xs sm:text-sm">Venta</span>
-          </button>
-          <button
-            onClick={() => setIsExpenseModalOpen(true)}
-            className="py-4 sm:py-5 bg-zinc-900 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-300 font-bold hover:bg-zinc-800 hover:border-rose-500/30 transition-all active:scale-[0.98]"
-          >
-            <div className="p-2 sm:p-2.5 bg-rose-500/10 rounded-xl text-rose-500">
-              <TrendingDown size={20} className="sm:w-[22px] sm:h-[22px]" />
-            </div>
-            <span className="text-xs sm:text-sm">Gasto</span>
-          </button>
-          <button
-            onClick={() => {
-              setEditingOrder(null);
-              setIsOrderModalOpen(true);
-            }}
-            className="py-4 sm:py-5 bg-zinc-900 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-300 font-bold hover:bg-zinc-800 hover:border-amber-500/30 transition-all active:scale-[0.98]"
-          >
-            <div className="p-2 sm:p-2.5 bg-amber-500/10 rounded-xl text-amber-500">
-              <ClipboardList size={20} className="sm:w-[22px] sm:h-[22px]" />
-            </div>
-            <span className="text-xs sm:text-sm">Pedido</span>
-          </button>
-          <button
-            onClick={() => setIsProductListOpen(true)}
-            className="py-4 sm:py-5 bg-zinc-900 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-zinc-300 font-bold hover:bg-zinc-800 hover:border-indigo-500/30 transition-all active:scale-[0.98]"
-          >
-            <div className="p-2 sm:p-2.5 bg-indigo-500/10 rounded-xl text-indigo-500">
-              <Package size={20} className="sm:w-[22px] sm:h-[22px]" />
-            </div>
-            <span className="text-xs sm:text-sm">Inventario</span>
-          </button>
+        <div>
+          <h2 className="text-[10px] sm:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 sm:mb-4 px-1">
+            Acciones rápidas
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <button
+              onClick={() => setIsSaleModalOpen(true)}
+              className="group relative overflow-hidden py-5 sm:py-6 bg-linear-to-br from-zinc-900 to-zinc-900/60 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-zinc-200 font-bold hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
+            >
+              <div className="absolute inset-0 bg-linear-to-br from-emerald-500/0 to-emerald-500/0 group-hover:from-emerald-500/10 group-hover:to-transparent transition-all" />
+              <div className="relative p-2.5 sm:p-3 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20 group-hover:scale-110 group-hover:bg-emerald-500/20 transition-all">
+                <TrendingUp size={22} strokeWidth={2.5} />
+              </div>
+              <span className="relative text-xs sm:text-sm tracking-wide">Venta</span>
+            </button>
+            <button
+              onClick={() => setIsExpenseModalOpen(true)}
+              className="group relative overflow-hidden py-5 sm:py-6 bg-linear-to-br from-zinc-900 to-zinc-900/60 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-zinc-200 font-bold hover:border-rose-500/40 hover:shadow-xl hover:shadow-rose-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
+            >
+              <div className="absolute inset-0 bg-linear-to-br from-rose-500/0 to-rose-500/0 group-hover:from-rose-500/10 group-hover:to-transparent transition-all" />
+              <div className="relative p-2.5 sm:p-3 bg-rose-500/10 rounded-xl text-rose-400 border border-rose-500/20 group-hover:scale-110 group-hover:bg-rose-500/20 transition-all">
+                <TrendingDown size={22} strokeWidth={2.5} />
+              </div>
+              <span className="relative text-xs sm:text-sm tracking-wide">Gasto</span>
+            </button>
+            <button
+              onClick={() => {
+                setEditingOrder(null);
+                setIsOrderModalOpen(true);
+              }}
+              className="group relative overflow-hidden py-5 sm:py-6 bg-linear-to-br from-zinc-900 to-zinc-900/60 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-zinc-200 font-bold hover:border-amber-500/40 hover:shadow-xl hover:shadow-amber-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
+            >
+              <div className="absolute inset-0 bg-linear-to-br from-amber-500/0 to-amber-500/0 group-hover:from-amber-500/10 group-hover:to-transparent transition-all" />
+              <div className="relative p-2.5 sm:p-3 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20 group-hover:scale-110 group-hover:bg-amber-500/20 transition-all">
+                <ClipboardList size={22} strokeWidth={2.5} />
+              </div>
+              <span className="relative text-xs sm:text-sm tracking-wide">Pedido</span>
+            </button>
+            <button
+              onClick={() => setIsProductListOpen(true)}
+              className="group relative overflow-hidden py-5 sm:py-6 bg-linear-to-br from-zinc-900 to-zinc-900/60 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-zinc-200 font-bold hover:border-indigo-500/40 hover:shadow-xl hover:shadow-indigo-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
+            >
+              <div className="absolute inset-0 bg-linear-to-br from-indigo-500/0 to-indigo-500/0 group-hover:from-indigo-500/10 group-hover:to-transparent transition-all" />
+              <div className="relative p-2.5 sm:p-3 bg-indigo-500/10 rounded-xl text-indigo-400 border border-indigo-500/20 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all">
+                <Package size={22} strokeWidth={2.5} />
+              </div>
+              <span className="relative text-xs sm:text-sm tracking-wide">Inventario</span>
+            </button>
+          </div>
         </div>
 
         {/* Sección de Pedidos Pendientes */}
         {!loading && (
           <div className="mt-6">
-            <div className="flex items-center justify-between mb-3 sm:mb-4 border-b border-zinc-800/50 pb-2 sm:pb-3">
-              <h2 className="text-xs sm:text-sm font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-2 sm:gap-3">
-                <div className="p-1.5 bg-amber-500/10 rounded-md text-amber-500 border border-amber-500/20 shadow-sm shadow-amber-900/20">
+            <div className="flex items-center justify-between mb-4 sm:mb-5">
+              <h2 className="text-xs sm:text-sm font-bold text-zinc-300 uppercase tracking-widest flex items-center gap-2.5 sm:gap-3">
+                <div className="p-2 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20 shadow-sm shadow-amber-900/20">
                   <Clock size={14} className="sm:w-4 sm:h-4" />
                 </div>
-                Pendientes
+                Pedidos pendientes
               </h2>
               <span
-                className={`px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-black shadow-md transition-colors ${orders.length > 0 ? "bg-emerald-500 text-emerald-950 shadow-emerald-900/30" : "bg-amber-500 text-amber-950 shadow-amber-900/30"}`}
+                className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-black shadow-md transition-colors ${orders.length > 0 ? "bg-linear-to-r from-emerald-400 to-emerald-500 text-emerald-950 shadow-emerald-900/30" : "bg-zinc-800 text-zinc-500 border border-zinc-700"}`}
               >
-                {orders.length}
+                {orders.length} {orders.length === 1 ? "pedido" : "pedidos"}
               </span>
             </div>
 
             {orders.length > 0 ? (
-              <div className="space-y-2.5 sm:space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                 {orders.map((order) => (
                   <div
                     key={order.idFirebase}
-                    className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden"
+                    className="bg-linear-to-br from-zinc-900 to-zinc-900/60 rounded-2xl border border-zinc-800 overflow-hidden hover:border-zinc-700 transition-all shadow-lg shadow-black/20"
                   >
                     <button
                       type="button"
@@ -429,27 +458,27 @@ export default function AdminPage() {
                 ))}
               </div>
             ) : (
-              <div className="bg-zinc-900/50 border border-dashed border-zinc-800 rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center">
-                <div className="bg-blue-500/10 p-3 sm:p-4 rounded-full mb-3 sm:mb-4">
-                  <ClipboardList
-                    size={28}
-                    className="text-blue-500 sm:w-8 sm:h-8"
-                  />
+              <div className="bg-linear-to-br from-zinc-900/60 to-zinc-900/20 border border-dashed border-zinc-800 rounded-3xl p-10 sm:p-16 flex flex-col items-center justify-center text-center">
+                <div className="relative mb-5">
+                  <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-2xl" />
+                  <div className="relative bg-linear-to-br from-indigo-500/20 to-indigo-600/10 p-5 rounded-2xl border border-indigo-500/20">
+                    <ClipboardList size={32} className="text-indigo-400" strokeWidth={2} />
+                  </div>
                 </div>
-                <p className="text-zinc-400 text-xs sm:text-sm mb-4 sm:mb-6 font-medium px-4">
-                  No tienes pedidos pendientes.
+                <h3 className="text-zinc-200 text-base sm:text-lg font-bold mb-1.5">
+                  Todo en orden
+                </h3>
+                <p className="text-zinc-500 text-xs sm:text-sm mb-6 font-medium max-w-xs">
+                  No tienes pedidos pendientes por completar. ¡Aprovecha para registrar uno nuevo!
                 </p>
                 <button
                   onClick={() => {
                     setEditingOrder(null);
                     setIsOrderModalOpen(true);
                   }}
-                  className="bg-blue-600 hover:bg-blue-500 text-white border border-blue-500/50 px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-blue-900/40 transition-all active:scale-95 flex items-center gap-2 group"
+                  className="bg-linear-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-indigo-900/40 transition-all active:scale-95 flex items-center gap-2 group"
                 >
-                  <Plus
-                    size={16}
-                    className="group-hover:rotate-90 transition-transform duration-300 sm:w-[18px] sm:h-[18px]"
-                  />{" "}
+                  <Plus size={18} className="group-hover:rotate-90 transition-transform duration-300" />
                   Nuevo Pedido
                 </button>
               </div>
