@@ -9,12 +9,15 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
+import { CartProvider } from "./context/CartContext";
+import CartDrawer from "./components/cart-drawer";
 
 interface Planta {
   id: string;
   nombre: string;
   descripcion: string;
   imagenUrl: string;
+  imagenPosition?: string;
   categorias: string[];
   stock?: number;
   precio: {
@@ -71,10 +74,10 @@ export default function Home() {
     "TODAS",
     "CACTUS",
     "SUCULENTAS",
-    "JARDINES",
     "INTERIOR",
     "EXTERIOR",
     "COLECCION",
+    "TUTORES",
   ];
 
   const plantasFiltradas = plantas
@@ -103,9 +106,9 @@ export default function Home() {
   const [plantaAEditar, setPlantaAEditar] = useState<Planta | null>(null);
 
   const SkeletonCard = () => (
-    <div className="bg-white rounded-xl overflow-hidden shadow-sm h-[420px] border-2 border-transparent relative flex flex-col">
-      <div className="h-64 bg-gray-200 animate-pulse shrink-0"></div>
-      <div className="p-5 flex flex-col flex-grow justify-between">
+    <div className="bg-white rounded-xl overflow-hidden shadow-sm border-2 border-transparent relative flex flex-col">
+      <div className="w-full aspect-[4/5] bg-gray-200 animate-pulse shrink-0"></div>
+      <div className="p-3 sm:p-5 flex flex-col flex-grow justify-between">
         <div>
           <div className="h-6 bg-gray-200 rounded animate-pulse mb-3 w-3/4"></div>
           <div className="h-4 bg-gray-200 rounded animate-pulse mb-2 w-full"></div>
@@ -144,6 +147,7 @@ export default function Home() {
   };
 
   return (
+    <CartProvider>
     <main className="min-h-screen bg-milokira-crema patron-muro px-2 pb-8 font-sans overflow-x-hidden">
       {isAdmin && (
         <button
@@ -312,7 +316,7 @@ export default function Home() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      <div className={`grid ${categoriaActiva === "TUTORES" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-2 lg:grid-cols-3"} gap-3 sm:gap-8 max-w-6xl mx-auto`}>
         {isLoadingData &&
           Array(6)
             .fill(0)
@@ -338,27 +342,27 @@ export default function Home() {
         <div className="max-w-6xl mx-auto py-8 sm:py-12">
           <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
             {/* Info de envíos */}
-            <div className="text-center md:text-left space-y-3 text-sm text-gray-600 font-medium flex-1">
-              <h3 className="text-milokira-verde font-bold text-base mb-4 uppercase tracking-[2px]">
+            <div className="text-left space-y-3 text-sm text-gray-600 font-medium flex-1 w-full">
+              <h3 className="text-milokira-verde font-bold text-base mb-4 uppercase tracking-[2px] text-center md:text-left">
                 Envíos y Entregas
               </h3>
 
-              <p className="flex items-center justify-center md:justify-start gap-2">
-                <span className="text-lg">📍</span>
-                <span>Ubicados en Talca, sector Bicentenario.</span>
+              <p className="flex items-start gap-2.5">
+                <span className="text-lg leading-tight shrink-0">📍</span>
+                <span className="leading-relaxed">Ubicados en Talca, sector Bicentenario.</span>
               </p>
 
-              <p className="flex items-center justify-center md:justify-start gap-2">
-                <span className="text-lg">🛵</span>
-                <span>
+              <p className="flex items-start gap-2.5">
+                <span className="text-lg leading-tight shrink-0">🛵</span>
+                <span className="leading-relaxed">
                   Delivery <strong className="text-milokira-verde">GRATIS</strong>{" "}
-                  en el sector (valor adicional a otras zonas).
+                  en Bicentenario sobre $10.000 (valor adicional a otras zonas).
                 </span>
               </p>
 
-              <p className="flex items-center justify-center md:justify-start gap-2">
-                <span className="text-lg">📦</span>
-                <span>Envíos a regiones por pagar.</span>
+              <p className="flex items-start gap-2.5">
+                <span className="text-lg leading-tight shrink-0">📦</span>
+                <span className="leading-relaxed">Envíos a regiones por pagar.</span>
               </p>
 
               {/* Redes sociales */}
@@ -442,5 +446,7 @@ export default function Home() {
         </div>
       </footer>
     </main>
+    <CartDrawer />
+    </CartProvider>
   );
 }

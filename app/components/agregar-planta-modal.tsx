@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { doc, setDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../firebaseConfig";
@@ -10,6 +10,7 @@ interface Planta {
   nombre: string;
   descripcion: string;
   imagenUrl: string;
+  imagenPosition?: string;
   categorias: string[];
   precio: {
     valor: number;
@@ -52,10 +53,15 @@ export default function AgregarPlantaModal({
     descripcion: "",
     categorias: ["INTERIOR"] as string[],
     imagenUrl: "",
+    imagenPosition: "50% 50%",
     precioValor: "",
     precioTipo: "fijo",
     disponible: "true",
   });
+
+  const [imgNaturalSize, setImgNaturalSize] = useState<{ w: number; h: number } | null>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
 
   useEffect(() => {
     if (plantaAEditar) {
@@ -64,6 +70,7 @@ export default function AgregarPlantaModal({
         descripcion: plantaAEditar.descripcion,
         categorias: plantaAEditar.categorias?.length ? plantaAEditar.categorias : ["INTERIOR"],
         imagenUrl: plantaAEditar.imagenUrl || "",
+        imagenPosition: plantaAEditar.imagenPosition || "50% 50%",
         precioValor: plantaAEditar.precio.valor.toString(),
         precioTipo: plantaAEditar.precio.tipo || "fijo",
         disponible:
@@ -76,6 +83,7 @@ export default function AgregarPlantaModal({
         descripcion: "",
         categorias: ["INTERIOR"],
         imagenUrl: "",
+        imagenPosition: "50% 50%",
         precioValor: "",
         precioTipo: "fijo",
         disponible: "true",
@@ -92,6 +100,57 @@ export default function AgregarPlantaModal({
   ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  const parsePosition = (pos: string): { x: number; y: number } => {
+    const parts = pos.split(" ");
+    return {
+      x: Number.parseFloat(parts[0]) || 50,
+      y: Number.parseFloat(parts[1]) || 50,
+    };
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!frameRef.current) return;
+    isDraggingRef.current = true;
+    frameRef.current.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current || !frameRef.current || !imgNaturalSize) return;
+
+    const frame = frameRef.current.getBoundingClientRect();
+    const frameRatio = frame.width / frame.height;
+    const imgRatio = imgNaturalSize.w / imgNaturalSize.h;
+
+    const { x, y } = parsePosition(formData.imagenPosition);
+    let newX = x;
+    let newY = y;
+
+    if (imgRatio > frameRatio) {
+      const scaledW = frame.height * imgRatio;
+      const overflowPx = scaledW - frame.width;
+      if (overflowPx > 0) {
+        const deltaPct = (e.movementX / overflowPx) * 100;
+        newX = Math.max(0, Math.min(100, x - deltaPct));
+      }
+    } else if (imgRatio < frameRatio) {
+      const scaledH = frame.width / imgRatio;
+      const overflowPx = scaledH - frame.height;
+      if (overflowPx > 0) {
+        const deltaPct = (e.movementY / overflowPx) * 100;
+        newY = Math.max(0, Math.min(100, y - deltaPct));
+      }
+    }
+
+    setFormData((prev) => ({ ...prev, imagenPosition: `${newX}% ${newY}%` }));
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingRef.current = false;
+    if (frameRef.current?.hasPointerCapture(e.pointerId)) {
+      frameRef.current.releasePointerCapture(e.pointerId);
+    }
   };
 
   const convertToWebP = (file: File, maxWidth = 800): Promise<Blob> => {
@@ -160,7 +219,7 @@ export default function AgregarPlantaModal({
       const downloadUrl = await getDownloadURL(storageRef);
 
       console.log("6. ¡Éxito! El link es:", downloadUrl);
-      setFormData((prev) => ({ ...prev, imagenUrl: downloadUrl }));
+      setFormData((prev) => ({ ...prev, imagenUrl: downloadUrl, imagenPosition: "50% 50%" }));
     } catch (error: unknown) {
       const firebaseError = error as { code?: string; message?: string };
       console.error("🚨 ERROR FATAL DE FIREBASE:", firebaseError.code, firebaseError.message);
@@ -181,6 +240,7 @@ export default function AgregarPlantaModal({
         descripcion: formData.descripcion,
         categorias: formData.categorias,
         imagenUrl: formData.imagenUrl,
+        imagenPosition: formData.imagenPosition,
         precio: {
           valor: Number(formData.precioValor),
           tipo: formData.precioTipo,
@@ -344,22 +404,42 @@ export default function AgregarPlantaModal({
                   </div>
 
                   {formData.imagenUrl && (
-                    <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-stone-200 shadow-sm group">
-                      <img
-                        src={formData.imagenUrl}
-                        alt="Vista previa"
-                        className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFormData((prev) => ({ ...prev, imagenUrl: "" }))
-                        }
-                        className="absolute top-0.5 right-0.5 bg-rose-500 text-white p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Quitar imagen"
+                    <div className="flex flex-col gap-1">
+                      <div
+                        ref={frameRef}
+                        onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerCancel={handlePointerUp}
+                        className="relative w-32 aspect-[4/5] rounded-lg overflow-hidden border border-stone-200 shadow-sm group cursor-grab active:cursor-grabbing select-none touch-none bg-stone-100"
+                        title="Arrastra para reposicionar"
                       >
-                        <X size={10} strokeWidth={3} />
-                      </button>
+                        <img
+                          src={formData.imagenUrl}
+                          alt="Vista previa"
+                          draggable={false}
+                          onLoad={(e) => {
+                            const el = e.currentTarget;
+                            setImgNaturalSize({ w: el.naturalWidth, h: el.naturalHeight });
+                          }}
+                          style={{ objectPosition: formData.imagenPosition }}
+                          className="object-cover w-full h-full pointer-events-none"
+                        />
+                        <div className="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[9px] text-center py-0.5 font-bold uppercase tracking-wider pointer-events-none">
+                          Arrastra
+                        </div>
+                        <button
+                          type="button"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={() =>
+                            setFormData((prev) => ({ ...prev, imagenUrl: "", imagenPosition: "50% 50%" }))
+                          }
+                          className="absolute top-1 right-1 bg-rose-500 text-white p-1 rounded-full shadow-md hover:bg-rose-600 transition-colors z-10"
+                          title="Quitar imagen"
+                        >
+                          <X size={12} strokeWidth={3} />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -382,7 +462,7 @@ export default function AgregarPlantaModal({
             <div>
               <label className={labelEstilo}>Categorías</label>
               <div className="flex flex-wrap gap-2 mt-1">
-                {["INTERIOR", "EXTERIOR", "SUCULENTAS", "CACTUS", "JARDINES", "COLECCION"].map((cat) => {
+                {["INTERIOR", "EXTERIOR", "SUCULENTAS", "CACTUS", "COLECCION", "TUTORES"].map((cat) => {
                   const isSelected = formData.categorias.includes(cat);
                   return (
                     <button
