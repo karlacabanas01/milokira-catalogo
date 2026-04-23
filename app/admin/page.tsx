@@ -27,6 +27,7 @@ import {
   Edit3,
   Plus,
   ArrowLeft,
+  BookOpen,
 } from "lucide-react";
 
 import StatsOverview from "./components/StatsOverview";
@@ -36,6 +37,7 @@ import SaleListModal from "./components/SaleListModal";
 import ExpenseListModal from "./components/ExpenseListModal";
 import OrderModal from "./components/OrderModal";
 import ProductListModal from "./components/ProductListModal";
+import KnowledgeListModal from "./components/KnowledgeListModal";
 
 export type OrderType = {
   idFirebase: string;
@@ -66,6 +68,7 @@ export default function AdminPage() {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isProductListOpen, setIsProductListOpen] = useState(false);
+  const [isKnowledgeOpen, setIsKnowledgeOpen] = useState(false);
 
   const [isSaleListOpen, setIsSaleListOpen] = useState(false);
   const [isExpenseListOpen, setIsExpenseListOpen] = useState(false);
@@ -265,7 +268,7 @@ export default function AdminPage() {
           <h2 className="text-[10px] sm:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 sm:mb-4 px-1">
             Acciones rápidas
           </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             <button
               onClick={() => setIsSaleModalOpen(true)}
               className="group relative overflow-hidden py-5 sm:py-6 bg-linear-to-br from-zinc-900 to-zinc-900/60 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-zinc-200 font-bold hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
@@ -308,6 +311,16 @@ export default function AdminPage() {
                 <Package size={22} strokeWidth={2.5} />
               </div>
               <span className="relative text-xs sm:text-sm tracking-wide">Inventario</span>
+            </button>
+            <button
+              onClick={() => setIsKnowledgeOpen(true)}
+              className="group relative overflow-hidden py-5 sm:py-6 bg-linear-to-br from-zinc-900 to-zinc-900/60 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-zinc-200 font-bold hover:border-teal-500/40 hover:shadow-xl hover:shadow-teal-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
+            >
+              <div className="absolute inset-0 bg-linear-to-br from-teal-500/0 to-teal-500/0 group-hover:from-teal-500/10 group-hover:to-transparent transition-all" />
+              <div className="relative p-2.5 sm:p-3 bg-teal-500/10 rounded-xl text-teal-400 border border-teal-500/20 group-hover:scale-110 group-hover:bg-teal-500/20 transition-all">
+                <BookOpen size={22} strokeWidth={2.5} />
+              </div>
+              <span className="relative text-xs sm:text-sm tracking-wide">Cerebro Kira</span>
             </button>
           </div>
         </div>
@@ -566,6 +579,12 @@ export default function AdminPage() {
         <ProductListModal
           isOpen={isProductListOpen}
           onClose={() => setIsProductListOpen(false)}
+        />
+      )}
+      {isKnowledgeOpen && (
+        <KnowledgeListModal
+          isOpen={isKnowledgeOpen}
+          onClose={() => setIsKnowledgeOpen(false)}
         />
       )}
     </main>

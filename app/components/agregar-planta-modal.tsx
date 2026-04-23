@@ -59,7 +59,10 @@ export default function AgregarPlantaModal({
     disponible: "true",
   });
 
-  const [imgNaturalSize, setImgNaturalSize] = useState<{ w: number; h: number } | null>(null);
+  const [imgNaturalSize, setImgNaturalSize] = useState<{
+    w: number;
+    h: number;
+  } | null>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
 
@@ -68,7 +71,9 @@ export default function AgregarPlantaModal({
       setFormData({
         nombre: plantaAEditar.nombre,
         descripcion: plantaAEditar.descripcion,
-        categorias: plantaAEditar.categorias?.length ? plantaAEditar.categorias : ["INTERIOR"],
+        categorias: plantaAEditar.categorias?.length
+          ? plantaAEditar.categorias
+          : ["INTERIOR"],
         imagenUrl: plantaAEditar.imagenUrl || "",
         imagenPosition: plantaAEditar.imagenPosition || "50% 50%",
         precioValor: plantaAEditar.precio.valor.toString(),
@@ -105,8 +110,8 @@ export default function AgregarPlantaModal({
   const parsePosition = (pos: string): { x: number; y: number } => {
     const parts = pos.split(" ");
     return {
-      x: Number.parseFloat(parts[0]) || 50,
-      y: Number.parseFloat(parts[1]) || 50,
+      x: parseFloat(parts[0]) || 50,
+      y: parseFloat(parts[1]) || 50,
     };
   };
 
@@ -208,7 +213,12 @@ export default function AgregarPlantaModal({
 
       console.log("2. Convirtiendo imagen a WebP...");
       const webpBlob = await convertToWebP(file);
-      console.log("3. Imagen convertida. Tamaño original:", file.size, "→ WebP:", webpBlob.size);
+      console.log(
+        "3. Imagen convertida. Tamaño original:",
+        file.size,
+        "→ WebP:",
+        webpBlob.size,
+      );
 
       const storageRef = ref(storage, `plantas/${fileName}`);
 
@@ -219,10 +229,18 @@ export default function AgregarPlantaModal({
       const downloadUrl = await getDownloadURL(storageRef);
 
       console.log("6. ¡Éxito! El link es:", downloadUrl);
-      setFormData((prev) => ({ ...prev, imagenUrl: downloadUrl, imagenPosition: "50% 50%" }));
+      setFormData((prev) => ({
+        ...prev,
+        imagenUrl: downloadUrl,
+        imagenPosition: "50% 50%",
+      }));
     } catch (error: unknown) {
       const firebaseError = error as { code?: string; message?: string };
-      console.error("🚨 ERROR FATAL DE FIREBASE:", firebaseError.code, firebaseError.message);
+      console.error(
+        "🚨 ERROR FATAL DE FIREBASE:",
+        firebaseError.code,
+        firebaseError.message,
+      );
       alert(`Error al subir: ${firebaseError.message ?? "Error desconocido"}`);
     } finally {
       setIsUploadingImage(false);
@@ -290,7 +308,9 @@ export default function AgregarPlantaModal({
         await setDoc(doc(db, "Plantas", idAmigable), {
           nombre: planta.nombre,
           descripcion: planta.descripcion,
-          categorias: planta.categorias || (planta.categoria ? [planta.categoria] : ["INTERIOR"]),
+          categorias:
+            planta.categorias ||
+            (planta.categoria ? [planta.categoria] : ["INTERIOR"]),
           imagenUrl: planta.imagenUrl,
           precio: {
             valor: planta.precio.valor,
@@ -420,7 +440,10 @@ export default function AgregarPlantaModal({
                           draggable={false}
                           onLoad={(e) => {
                             const el = e.currentTarget;
-                            setImgNaturalSize({ w: el.naturalWidth, h: el.naturalHeight });
+                            setImgNaturalSize({
+                              w: el.naturalWidth,
+                              h: el.naturalHeight,
+                            });
                           }}
                           style={{ objectPosition: formData.imagenPosition }}
                           className="object-cover w-full h-full pointer-events-none"
@@ -432,7 +455,11 @@ export default function AgregarPlantaModal({
                           type="button"
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={() =>
-                            setFormData((prev) => ({ ...prev, imagenUrl: "", imagenPosition: "50% 50%" }))
+                            setFormData((prev) => ({
+                              ...prev,
+                              imagenUrl: "",
+                              imagenPosition: "50% 50%",
+                            }))
                           }
                           className="absolute top-1 right-1 bg-rose-500 text-white p-1 rounded-full shadow-md hover:bg-rose-600 transition-colors z-10"
                           title="Quitar imagen"
@@ -462,7 +489,14 @@ export default function AgregarPlantaModal({
             <div>
               <label className={labelEstilo}>Categorías</label>
               <div className="flex flex-wrap gap-2 mt-1">
-                {["INTERIOR", "EXTERIOR", "SUCULENTAS", "CACTUS", "COLECCION", "TUTORES"].map((cat) => {
+                {[
+                  "INTERIOR",
+                  "EXTERIOR",
+                  "SUCULENTAS",
+                  "CACTUS",
+                  "JARDINES",
+                  "COLECCION",
+                ].map((cat) => {
                   const isSelected = formData.categorias.includes(cat);
                   return (
                     <button
@@ -473,7 +507,10 @@ export default function AgregarPlantaModal({
                           const next = isSelected
                             ? prev.categorias.filter((c) => c !== cat)
                             : [...prev.categorias, cat];
-                          return { ...prev, categorias: next.length > 0 ? next : [cat] };
+                          return {
+                            ...prev,
+                            categorias: next.length > 0 ? next : [cat],
+                          };
                         });
                       }}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all ${
@@ -482,7 +519,9 @@ export default function AgregarPlantaModal({
                           : "bg-stone-50 border-stone-200 text-stone-400 hover:border-stone-300"
                       }`}
                     >
-                      {cat === "COLECCION" ? "Colección" : cat.charAt(0) + cat.slice(1).toLowerCase()}
+                      {cat === "COLECCION"
+                        ? "Colección"
+                        : cat.charAt(0) + cat.slice(1).toLowerCase()}
                     </button>
                   );
                 })}

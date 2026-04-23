@@ -8,9 +8,10 @@ import Image from "next/image";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import Link from "next/link";
-import { Search, X } from "lucide-react";
+import { Search, X, Sparkles, Leaf } from "lucide-react";
 import { CartProvider } from "./context/CartContext";
 import CartDrawer from "./components/cart-drawer";
+import PlantChat from "./components/plant-chat";
 
 interface Planta {
   id: string;
@@ -125,6 +126,7 @@ export default function Home() {
   // SEGURIDAD
   const [isAdmin, setIsAdmin] = useState(false);
   const [logoClicks, setLogoClicks] = useState(0);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // FUNCIÓN SECRETA PARA ACTIVAR EL MODO ADMIN
   const handleLogoClick = () => {
@@ -316,6 +318,40 @@ export default function Home() {
         ))}
       </div>
 
+      <div className="max-w-6xl mx-auto mb-6 sm:mb-8 px-1 sm:px-0">
+        <button
+          type="button"
+          onClick={() => setIsChatOpen(true)}
+          className="group relative w-full overflow-hidden bg-linear-to-r from-milokira-lila/10 via-white to-milokira-verde/10 border-2 border-milokira-lila/20 hover:border-milokira-lila/50 rounded-2xl px-4 sm:px-6 py-4 sm:py-5 flex items-center gap-3 sm:gap-4 text-left shadow-sm hover:shadow-lg hover:shadow-milokira-lila/20 transition-all duration-300 active:scale-[0.99]"
+        >
+          <div className="relative shrink-0">
+            <div className="absolute inset-0 bg-milokira-lila/30 rounded-2xl blur-xl group-hover:bg-milokira-lila/50 transition-colors" />
+            <div className="relative h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-linear-to-br from-milokira-lila to-milokira-verde flex items-center justify-center shadow-md">
+              <Leaf className="text-white" size={20} strokeWidth={2.5} />
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <h3 className="font-black text-stone-800 text-sm sm:text-base tracking-tight">
+                ¿Dudas con tu planta?
+              </h3>
+              <span className="bg-milokira-verde text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                IA
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-stone-500 font-medium line-clamp-2">
+              Pregúntale a Kira 🐶 — manda una foto o describe qué le pasa.
+            </p>
+          </div>
+
+          <div className="shrink-0 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-milokira-lila text-white text-xs font-bold shadow-md group-hover:bg-milokira-verde transition-colors">
+            <Sparkles size={14} strokeWidth={2.5} />
+            Preguntar
+          </div>
+        </button>
+      </div>
+
       <div className={`grid ${categoriaActiva === "TUTORES" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-2 lg:grid-cols-3"} gap-3 sm:gap-8 max-w-6xl mx-auto`}>
         {isLoadingData &&
           Array(6)
@@ -447,6 +483,7 @@ export default function Home() {
       </footer>
     </main>
     <CartDrawer />
+    <PlantChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </CartProvider>
   );
 }

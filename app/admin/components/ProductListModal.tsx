@@ -26,6 +26,11 @@ export type Product = {
   unidadesCompradas: number;
   precioCompraUnitaria: number;
   plantasPorMaceta: number;
+  descripcion: string;
+  categorias: string[];
+  imagenUrl: string;
+  imagenPosition: string;
+  precioTipo: string;
 };
 
 type Props = {
@@ -65,6 +70,13 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
             unidadesCompradas: Number(data.unidadesCompradas) || 1,
             precioCompraUnitaria: Number(data.precioCompraUnitaria) || 0,
             plantasPorMaceta: Number(data.plantasPorMaceta) || 1,
+            descripcion: data.descripcion || "",
+            categorias: Array.isArray(data.categorias) && data.categorias.length > 0
+              ? data.categorias
+              : ["INTERIOR"],
+            imagenUrl: data.imagenUrl || "",
+            imagenPosition: data.imagenPosition || "50% 50%",
+            precioTipo: data.precio?.tipo || "fijo",
           });
         }
       });
@@ -129,6 +141,11 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
       unidadesCompradas: number;
       precioCompraUnitaria: number;
       plantasPorMaceta: number;
+      descripcion: string;
+      categorias: string[];
+      imagenUrl: string;
+      imagenPosition: string;
+      precioTipo: string;
     },
     idFirebase?: string,
   ) => {
@@ -137,6 +154,7 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
       const payload = {
         nombre: data.name,
         "precio.valor": data.price,
+        "precio.tipo": data.precioTipo,
         stock: data.stock,
         costo: data.cost,
         margen: data.margin,
@@ -144,6 +162,10 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
         unidadesCompradas: data.unidadesCompradas,
         precioCompraUnitaria: data.precioCompraUnitaria,
         plantasPorMaceta: data.plantasPorMaceta,
+        descripcion: data.descripcion,
+        categorias: data.categorias,
+        imagenUrl: data.imagenUrl,
+        imagenPosition: data.imagenPosition,
       };
 
       if (idFirebase) {
@@ -156,11 +178,19 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
           .replace(/\s+/g, "-");
 
         await setDoc(doc(db, "Plantas", nuevoId), {
-          ...payload,
-          descripcion: "",
-          categorias: ["INTERIOR"],
-          imagenUrl: "",
-          precio: { valor: data.price, tipo: "fijo", disponible: true },
+          nombre: data.name,
+          stock: data.stock,
+          costo: data.cost,
+          margen: data.margin,
+          costoOriginalTotal: data.costoOriginalTotal,
+          unidadesCompradas: data.unidadesCompradas,
+          precioCompraUnitaria: data.precioCompraUnitaria,
+          plantasPorMaceta: data.plantasPorMaceta,
+          descripcion: data.descripcion,
+          categorias: data.categorias,
+          imagenUrl: data.imagenUrl,
+          imagenPosition: data.imagenPosition,
+          precio: { valor: data.price, tipo: data.precioTipo, disponible: true },
         });
       }
 
@@ -183,7 +213,7 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm">
-      <div className="bg-zinc-900 w-full max-w-md rounded-2xl border border-zinc-800 shadow-2xl h-[95vh] sm:h-[85vh] flex flex-col overflow-hidden">
+      <div className="bg-zinc-900 w-full max-w-3xl rounded-2xl border border-zinc-800 shadow-2xl h-[95vh] sm:h-[85vh] flex flex-col overflow-hidden">
         <div className="flex justify-between items-center p-4 sm:p-5 border-b border-zinc-800 bg-zinc-950 shrink-0">
           <h2 className="text-lg sm:text-xl font-bold text-indigo-400 flex items-center gap-2">
             <PackagePlus size={20} className="sm:w-[22px] sm:h-[22px]" />{" "}
@@ -217,13 +247,13 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
           />
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 pt-0 space-y-2 sm:space-y-3 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 scrollbar-hide">
           {loading ? (
-            <div className="text-center text-zinc-500 py-10 text-sm">
+            <div className="col-span-full text-center text-zinc-500 py-10 text-sm">
               Cargando inventario...
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="text-center text-zinc-500 py-10 border border-dashed border-zinc-800 rounded-xl text-sm">
+            <div className="col-span-full text-center text-zinc-500 py-10 border border-dashed border-zinc-800 rounded-xl text-sm">
               No hay productos registrados.
             </div>
           ) : (
