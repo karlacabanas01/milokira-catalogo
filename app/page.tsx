@@ -8,7 +8,7 @@ import Image from "next/image";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import Link from "next/link";
-import { Search, X, Sparkles, Leaf } from "lucide-react";
+import { Search, X, Sparkles, Leaf, Truck } from "lucide-react";
 import { CartProvider } from "./context/CartContext";
 import CartDrawer from "./components/cart-drawer";
 import PlantChat from "./components/plant-chat";
@@ -192,6 +192,14 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3">
+            {isAdmin && (
+              <Link href="/admin/pedidos">
+                <button className="bg-amber-500 text-white px-3 sm:px-4 py-2 rounded-full flex items-center justify-center shadow-md hover:scale-105 hover:bg-amber-400 transition-all duration-300 font-bold tracking-wide gap-1.5 text-xs sm:text-sm">
+                  <Truck size={14} strokeWidth={2.5} />
+                  <span className="hidden sm:inline">Pedidos</span>
+                </button>
+              </Link>
+            )}
             {isAdmin && (
               <Link href="/admin">
                 <button className="bg-milokira-verde text-white px-4 py-2 rounded-full flex items-center justify-center shadow-md hover:scale-105 hover:bg-milokira-verde/90 transition-all duration-300 font-bold tracking-wide gap-2 text-xs sm:text-sm">
