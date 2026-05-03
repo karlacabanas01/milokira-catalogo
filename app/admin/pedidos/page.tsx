@@ -8,6 +8,7 @@ import {
   doc,
   updateDoc,
   getDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
 import OrderModal from "../components/OrderModal";
@@ -27,6 +28,11 @@ import {
   ChevronDown,
   Package,
   Calendar,
+  Trash2,
+  Pencil,
+  Save,
+  X,
+  Edit3,
 } from "lucide-react";
 
 type DeliveryDay = "martes" | "viernes" | "otro" | "";
@@ -49,6 +55,7 @@ type Order = {
   address?: string;
   phone?: string;
   notes?: string;
+  admin_notes?: string;
   delivery_day?: DeliveryDay;
   items: OrderItem[];
 };
@@ -63,6 +70,7 @@ export default function PedidosPage() {
   const [filter, setFilter] = useState<Filter>("todos");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -167,6 +175,39 @@ export default function PedidosPage() {
     }
   };
 
+  const handleDelete = async (order: Order) => {
+    if (
+      !confirm(
+        `¿Borrar el pedido de ${order.customer_name}? Esta acción no se puede deshacer.`,
+      )
+    )
+      return;
+
+    try {
+      await deleteDoc(doc(db, "Transacciones", order.idFirebase));
+      setOrders((prev) => prev.filter((o) => o.idFirebase !== order.idFirebase));
+    } catch (err) {
+      console.error(err);
+      alert("Error al borrar el pedido.");
+    }
+  };
+
+  const handleSaveAdminNotes = async (order: Order, value: string) => {
+    try {
+      await updateDoc(doc(db, "Transacciones", order.idFirebase), {
+        admin_notes: value,
+      });
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.idFirebase === order.idFirebase ? { ...o, admin_notes: value } : o,
+        ),
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Error al guardar la nota.");
+    }
+  };
+
   const visibleOrders = applyFilter(orders, filter);
 
   const counts = {
@@ -222,7 +263,10 @@ export default function PedidosPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={() => setIsOrderModalOpen(true)}
+            onClick={() => {
+              setEditingOrder(null);
+              setIsOrderModalOpen(true);
+            }}
             className="bg-linear-to-r from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-white py-3.5 sm:py-4 rounded-2xl shadow-lg shadow-amber-900/30 transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-2 font-black tracking-wide text-sm sm:text-base"
           >
             <Plus size={18} strokeWidth={3} />
@@ -336,6 +380,12 @@ export default function PedidosPage() {
                 onMoveUp={() => moveOrder(order.idFirebase, -1)}
                 onMoveDown={() => moveOrder(order.idFirebase, 1)}
                 onComplete={() => handleComplete(order)}
+                onDelete={() => handleDelete(order)}
+                onSaveAdminNotes={(notes) => handleSaveAdminNotes(order, notes)}
+                onEdit={() => {
+                  setEditingOrder(order);
+                  setIsOrderModalOpen(true);
+                }}
               />
             ))}
           </ul>
@@ -345,8 +395,12 @@ export default function PedidosPage() {
       {isOrderModalOpen && (
         <OrderModal
           isOpen={isOrderModalOpen}
-          onClose={() => setIsOrderModalOpen(false)}
+          onClose={() => {
+            setIsOrderModalOpen(false);
+            setEditingOrder(null);
+          }}
           onSuccess={() => setRefreshKey((k) => k + 1)}
+          editingOrder={editingOrder}
         />
       )}
     </main>
@@ -407,6 +461,9 @@ function OrderCard({
   onMoveUp,
   onMoveDown,
   onComplete,
+  onDelete,
+  onSaveAdminNotes,
+  onEdit,
 }: {
   readonly order: Order;
   readonly position: number;
@@ -417,7 +474,13 @@ function OrderCard({
   readonly onMoveUp: () => void;
   readonly onMoveDown: () => void;
   readonly onComplete: () => void;
+  readonly onDelete: () => void;
+  readonly onSaveAdminNotes: (notes: string) => void;
+  readonly onEdit: () => void;
 }) {
+  const [editingAdminNote, setEditingAdminNote] = useState(false);
+  const [adminNoteDraft, setAdminNoteDraft] = useState(order.admin_notes || "");
+
   const isDelivery = order.delivery_type === "delivery";
 
   const mapsUrl = order.address
@@ -560,6 +623,22 @@ function OrderCard({
           <CheckCircle size={13} strokeWidth={2.5} />
           Entregado
         </button>
+        <button
+          onClick={onEdit}
+          aria-label="Editar pedido"
+          title="Editar pedido"
+          className="shrink-0 px-2.5 py-2 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition-all active:scale-95"
+        >
+          <Edit3 size={13} />
+        </button>
+        <button
+          onClick={onDelete}
+          aria-label="Borrar pedido"
+          title="Borrar pedido"
+          className="shrink-0 px-2.5 py-2 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all active:scale-95"
+        >
+          <Trash2 size={13} />
+        </button>
       </div>
 
       {expanded && (
@@ -571,12 +650,16 @@ function OrderCard({
                 className="flex justify-between text-xs sm:text-sm text-zinc-300"
               >
                 <span className="truncate pr-2">
-                  • {item.nombre || "Planta"}{" "}
-                  <span className="text-zinc-500 text-[10px]">(x{item.quantity})</span>
+                  • {item.nombre || "Planta"}
+                  {item.quantity > 1 && (
+                    <span className="text-zinc-500 text-[10px]"> (x{item.quantity})</span>
+                  )}
                 </span>
-                <span className="shrink-0 font-mono">
-                  ${(item.unit_price * item.quantity).toLocaleString("es-CL")}
-                </span>
+                {item.unit_price > 0 && (
+                  <span className="shrink-0 font-mono">
+                    ${(item.unit_price * item.quantity).toLocaleString("es-CL")}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
@@ -586,6 +669,69 @@ function OrderCard({
               <span>${order.delivery_fee.toLocaleString("es-CL")}</span>
             </div>
           )}
+
+          {/* Notas internas del admin */}
+          <div className="mt-3 pt-3 border-t border-zinc-800/60">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                <StickyNote size={11} />
+                Mis notas (internas)
+              </span>
+              {!editingAdminNote && (
+                <button
+                  onClick={() => {
+                    setAdminNoteDraft(order.admin_notes || "");
+                    setEditingAdminNote(true);
+                  }}
+                  className="text-[10px] text-zinc-500 hover:text-amber-400 font-bold uppercase tracking-wide flex items-center gap-1 transition-colors"
+                >
+                  <Pencil size={10} />
+                  {order.admin_notes ? "Editar" : "Agregar"}
+                </button>
+              )}
+            </div>
+
+            {editingAdminNote ? (
+              <div className="space-y-2">
+                <textarea
+                  rows={2}
+                  autoFocus
+                  value={adminNoteDraft}
+                  onChange={(e) => setAdminNoteDraft(e.target.value)}
+                  placeholder="Ej: debe $5.000, llamar antes..."
+                  className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-zinc-200 text-xs outline-none focus:border-amber-500 transition-colors resize-none placeholder:text-zinc-600"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      onSaveAdminNotes(adminNoteDraft.trim());
+                      setEditingAdminNote(false);
+                    }}
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-amber-950 text-[10px] font-black uppercase tracking-wider transition-all active:scale-95"
+                  >
+                    <Save size={11} strokeWidth={3} />
+                    Guardar
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAdminNoteDraft(order.admin_notes || "");
+                      setEditingAdminNote(false);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px] font-bold uppercase tracking-wider transition-colors flex items-center gap-1"
+                  >
+                    <X size={11} />
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : order.admin_notes ? (
+              <p className="text-xs text-amber-200/90 italic leading-snug bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2">
+                {order.admin_notes}
+              </p>
+            ) : (
+              <p className="text-[11px] text-zinc-600 italic">Sin notas internas.</p>
+            )}
+          </div>
         </div>
       )}
     </li>

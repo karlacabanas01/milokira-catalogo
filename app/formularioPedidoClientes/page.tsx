@@ -19,6 +19,8 @@ import {
   Send,
   CheckCircle,
   Loader2,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 const WHATSAPP_NUMBER = "56994955949";
@@ -32,21 +34,40 @@ export default function PedidoPublicoPage() {
   const [diaEntrega, setDiaEntrega] = useState("");
   const [direccion, setDireccion] = useState("");
   const [notas, setNotas] = useState("");
-  const [plantas, setPlantas] = useState("");
+  const [plantasList, setPlantasList] = useState<string[]>([""]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [enviado, setEnviado] = useState<{ id: string; resumen: string } | null>(null);
 
+  const plantasLimpias = plantasList.map((p) => p.trim()).filter(Boolean);
+  const telefonoCompleto = telefono ? `+56 9 ${telefono}` : "";
+
   const validar = () => {
     if (!nombre.trim()) return "Necesitamos tu nombre.";
-    if (!telefono.trim()) return "Necesitamos tu teléfono para confirmar el pedido.";
-    if (!plantas.trim()) return "Cuéntanos qué plantitas quieres.";
+    if (telefono.length !== 8)
+      return "Tu teléfono debe tener 8 números después del 9.";
+    if (plantasLimpias.length === 0) return "Cuéntanos qué plantitas quieres.";
     if (tipoEntrega === "delivery") {
       if (!direccion.trim()) return "Necesitamos la dirección de entrega.";
       if (!diaEntrega) return "Elige el día de entrega.";
     }
     return null;
+  };
+
+  const updatePlanta = (idx: number, value: string) => {
+    setPlantasList((prev) => prev.map((p, i) => (i === idx ? value : p)));
+  };
+
+  const addPlanta = () => {
+    setPlantasList((prev) => [...prev, ""]);
+  };
+
+  const removePlanta = (idx: number) => {
+    setPlantasList((prev) => {
+      if (prev.length <= 1) return [""];
+      return prev.filter((_, i) => i !== idx);
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,18 +86,16 @@ export default function PedidoPublicoPage() {
         tipo: "pedido",
         status: "pending",
         customer_name: nombre.trim(),
-        phone: telefono.trim(),
+        phone: telefonoCompleto,
         delivery_type: tipoEntrega,
         delivery_day: tipoEntrega === "delivery" ? diaEntrega : "",
         address: tipoEntrega === "delivery" ? direccion.trim() : "",
         notes: notas.trim(),
-        items: [
-          {
-            nombre: plantas.trim(),
-            quantity: 1,
-            unit_price: 0,
-          },
-        ],
+        items: plantasLimpias.map((nombre) => ({
+          nombre,
+          quantity: 1,
+          unit_price: 0,
+        })),
         total_amount: 0,
         delivery_fee: 0,
         created_at: new Date().toISOString(),
@@ -89,12 +108,12 @@ export default function PedidoPublicoPage() {
         `¡Hola Milokira! Acabo de hacer un pedido por la página.`,
         ``,
         `*Nombre:* ${nombre.trim()}`,
-        `*Teléfono:* ${telefono.trim()}`,
+        `*Teléfono:* ${telefonoCompleto}`,
         `*Entrega:* ${tipoEntrega === "delivery" ? `Delivery (${diaEntrega})` : "Retiro"}`,
         tipoEntrega === "delivery" ? `*Dirección:* ${direccion.trim()}` : null,
         ``,
         `*Plantas:*`,
-        plantas.trim(),
+        ...plantasLimpias.map((p) => `- ${p}`),
         notas.trim() ? `\n*Notas:* ${notas.trim()}` : null,
       ]
         .filter(Boolean)
@@ -192,19 +211,26 @@ export default function PedidoPublicoPage() {
             <label className="text-[11px] font-bold text-stone-500 uppercase tracking-widest ml-1 mb-1.5 block">
               Teléfono <span className="text-rose-500">*</span>
             </label>
-            <div className="relative">
-              <Phone
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
-              />
+            <div className="flex items-stretch bg-stone-50 border border-stone-200 rounded-xl overflow-hidden focus-within:bg-white focus-within:border-milokira-verde transition-colors">
+              <div className="flex items-center gap-1.5 pl-3 pr-2 border-r border-stone-200 text-stone-500 text-sm font-bold">
+                <Phone size={14} className="text-stone-400" />
+                +56 9
+              </div>
               <input
                 type="tel"
+                inputMode="numeric"
+                maxLength={8}
                 value={telefono}
-                onChange={(e) => setTelefono(e.target.value)}
-                placeholder="+56 9 ..."
-                className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-verde transition-colors placeholder:text-stone-400"
+                onChange={(e) =>
+                  setTelefono(e.target.value.replace(/\D/g, "").slice(0, 8))
+                }
+                placeholder="12345678"
+                className="flex-1 px-3 py-3 bg-transparent text-stone-700 text-sm outline-none placeholder:text-stone-400"
               />
             </div>
+            <p className="text-[10px] text-stone-400 mt-1 ml-1">
+              Pon solo los 8 números después del 9 (ej: 12345678).
+            </p>
           </div>
 
           {/* Plantas */}
@@ -212,20 +238,47 @@ export default function PedidoPublicoPage() {
             <label className="text-[11px] font-bold text-stone-500 uppercase tracking-widest ml-1 mb-1.5 block">
               ¿Qué plantitas quieres? <span className="text-rose-500">*</span>
             </label>
-            <div className="relative">
-              <Leaf
-                size={16}
-                className="absolute left-3 top-3 text-milokira-verde"
-              />
-              <textarea
-                rows={4}
-                value={plantas}
-                onChange={(e) => setPlantas(e.target.value)}
-                placeholder="Ej: 1 monstera deliciosa, 2 suculentas, 1 potus..."
-                className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-verde transition-colors placeholder:text-stone-400 resize-none"
-              />
+            <div className="space-y-2">
+              {plantasList.map((planta, idx) => (
+                <div key={idx} className="relative flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Leaf
+                      size={16}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-milokira-verde"
+                    />
+                    <input
+                      value={planta}
+                      onChange={(e) => updatePlanta(idx, e.target.value)}
+                      placeholder={
+                        idx === 0
+                          ? "Ej: 2 singonio pink"
+                          : "Ej: 1 monstera adansonii"
+                      }
+                      className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-verde transition-colors placeholder:text-stone-400"
+                    />
+                  </div>
+                  {plantasList.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removePlanta(idx)}
+                      className="shrink-0 p-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-500 border border-rose-200 transition-colors"
+                      aria-label="Quitar planta"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addPlanta}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-milokira-verde/10 hover:bg-milokira-verde/20 text-milokira-verde border-2 border-dashed border-milokira-verde/40 hover:border-milokira-verde/70 transition-colors text-xs font-bold uppercase tracking-wider"
+              >
+                <Plus size={14} strokeWidth={3} />
+                Agregar otra planta
+              </button>
             </div>
-            <p className="text-[10px] text-stone-400 mt-1 ml-1">
+            <p className="text-[10px] text-stone-400 mt-1.5 ml-1">
               Escríbelas con detalle, te confirmamos precios al contactarte.
             </p>
           </div>

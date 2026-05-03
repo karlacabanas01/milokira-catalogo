@@ -269,12 +269,16 @@ function Label({ order }: { readonly order: Order }) {
           {order.items?.slice(0, 6).map((item, i) => (
             <li key={i} className="flex justify-between gap-2">
               <span className="truncate">
-                <span className="font-bold">{item.quantity}×</span>{" "}
+                {item.quantity > 1 && (
+                  <span className="font-bold">{item.quantity}× </span>
+                )}
                 {item.nombre || "Planta"}
               </span>
-              <span className="font-mono text-stone-600 shrink-0">
-                ${(item.unit_price * item.quantity).toLocaleString("es-CL")}
-              </span>
+              {item.unit_price > 0 && (
+                <span className="font-mono text-stone-600 shrink-0">
+                  ${(item.unit_price * item.quantity).toLocaleString("es-CL")}
+                </span>
+              )}
             </li>
           ))}
           {order.items && order.items.length > 6 && (
