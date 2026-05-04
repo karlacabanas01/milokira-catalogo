@@ -33,6 +33,18 @@ type CartItem = {
 
 type DeliveryType = "delivery" | "retiro";
 
+const SECTORES = [
+  "Bicentenario",
+  "Las Rastras",
+  "Faustino",
+  "La Florida",
+  "Valles de Talca",
+  "Doña Ignacia",
+  "Nueva Holanda",
+  "Barrio Norte",
+  "Otro",
+];
+
 type EditingOrderType = {
   idFirebase: string;
   customer_name: string;
@@ -42,6 +54,7 @@ type EditingOrderType = {
   phone?: string;
   notes?: string;
   delivery_day?: string;
+  sector?: string;
   items: {
     product_id?: string;
     nombre?: string;
@@ -75,6 +88,8 @@ export default function OrderModal({
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [deliveryDay, setDeliveryDay] = useState("");
+  const [sector, setSector] = useState("");
+  const [manualTotal, setManualTotal] = useState("");
 
   // Form para nuevo item
   const [itemName, setItemName] = useState("");
@@ -90,6 +105,21 @@ export default function OrderModal({
       setPhone(editingOrder.phone || "");
       setNotes(editingOrder.notes || "");
       setDeliveryDay(editingOrder.delivery_day || "");
+      setSector(editingOrder.sector || "");
+
+      // Si el total guardado no coincide con el subtotal calculado, asumimos que fue manual
+      const calcSubtotal = editingOrder.items.reduce(
+        (a, i) => a + (i.unit_price || 0) * (i.quantity || 0),
+        0,
+      );
+      const fee = editingOrder.delivery_fee || 0;
+      const calcTotal = calcSubtotal + fee;
+      const guardado = (editingOrder as { total_amount?: number }).total_amount;
+      if (typeof guardado === "number" && guardado > 0 && guardado !== calcTotal) {
+        setManualTotal(String(guardado - fee));
+      } else {
+        setManualTotal("");
+      }
 
       const loadedCart: CartItem[] = editingOrder.items.map((item) => ({
         id: item.product_id || newId(),
@@ -107,6 +137,8 @@ export default function OrderModal({
       setPhone("");
       setNotes("");
       setDeliveryDay("");
+      setSector("");
+      setManualTotal("");
     }
     setItemName("");
     setItemPrice("");
@@ -143,10 +175,13 @@ export default function OrderModal({
     setCart((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const subtotalOrder = cart.reduce(
+  const subtotalCalculado = cart.reduce(
     (acc, item) => acc + item.price * item.quantity,
     0,
   );
+  const manualTotalNum = Number(manualTotal);
+  const usaManual = manualTotal.trim() !== "" && !Number.isNaN(manualTotalNum);
+  const subtotalOrder = usaManual ? manualTotalNum : subtotalCalculado;
   const totalOrder =
     subtotalOrder + (deliveryType === "delivery" ? deliveryFee : 0);
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
@@ -172,6 +207,7 @@ export default function OrderModal({
         phone: phone.trim(),
         notes: notes.trim(),
         delivery_day: deliveryType === "delivery" ? deliveryDay : "",
+        sector: deliveryType === "delivery" ? sector : "",
       };
 
       if (editingOrder) {
@@ -383,6 +419,39 @@ export default function OrderModal({
                 </button>
               </div>
             </div>
+
+            {/* Total manual */}
+            <div className="mt-3 pt-3 border-t border-emerald-500/30">
+              <label
+                htmlFor="manual-total"
+                className="block text-[10px] font-bold text-emerald-700 uppercase tracking-widest mb-1.5 px-1"
+              >
+                Total $ (opcional, lo escribes tú)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 font-bold text-sm">
+                  $
+                </span>
+                <input
+                  id="manual-total"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder={
+                    subtotalCalculado > 0
+                      ? `Sugerido: ${subtotalCalculado.toLocaleString("es-CL")}`
+                      : "Ej: 25000"
+                  }
+                  value={manualTotal}
+                  onChange={(e) =>
+                    setManualTotal(e.target.value.replace(/\D/g, ""))
+                  }
+                  className="w-full pl-7 pr-3 py-2.5 bg-white border border-emerald-300 rounded-lg text-stone-700 outline-none focus:border-emerald-500 text-sm placeholder:text-stone-400 font-bold"
+                />
+              </div>
+              <p className="text-[10px] text-stone-500 mt-1 px-1">
+                Si lo dejas vacío se calcula automático sumando los precios de cada planta.
+              </p>
+            </div>
           </div>
 
           {/* Tipo de entrega */}
@@ -426,20 +495,34 @@ export default function OrderModal({
                   value={deliveryFee || ""}
                   onChange={(e) => setDeliveryFee(Number(e.target.value) || 0)}
                 />
-                <div className="relative">
-                  <CalendarDays
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
-                    size={14}
-                  />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="relative">
+                    <CalendarDays
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
+                      size={14}
+                    />
+                    <select
+                      value={deliveryDay}
+                      onChange={(e) => setDeliveryDay(e.target.value)}
+                      className="w-full pl-9 pr-2 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-milokira-lila text-xs sm:text-sm"
+                    >
+                      <option value="">Día...</option>
+                      <option value="martes">Martes</option>
+                      <option value="viernes">Viernes</option>
+                      <option value="otro">Otro</option>
+                    </select>
+                  </div>
                   <select
-                    value={deliveryDay}
-                    onChange={(e) => setDeliveryDay(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-milokira-lila text-xs sm:text-sm"
+                    value={sector}
+                    onChange={(e) => setSector(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-milokira-lila text-xs sm:text-sm"
                   >
-                    <option value="">Día de entrega...</option>
-                    <option value="martes">Martes</option>
-                    <option value="viernes">Viernes</option>
-                    <option value="otro">Otro día</option>
+                    <option value="">Sector...</option>
+                    {SECTORES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="relative">

@@ -33,6 +33,7 @@ import {
   Save,
   X,
   Edit3,
+  Layers,
 } from "lucide-react";
 
 type DeliveryDay = "martes" | "viernes" | "otro" | "";
@@ -57,10 +58,56 @@ type Order = {
   notes?: string;
   admin_notes?: string;
   delivery_day?: DeliveryDay;
+  sector?: string;
+  lat?: number;
+  lng?: number;
   items: OrderItem[];
 };
 
 type Filter = "todos" | "martes" | "viernes" | "retiro";
+type SortMode = "manual" | "sector" | "cercania";
+
+// Punto base (Bicentenario, Talca)
+const HOME_LAT = -35.4364;
+const HOME_LNG = -71.6105;
+
+const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  return 2 * R * Math.asin(Math.sqrt(x));
+};
+
+const nearestNeighborOrder = (
+  orders: Order[],
+  start: { lat: number; lng: number },
+): Order[] => {
+  const result: Order[] = [];
+  const remaining = orders.filter((o) => o.lat != null && o.lng != null);
+  let current = start;
+  while (remaining.length > 0) {
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < remaining.length; i++) {
+      const o = remaining[i];
+      const d = haversineKm(current, { lat: o.lat!, lng: o.lng! });
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    }
+    const next = remaining.splice(bestIdx, 1)[0];
+    result.push(next);
+    current = { lat: next.lat!, lng: next.lng! };
+  }
+  // Pedidos sin coords al final
+  return [...result, ...orders.filter((o) => o.lat == null || o.lng == null)];
+};
 
 const ORDER_STORAGE_KEY = "milokira-pedidos-order";
 
@@ -68,6 +115,65 @@ export default function PedidosPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("todos");
+  const [sortMode, setSortMode] = useState<SortMode>("manual");
+  const [geocoding, setGeocoding] = useState(false);
+
+  const ensureCoords = async () => {
+    const visibles = applyFilter(orders, filter).filter(
+      (o) => o.delivery_type === "delivery" && (o.lat == null || o.lng == null) && o.address,
+    );
+    if (visibles.length === 0) return;
+    setGeocoding(true);
+    try {
+      for (const o of visibles) {
+        try {
+          const res = await fetch(`/api/geocode?q=${encodeURIComponent(o.address!)}`);
+          if (!res.ok) continue;
+          const data = await res.json();
+          if (data.found && typeof data.lat === "number" && typeof data.lng === "number") {
+            await updateDoc(doc(db, "Transacciones", o.idFirebase), {
+              lat: data.lat,
+              lng: data.lng,
+            });
+            setOrders((prev) =>
+              prev.map((p) =>
+                p.idFirebase === o.idFirebase ? { ...p, lat: data.lat, lng: data.lng } : p,
+              ),
+            );
+          }
+          // Nominatim pide max 1 req/seg
+          await new Promise((r) => setTimeout(r, 1100));
+        } catch (err) {
+          console.warn("Geocoding falló para", o.idFirebase, err);
+        }
+      }
+    } finally {
+      setGeocoding(false);
+    }
+  };
+
+  const handleSortByCercania = async () => {
+    await ensureCoords();
+    setSortMode("cercania");
+  };
+
+  const buildRouteUrl = (orders: Order[]) => {
+    const stops = orders
+      .filter((o) => o.delivery_type === "delivery")
+      .map((o) => {
+        if (o.lat != null && o.lng != null) return `${o.lat},${o.lng}`;
+        if (o.address) return encodeURIComponent(`${o.address}, Talca, Chile`);
+        return null;
+      })
+      .filter((s): s is string => Boolean(s));
+    if (stops.length === 0) return null;
+    const origin = `${HOME_LAT},${HOME_LNG}`;
+    const destination = stops[stops.length - 1];
+    const waypoints = stops.slice(0, -1).join("|");
+    return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${
+      waypoints ? `&waypoints=${waypoints}` : ""
+    }&travelmode=driving`;
+  };
   const [expanded, setExpanded] = useState<string | null>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
@@ -208,7 +314,18 @@ export default function PedidosPage() {
     }
   };
 
-  const visibleOrders = applyFilter(orders, filter);
+  const filteredOrders = applyFilter(orders, filter);
+  let visibleOrders = filteredOrders;
+  if (sortMode === "sector") {
+    visibleOrders = [...filteredOrders].sort((a, b) =>
+      (a.sector || "zzz").localeCompare(b.sector || "zzz"),
+    );
+  } else if (sortMode === "cercania") {
+    visibleOrders = nearestNeighborOrder(filteredOrders, {
+      lat: HOME_LAT,
+      lng: HOME_LNG,
+    });
+  }
 
   const counts = {
     todos: orders.length,
@@ -260,7 +377,7 @@ export default function PedidosPage() {
 
       <div className="relative z-10 p-4 sm:p-8 w-full max-w-400 mx-auto space-y-5">
         {/* Acciones principales */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <button
             type="button"
             onClick={() => {
@@ -283,6 +400,72 @@ export default function PedidosPage() {
             <Printer size={18} strokeWidth={3} />
             Imprimir hoja
           </button>
+          <button
+            type="button"
+            disabled={
+              visibleOrders.filter((o) => o.delivery_type === "delivery").length === 0
+            }
+            onClick={() => {
+              const url = buildRouteUrl(visibleOrders);
+              if (url) window.open(url, "_blank");
+            }}
+            className="bg-linear-to-r from-indigo-500 to-indigo-700 hover:from-indigo-400 hover:to-indigo-600 text-white py-3.5 sm:py-4 rounded-2xl shadow-lg shadow-indigo-900/30 transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-2 font-black tracking-wide text-sm sm:text-base disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <MapIcon size={18} strokeWidth={3} />
+            Ruta en Maps
+          </button>
+        </div>
+
+        {/* Orden */}
+        <div>
+          <h2 className="text-[10px] sm:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 px-1">
+            Ordenar por
+          </h2>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => setSortMode("manual")}
+              className={`p-3 rounded-xl border text-left transition-all active:scale-[0.98] flex items-center gap-2 ${
+                sortMode === "manual"
+                  ? "bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-lg shadow-amber-900/30"
+                  : "bg-zinc-900/60 border-zinc-800 text-zinc-500 hover:border-amber-500/30 hover:text-amber-400"
+              }`}
+            >
+              <ChevronUp size={14} />
+              <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider">
+                Manual
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSortMode("sector")}
+              className={`p-3 rounded-xl border text-left transition-all active:scale-[0.98] flex items-center gap-2 ${
+                sortMode === "sector"
+                  ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-lg shadow-emerald-900/30"
+                  : "bg-zinc-900/60 border-zinc-800 text-zinc-500 hover:border-emerald-500/30 hover:text-emerald-400"
+              }`}
+            >
+              <Layers size={14} />
+              <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider">
+                Sector
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={handleSortByCercania}
+              disabled={geocoding}
+              className={`p-3 rounded-xl border text-left transition-all active:scale-[0.98] flex items-center gap-2 disabled:opacity-50 ${
+                sortMode === "cercania"
+                  ? "bg-indigo-500/15 border-indigo-500/40 text-indigo-300 shadow-lg shadow-indigo-900/30"
+                  : "bg-zinc-900/60 border-zinc-800 text-zinc-500 hover:border-indigo-500/30 hover:text-indigo-400"
+              }`}
+            >
+              <MapIcon size={14} />
+              <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider">
+                {geocoding ? "Calculando…" : "Cercanía"}
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Filtros */}
@@ -545,6 +728,11 @@ function OrderCard({
                 {order.delivery_day && (
                   <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-zinc-800 text-zinc-300 border border-zinc-700 shrink-0">
                     {order.delivery_day}
+                  </span>
+                )}
+                {order.sector && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shrink-0">
+                    {order.sector}
                   </span>
                 )}
               </div>

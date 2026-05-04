@@ -25,6 +25,18 @@ import {
 
 const WHATSAPP_NUMBER = "56994955949";
 
+const SECTORES = [
+  "Bicentenario",
+  "Las Rastras",
+  "Faustino",
+  "La Florida",
+  "Valles de Talca",
+  "Doña Ignacia",
+  "Nueva Holanda",
+  "Barrio Norte",
+  "Otro",
+];
+
 type DeliveryType = "delivery" | "retiro";
 
 export default function PedidoPublicoPage() {
@@ -33,6 +45,7 @@ export default function PedidoPublicoPage() {
   const [tipoEntrega, setTipoEntrega] = useState<DeliveryType>("retiro");
   const [diaEntrega, setDiaEntrega] = useState("");
   const [direccion, setDireccion] = useState("");
+  const [sector, setSector] = useState("");
   const [notas, setNotas] = useState("");
   const [plantasList, setPlantasList] = useState<string[]>([""]);
 
@@ -49,6 +62,7 @@ export default function PedidoPublicoPage() {
       return "Tu teléfono debe tener 8 números después del 9.";
     if (plantasLimpias.length === 0) return "Cuéntanos qué plantitas quieres.";
     if (tipoEntrega === "delivery") {
+      if (!sector) return "Elige el sector de entrega.";
       if (!direccion.trim()) return "Necesitamos la dirección de entrega.";
       if (!diaEntrega) return "Elige el día de entrega.";
     }
@@ -90,6 +104,7 @@ export default function PedidoPublicoPage() {
         delivery_type: tipoEntrega,
         delivery_day: tipoEntrega === "delivery" ? diaEntrega : "",
         address: tipoEntrega === "delivery" ? direccion.trim() : "",
+        sector: tipoEntrega === "delivery" ? sector : "",
         notes: notas.trim(),
         items: plantasLimpias.map((nombre) => ({
           nombre,
@@ -343,6 +358,24 @@ export default function PedidoPublicoPage() {
 
               <div>
                 <label className="text-[11px] font-bold text-stone-500 uppercase tracking-widest ml-1 mb-1.5 block">
+                  Sector <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={sector}
+                  onChange={(e) => setSector(e.target.value)}
+                  className="w-full px-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-lila transition-colors"
+                >
+                  <option value="">Elige tu sector...</option>
+                  {SECTORES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-stone-500 uppercase tracking-widest ml-1 mb-1.5 block">
                   Dirección <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
@@ -354,7 +387,7 @@ export default function PedidoPublicoPage() {
                     rows={2}
                     value={direccion}
                     onChange={(e) => setDireccion(e.target.value)}
-                    placeholder="Calle, número, sector, comuna"
+                    placeholder="Calle y número"
                     className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-lila transition-colors placeholder:text-stone-400 resize-none"
                   />
                 </div>
