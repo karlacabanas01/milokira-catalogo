@@ -262,7 +262,7 @@ export default function Home() {
           {/* Contenido central del banner */}
           <div className="sm:absolute sm:inset-0 flex items-center justify-center py-6 sm:py-0">
             <div className="text-center px-6">
-              <h1 className="text-2xl sm:text-5xl md:text-6xl font-black tracking-tight text-stone-800 leading-[1.05] drop-shadow-sm">
+              <h1 className="text-5xl sm:text-5xl md:text-6xl font-black tracking-tight text-stone-800 leading-[1.05] drop-shadow-sm">
                 <span className="block">Catálogo de</span>
                 <span className="relative inline-block mt-1 sm:mt-2">
                   <span className="relative z-10 text-milokira-verde">plantas</span>
