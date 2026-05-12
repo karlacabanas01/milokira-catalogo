@@ -48,7 +48,7 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
   const [justAdded, setJustAdded] = useState(false);
   const { addItem } = useCart();
   const estaDisponible = precio.disponible !== false;
-  const esTutor = categorias?.some((c) => c.toUpperCase() === "TUTORES");
+  const esTutor = categorias?.some((c) => c.toUpperCase() === "IMPLEMENTOS");
 
   const agregarAlCarrito = () => {
     if (!estaDisponible) return;
@@ -90,14 +90,14 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
 
   return (
     <div
-      className={`bg-white rounded-xl overflow-hidden shadow-sm transition-all duration-500 flex flex-col h-full border-2 relative
+      className={`bg-white rounded-3xl overflow-hidden shadow-sm transition-all duration-300 flex flex-col h-full border-2 relative hover:-translate-y-1
       ${
         estaDisponible
           ? "hover:shadow-xl hover:shadow-milokira-lila/30 border-transparent hover:border-milokira-lila/50 group"
           : `${isAdmin ? "" : "grayscale pointer-events-none"} opacity-70 border-gray-100 bg-gray-50`
       }`}
     >
-      <div className="relative w-full aspect-[4/5] overflow-hidden rounded-t-2xl bg-[#fdfaf5]">
+      <div className="relative w-full aspect-[4/5] overflow-hidden rounded-t-3xl bg-[#fdfaf5]">
         {imagenUrl ? (
           <Image
             src={imagenUrl}
@@ -190,7 +190,7 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mt-auto">
           <div
-            className={`font-extrabold text-sm sm:text-lg ${estaDisponible ? "text-milokira-verde" : "text-gray-400 italic"}`}
+            className={`font-black text-base sm:text-xl tracking-tight ${estaDisponible ? "text-milokira-verde" : "text-gray-400 italic"}`}
           >
             {formatearPrecio(precio)}
           </div>

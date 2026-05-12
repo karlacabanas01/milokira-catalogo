@@ -8,7 +8,7 @@ import Image from "next/image";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import Link from "next/link";
-import { Search, X, Sparkles, Leaf, Truck } from "lucide-react";
+import { Search, X, Truck, ArrowRight } from "lucide-react";
 import { CartProvider } from "./context/CartContext";
 import CartDrawer from "./components/cart-drawer";
 import PlantChat from "./components/plant-chat";
@@ -34,19 +34,6 @@ export default function Home() {
   const [busqueda, setBusqueda] = useState("");
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [tituloVisible, setTituloVisible] = useState("");
-
-  useEffect(() => {
-    const texto = "Catálogo de Plantas";
-    let i = 0;
-    const interval = setInterval(() => {
-      setTituloVisible(texto.slice(0, i + 1));
-      i++;
-      if (i >= texto.length) clearInterval(interval);
-    }, 80);
-    return () => clearInterval(interval);
-  }, []);
-
   useEffect(() => {
     const unsubscribe = onSnapshot(
       collection(db, "Plantas"),
@@ -78,8 +65,18 @@ export default function Home() {
     "INTERIOR",
     "EXTERIOR",
     "COLECCION",
-    "TUTORES",
+    "IMPLEMENTOS",
   ];
+
+  const CATEGORIA_EMOJI: Record<string, string> = {
+    TODAS: "✨",
+    CACTUS: "🌵",
+    SUCULENTAS: "🌱",
+    INTERIOR: "🪴",
+    EXTERIOR: "☀️",
+    COLECCION: "💎",
+    IMPLEMENTOS: "🪢",
+  };
 
   const plantasFiltradas = plantas
     .filter((planta) => {
@@ -150,7 +147,10 @@ export default function Home() {
 
   return (
     <CartProvider>
-    <main className="min-h-screen bg-milokira-crema patron-muro px-2 pb-8 font-sans overflow-x-hidden">
+    <main
+      className="min-h-screen bg-milokira-crema patron-muro px-2 pb-8 overflow-x-hidden"
+      style={{ fontFamily: "var(--font-quicksand), system-ui, sans-serif" }}
+    >
       {isAdmin && (
         <button
           onClick={() => {
@@ -173,112 +173,128 @@ export default function Home() {
         plantaAEditar={plantaAEditar}
       />
 
-      {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-40 bg-milokira-crema/80 backdrop-blur-xl border-b border-milokira-verde/10 shadow-sm shadow-milokira-lila/10 px-2">
-        <div className="max-w-6xl mx-auto flex items-center justify-between py-3 sm:py-4">
-          <div
-            onClick={handleLogoClick}
-            className="cursor-pointer select-none shrink-0 hover:scale-105 transition-transform duration-300"
+      {/* Barra superior: logo + redes sociales (encima del banner) */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-3 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={handleLogoClick}
+          aria-label="Logo Milokira"
+          className="cursor-pointer select-none shrink-0 hover:scale-105 transition-transform duration-300"
+        >
+          <Image
+            src="/img/logo.png"
+            alt="Logo Milokira Plantitas"
+            width={100}
+            height={40}
+            className="object-contain w-[90px] sm:w-[140px]"
+            style={{ height: "auto" }}
+            priority
+          />
+        </button>
+
+        <div className="flex items-center gap-1 sm:gap-3">
+          {isAdmin && (
+            <Link href="/admin/pedidos">
+              <button className="bg-amber-500 text-white p-1.5 sm:px-4 sm:py-2 rounded-full flex items-center justify-center shadow-md hover:scale-105 hover:bg-amber-400 transition-all duration-300 font-bold gap-1.5 text-xs sm:text-sm">
+                <Truck size={14} strokeWidth={2.5} />
+                <span className="hidden sm:inline">Pedidos</span>
+              </button>
+            </Link>
+          )}
+          {isAdmin && (
+            <Link href="/admin">
+              <button className="bg-milokira-verde text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full flex items-center justify-center shadow-md hover:scale-105 hover:bg-milokira-verde/90 transition-all duration-300 font-bold text-[11px] sm:text-sm">
+                <span>Admin</span>
+              </button>
+            </Link>
+          )}
+
+          <a
+            href="https://wa.me/56994955949"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-1.5 sm:p-2 rounded-full hover:bg-milokira-lila/40 hover:scale-110 transition-all duration-300"
+            title="WhatsApp"
           >
-            <Image
-              src="/img/logo.png"
-              alt="Logo Milokira Plantitas"
-              width={120}
-              height={48}
-              className="object-contain sm:w-[140px]"
-              style={{ height: "auto" }}
-              priority
-            />
-          </div>
-
-          <div className="flex items-center gap-3">
-            {isAdmin && (
-              <Link href="/admin/pedidos">
-                <button className="bg-amber-500 text-white px-3 sm:px-4 py-2 rounded-full flex items-center justify-center shadow-md hover:scale-105 hover:bg-amber-400 transition-all duration-300 font-bold tracking-wide gap-1.5 text-xs sm:text-sm">
-                  <Truck size={14} strokeWidth={2.5} />
-                  <span className="hidden sm:inline">Pedidos</span>
-                </button>
-              </Link>
-            )}
-            {isAdmin && (
-              <Link href="/admin">
-                <button className="bg-milokira-verde text-white px-4 py-2 rounded-full flex items-center justify-center shadow-md hover:scale-105 hover:bg-milokira-verde/90 transition-all duration-300 font-bold tracking-wide gap-2 text-xs sm:text-sm">
-                  <span>Panel Admin</span>
-                </button>
-              </Link>
-            )}
-
-            <a
-              href="https://wa.me/56994955949"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 rounded-full hover:bg-milokira-lila/40 transition-colors duration-300"
-              title="WhatsApp"
-            >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 sm:w-6 sm:h-6 text-milokira-verde">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-              </svg>
-            </a>
-            <a
-              href="https://www.tiktok.com/@milokira.plantas"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 rounded-full hover:bg-milokira-lila/40 transition-colors duration-300"
-              title="TikTok"
-            >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 sm:w-6 sm:h-6 text-milokira-verde">
-                <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.46V13a8.28 8.28 0 005.58 2.17v-3.48a4.85 4.85 0 01-3.77-1.23V6.69h3.77z" />
-              </svg>
-            </a>
-            <a
-              href="https://www.instagram.com/milokira.plantitas/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 rounded-full hover:bg-milokira-lila/40 transition-colors duration-300"
-              title="Instagram"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 sm:w-6 sm:h-6 text-milokira-verde">
-                <rect x="2" y="2" width="20" height="20" rx="5" />
-                <circle cx="12" cy="12" r="5" />
-                <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
-              </svg>
-            </a>
-          </div>
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-[18px] h-[18px] sm:w-6 sm:h-6 text-milokira-verde">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            </svg>
+          </a>
+          <a
+            href="https://www.tiktok.com/@milokira.plantas"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-1.5 sm:p-2 rounded-full hover:bg-milokira-lila/40 hover:scale-110 transition-all duration-300"
+            title="TikTok"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-[18px] h-[18px] sm:w-6 sm:h-6 text-milokira-verde">
+              <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.46V13a8.28 8.28 0 005.58 2.17v-3.48a4.85 4.85 0 01-3.77-1.23V6.69h3.77z" />
+            </svg>
+          </a>
+          <a
+            href="https://www.instagram.com/milokira.plantitas/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-1.5 sm:p-2 rounded-full hover:bg-milokira-lila/40 hover:scale-110 transition-all duration-300"
+            title="Instagram"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px] sm:w-6 sm:h-6 text-milokira-verde">
+              <rect x="2" y="2" width="20" height="20" rx="5" />
+              <circle cx="12" cy="12" r="5" />
+              <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+            </svg>
+          </a>
         </div>
-      </nav>
+      </div>
 
-      {/* Spacer para el navbar fijo */}
-      <div className="h-14 sm:h-16" />
+      {/* Banner ilustrado */}
+      <section className="relative max-w-7xl mx-auto mt-2 sm:mt-3 mb-8 sm:mb-10 px-2 sm:px-4">
+        <div className="relative w-full sm:aspect-[5/2] sm:max-h-[540px] overflow-hidden sm:rounded-[40px] sm:shadow-xl sm:shadow-milokira-verde/10 sm:border sm:border-white/60">
+          <Image
+            src="/img/header.jpg"
+            alt="Hojas y plantas ilustradas"
+            fill
+            priority
+            sizes="(max-width: 768px) 100vw, 1280px"
+            className="hidden sm:block object-cover opacity-80"
+          />
 
-      {/* Hero */}
-      <div className="text-center mb-8 mt-10 sm:mt-14 px-4">
-        <div className="inline-block relative">
-          <div className="absolute -top-3 -left-3 text-milokira-verde/20 text-5xl sm:text-6xl select-none pointer-events-none">
-            &#x1F33F;
-          </div>
-          <div className="absolute -bottom-2 -right-3 text-milokira-verde/15 text-4xl sm:text-5xl select-none pointer-events-none rotate-45">
-            &#x1F33F;
-          </div>
-          <div className="bg-white/50 backdrop-blur-sm border border-milokira-verde/15 rounded-3xl px-8 sm:px-12 py-6 sm:py-8 shadow-lg shadow-milokira-lila/10">
-            <p className="text-milokira-verde/50 text-[10px] sm:text-xs font-bold uppercase tracking-[4px] mb-2">
-              Milokira Plantitas
-            </p>
-            <h2 className="text-milokira-verde font-black tracking-[3px] sm:tracking-[5px] uppercase text-2xl sm:text-3xl md:text-4xl leading-tight">
-              {tituloVisible}
-              <span className="inline-block w-[2px] h-[1em] bg-milokira-verde/60 align-middle ml-0.5 animate-pulse" />
-            </h2>
-            <div className="flex items-center justify-center gap-3 mt-3">
-              <div className="w-8 sm:w-12 h-px bg-milokira-verde/30" />
-              <span className="text-milokira-verde/40 text-lg">&#x1F331;</span>
-              <div className="w-8 sm:w-12 h-px bg-milokira-verde/30" />
+          {/* Contenido central del banner */}
+          <div className="sm:absolute sm:inset-0 flex items-center justify-center py-6 sm:py-0">
+            <div className="text-center px-6">
+              <h1 className="text-2xl sm:text-5xl md:text-6xl font-black tracking-tight text-stone-800 leading-[1.05] drop-shadow-sm">
+                <span className="block">Catálogo de</span>
+                <span className="relative inline-block mt-1 sm:mt-2">
+                  <span className="relative z-10 text-milokira-verde">plantas</span>
+                  <span className="absolute inset-x-0 bottom-1 sm:bottom-2 h-3 sm:h-4 bg-milokira-lila/60 -z-0 rounded-full" />
+                </span>
+              </h1>
+              <p className="mt-2 sm:mt-3 text-stone-600 text-[11px] sm:text-sm md:text-base font-medium italic max-w-[280px] sm:max-w-md mx-auto leading-snug">
+                Un proyecto nacido del amor por las plantas y la inspiración de
+                nuestros tres peludos: Milo, Loki y Kira 🐾
+              </p>
+              <a
+                href="#catalogo"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document
+                    .getElementById("catalogo")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                className="group mt-4 sm:mt-5 inline-flex items-center justify-center gap-2 bg-milokira-verde hover:bg-milokira-verde/90 text-white font-bold py-2.5 sm:py-3 px-5 sm:px-7 rounded-full text-xs sm:text-sm shadow-lg shadow-milokira-verde/30 transition-all duration-300 active:scale-95"
+              >
+                Ver catálogo
+                <ArrowRight
+                  size={14}
+                  strokeWidth={2.5}
+                  className="group-hover:translate-x-1 transition-transform"
+                />
+              </a>
             </div>
           </div>
         </div>
-        <p className="mt-5 max-w-sm mx-auto text-gray-400 italic text-sm sm:text-base leading-relaxed">
-          &ldquo;Un proyecto nacido del amor por las plantas y la inspiración de
-          nuestros tres peludos: Milo, Loki y Kira&rdquo; 🐾
-        </p>
-      </div>
+      </section>
+
 
       <div className="max-w-xl mx-auto mt-8 mb-6 px-4 sm:px-8">
         <div className="relative group">
@@ -291,7 +307,7 @@ export default function Home() {
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar plantita..."
+            placeholder="Busca tu plantita 🔎"
             className="relative w-full pl-11 pr-10 py-3.5 bg-white/80 backdrop-blur-sm border-2 border-milokira-verde/20 rounded-full text-sm text-gray-700 font-medium placeholder:text-milokira-verde/40 placeholder:font-normal focus:outline-none focus:border-milokira-verde/50 focus:bg-white shadow-sm hover:shadow-md hover:border-milokira-verde/30 transition-all duration-300"
           />
           {busqueda && (
@@ -305,27 +321,34 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-16 px-4 sm:px-8 max-w-6xl mx-auto">
-        {categorias.map((categoria) => (
-          <button
-            key={categoria}
-            onClick={() => setCategoriaActiva(categoria)}
-            className={`
-              relative z-10 overflow-hidden px-4 py-2 rounded-md font-bold uppercase tracking-[2px] text-xs sm:text-sm cursor-pointer outline-[1.5px] outline-milokira-verde transition-all duration-1000 bg-transparent
-              hover:text-white hover:scale-105 hover:shadow-md hover:shadow-milokira-verde/40
-              before:content-[''] before:absolute before:-left-12.5 before:top-0 before:h-full before:bg-milokira-verde before:skew-x-45 before:-z-10 before:transition-[width] before:duration-1000
-              ${
-                categoriaActiva === categoria
-                  ? "text-white scale-105 shadow-md shadow-milokira-verde/40 before:w-[250%] outline-milokira-verde"
-                  : "text-milokira-verde before:w-0 hover:before:w-[250%] outline-milokira-verde"
-              }
-            `}
-          >
-            {categoria}
-          </button>
-        ))}
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-2.5 mb-10 sm:mb-14 px-4 sm:px-8 max-w-6xl mx-auto">
+        {categorias.map((categoria) => {
+          const activa = categoriaActiva === categoria;
+          const emoji = CATEGORIA_EMOJI[categoria] || "✨";
+          const label =
+            categoria === "TODAS"
+              ? "Todas"
+              : categoria === "COLECCION"
+                ? "Colección"
+                : categoria.charAt(0) + categoria.slice(1).toLowerCase();
+          return (
+            <button
+              key={categoria}
+              onClick={() => setCategoriaActiva(categoria)}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-xs sm:text-sm transition-all duration-200 hover:scale-105 active:scale-95 ${
+                activa
+                  ? "bg-milokira-verde text-white shadow-lg shadow-milokira-verde/40 border-2 border-milokira-verde"
+                  : "bg-white text-stone-600 border-2 border-stone-200 hover:border-milokira-verde/40 hover:text-milokira-verde"
+              }`}
+            >
+              <span className="text-sm">{emoji}</span>
+              {label}
+            </button>
+          );
+        })}
       </div>
 
+      {/* CTA "¿Dudas con tu planta?" — temporalmente oculto
       <div className="max-w-6xl mx-auto mb-6 sm:mb-8 px-1 sm:px-0">
         <button
           type="button"
@@ -359,8 +382,9 @@ export default function Home() {
           </div>
         </button>
       </div>
+      */}
 
-      <div className={`grid ${categoriaActiva === "TUTORES" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-2 lg:grid-cols-3"} gap-3 sm:gap-8 max-w-6xl mx-auto`}>
+      <div id="catalogo" className={`scroll-mt-24 grid ${categoriaActiva === "IMPLEMENTOS" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-2 lg:grid-cols-3"} gap-3 sm:gap-8 max-w-6xl mx-auto`}>
         {isLoadingData &&
           Array(6)
             .fill(0)
@@ -382,13 +406,13 @@ export default function Home() {
           ))}
       </div>
 
-      <footer className="mt-20 bg-white/70 backdrop-blur-md border-t border-milokira-lila/30 -mx-2 px-2">
+      <footer className="mt-20 bg-white/80 backdrop-blur-md border-t-2 border-milokira-lila/30 -mx-2 px-2 rounded-t-[40px]">
         <div className="max-w-6xl mx-auto py-8 sm:py-12">
           <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
             {/* Info de envíos */}
             <div className="text-left space-y-3 text-sm text-gray-600 font-medium flex-1 w-full">
-              <h3 className="text-milokira-verde font-bold text-base mb-4 uppercase tracking-[2px] text-center md:text-left">
-                Envíos y Entregas
+              <h3 className="text-milokira-verde font-black text-lg sm:text-xl mb-4 tracking-tight text-center md:text-left">
+                Envíos y entregas 🌿
               </h3>
 
               <p className="flex items-start gap-2.5">

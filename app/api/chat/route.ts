@@ -115,7 +115,7 @@ No respondas parcialmente temas fuera de alcance. No des "una pequeña ayuda" an
 - Ubicación: Talca, sector Bicentenario.
 - Delivery GRATIS en Bicentenario sobre $10.000. Otras zonas con costo adicional.
 - Envíos a regiones por pagar.
-- Tutores de musgo sphagnum a pedido.
+- Implementos para plantas (tutores de musgo sphagnum y otros accesorios) a pedido.
 - Si preguntan por precios, disponibilidad o quieren comprar, invítalos a escribir al WhatsApp
   +56 9 9495 5949.
 

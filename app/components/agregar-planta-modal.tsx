@@ -494,8 +494,8 @@ export default function AgregarPlantaModal({
                   "EXTERIOR",
                   "SUCULENTAS",
                   "CACTUS",
-                  "JARDINES",
                   "COLECCION",
+                  "IMPLEMENTOS",
                 ].map((cat) => {
                   const isSelected = formData.categorias.includes(cat);
                   return (

@@ -12,7 +12,7 @@ const CATEGORIAS_DISPONIBLES = [
   "SUCULENTAS",
   "CACTUS",
   "COLECCION",
-  "TUTORES",
+  "IMPLEMENTOS",
 ];
 
 type SavePayload = {
