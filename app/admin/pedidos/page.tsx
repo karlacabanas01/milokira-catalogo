@@ -12,6 +12,15 @@ import {
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
 import OrderModal from "../components/OrderModal";
+import type { TicketOrder } from "./ticketImg";
+
+const TICKET_STORAGE_KEY = "milokira-tickets-print";
+
+function openTicketPage(orders: TicketOrder[]) {
+  if (orders.length === 0) return;
+  sessionStorage.setItem(TICKET_STORAGE_KEY, JSON.stringify(orders));
+  window.open("/admin/pedidos/ticket", "_blank");
+}
 import {
   ArrowLeft,
   MapPin,
@@ -34,6 +43,7 @@ import {
   X,
   Edit3,
   Layers,
+  FileText,
 } from "lucide-react";
 
 type DeliveryDay = "martes" | "viernes" | "otro" | "";
@@ -377,7 +387,7 @@ export default function PedidosPage() {
 
       <div className="relative z-10 p-4 sm:p-8 w-full max-w-400 mx-auto space-y-5">
         {/* Acciones principales */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             type="button"
             onClick={() => {
@@ -413,6 +423,15 @@ export default function PedidosPage() {
           >
             <MapIcon size={18} strokeWidth={3} />
             Ruta en Maps
+          </button>
+          <button
+            type="button"
+            disabled={visibleOrders.length === 0}
+            onClick={() => openTicketPage(visibleOrders)}
+            className="bg-linear-to-r from-zinc-600 to-zinc-800 hover:from-zinc-500 hover:to-zinc-700 text-white py-3.5 sm:py-4 rounded-2xl shadow-lg shadow-black/30 transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-2 font-black tracking-wide text-sm sm:text-base disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <FileText size={18} strokeWidth={3} />
+            Tickets de todos
           </button>
         </div>
 
@@ -569,6 +588,7 @@ export default function PedidosPage() {
                   setEditingOrder(order);
                   setIsOrderModalOpen(true);
                 }}
+                onPdf={() => openTicketPage([order])}
               />
             ))}
           </ul>
@@ -647,6 +667,7 @@ function OrderCard({
   onDelete,
   onSaveAdminNotes,
   onEdit,
+  onPdf,
 }: {
   readonly order: Order;
   readonly position: number;
@@ -660,6 +681,7 @@ function OrderCard({
   readonly onDelete: () => void;
   readonly onSaveAdminNotes: (notes: string) => void;
   readonly onEdit: () => void;
+  readonly onPdf: () => void;
 }) {
   const [editingAdminNote, setEditingAdminNote] = useState(false);
   const [adminNoteDraft, setAdminNoteDraft] = useState(order.admin_notes || "");
@@ -810,6 +832,14 @@ function OrderCard({
         >
           <CheckCircle size={13} strokeWidth={2.5} />
           Entregado
+        </button>
+        <button
+          onClick={onPdf}
+          aria-label="Ver ticket"
+          title="Ver ticket para imprimir"
+          className="shrink-0 px-2.5 py-2 rounded-lg bg-zinc-700/40 hover:bg-zinc-700/70 text-zinc-200 border border-zinc-600 text-xs font-bold transition-all active:scale-95"
+        >
+          <FileText size={13} />
         </button>
         <button
           onClick={onEdit}
