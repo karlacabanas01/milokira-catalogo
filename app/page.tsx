@@ -367,7 +367,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-2 sm:gap-2.5 mb-10 sm:mb-14 px-4 sm:px-8 max-w-6xl mx-auto">
+      <div className="mb-10 sm:mb-14 max-w-6xl mx-auto flex sm:flex-wrap sm:justify-center gap-2.5 sm:gap-3 px-4 sm:px-8 py-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory">
         {categorias.map((categoria) => {
           const activa = categoriaActiva === categoria;
           const emoji = CATEGORIA_EMOJI[categoria] || "✨";
@@ -381,7 +381,7 @@ export default function Home() {
             <button
               key={categoria}
               onClick={() => setCategoriaActiva(categoria)}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-xs sm:text-sm transition-all duration-200 hover:scale-105 active:scale-95 ${
+              className={`shrink-0 snap-start inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-xs sm:text-sm transition-all duration-200 hover:scale-105 active:scale-95 ${
                 activa
                   ? "bg-milokira-verde text-white shadow-lg shadow-milokira-verde/40 border-2 border-milokira-verde"
                   : "bg-white text-stone-600 border-2 border-stone-200 hover:border-milokira-verde/40 hover:text-milokira-verde"
