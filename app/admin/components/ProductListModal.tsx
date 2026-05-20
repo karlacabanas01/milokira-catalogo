@@ -31,6 +31,8 @@ export type Product = {
   imagenUrl: string;
   imagenPosition: string;
   precioTipo: string;
+  dificultad: "facil" | "media" | "dificil";
+  aptaMascotas: "apta" | "moderada" | "toxica" | "sin-info";
 };
 
 type Props = {
@@ -77,6 +79,9 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
             imagenUrl: data.imagenUrl || "",
             imagenPosition: data.imagenPosition || "50% 50%",
             precioTipo: data.precio?.tipo || "fijo",
+            dificultad: (data.dificultad as Product["dificultad"]) || "media",
+            aptaMascotas:
+              (data.aptaMascotas as Product["aptaMascotas"]) || "sin-info",
           });
         }
       });
@@ -146,6 +151,8 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
       imagenUrl: string;
       imagenPosition: string;
       precioTipo: string;
+      dificultad: "facil" | "media" | "dificil";
+      aptaMascotas: "apta" | "moderada" | "toxica" | "sin-info";
     },
     idFirebase?: string,
   ) => {
@@ -166,6 +173,8 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
         categorias: data.categorias,
         imagenUrl: data.imagenUrl,
         imagenPosition: data.imagenPosition,
+        dificultad: data.dificultad,
+        aptaMascotas: data.aptaMascotas,
       };
 
       if (idFirebase) {
@@ -190,6 +199,8 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
           categorias: data.categorias,
           imagenUrl: data.imagenUrl,
           imagenPosition: data.imagenPosition,
+          dificultad: data.dificultad,
+          aptaMascotas: data.aptaMascotas,
           precio: { valor: data.price, tipo: data.precioTipo, disponible: true },
         });
       }

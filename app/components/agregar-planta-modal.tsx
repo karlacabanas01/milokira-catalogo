@@ -12,6 +12,8 @@ interface Planta {
   imagenUrl: string;
   imagenPosition?: string;
   categorias: string[];
+  dificultad?: "facil" | "media" | "dificil";
+  aptaMascotas?: "apta" | "moderada" | "toxica" | "sin-info";
   precio: {
     valor: number;
     tipo: string;
@@ -57,6 +59,8 @@ export default function AgregarPlantaModal({
     precioValor: "",
     precioTipo: "fijo",
     disponible: "true",
+    dificultad: "media" as "facil" | "media" | "dificil",
+    aptaMascotas: "sin-info" as "apta" | "moderada" | "toxica" | "sin-info",
   });
 
   const [imgNaturalSize, setImgNaturalSize] = useState<{
@@ -80,6 +84,8 @@ export default function AgregarPlantaModal({
         precioTipo: plantaAEditar.precio.tipo || "fijo",
         disponible:
           plantaAEditar.precio.disponible !== false ? "true" : "false",
+        dificultad: plantaAEditar.dificultad || "media",
+        aptaMascotas: plantaAEditar.aptaMascotas || "sin-info",
       });
       setPestaña("manual");
     } else {
@@ -92,6 +98,8 @@ export default function AgregarPlantaModal({
         precioValor: "",
         precioTipo: "fijo",
         disponible: "true",
+        dificultad: "media",
+        aptaMascotas: "sin-info",
       });
     }
   }, [plantaAEditar, isOpen]);
@@ -259,6 +267,8 @@ export default function AgregarPlantaModal({
         categorias: formData.categorias,
         imagenUrl: formData.imagenUrl,
         imagenPosition: formData.imagenPosition,
+        dificultad: formData.dificultad,
+        aptaMascotas: formData.aptaMascotas,
         precio: {
           valor: Number(formData.precioValor),
           tipo: formData.precioTipo,
@@ -539,6 +549,45 @@ export default function AgregarPlantaModal({
                 <option value="true">🟢 Disponible</option>
                 <option value="false">🔴 Agotado</option>
               </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelEstilo}>Dificultad</label>
+                <select
+                  value={formData.dificultad}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      dificultad: e.target.value as typeof formData.dificultad,
+                    })
+                  }
+                  className={inputEstilo}
+                >
+                  <option value="facil">💧 Fácil</option>
+                  <option value="media">💧💧 Media</option>
+                  <option value="dificil">💧💧💧 Difícil</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelEstilo}>Mascotas</label>
+                <select
+                  value={formData.aptaMascotas}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      aptaMascotas: e.target
+                        .value as typeof formData.aptaMascotas,
+                    })
+                  }
+                  className={inputEstilo}
+                >
+                  <option value="sin-info">Sin info</option>
+                  <option value="apta">🐾 Apta</option>
+                  <option value="moderada">🐾 Riesgo moderado</option>
+                  <option value="toxica">🐾 Tóxica</option>
+                </select>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 pb-2">

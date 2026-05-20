@@ -8,7 +8,8 @@ import Image from "next/image";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import Link from "next/link";
-import { Search, X, Truck, ArrowRight } from "lucide-react";
+import { Search, X, Truck, ArrowRight, Droplet } from "lucide-react";
+import { MdOutlinePets } from "react-icons/md";
 import { CartProvider } from "./context/CartContext";
 import CartDrawer from "./components/cart-drawer";
 import PlantChat from "./components/plant-chat";
@@ -21,6 +22,8 @@ interface Planta {
   imagenPosition?: string;
   categorias: string[];
   stock?: number;
+  dificultad?: "facil" | "media" | "dificil";
+  aptaMascotas?: "apta" | "moderada" | "toxica" | "sin-info";
   precio: {
     valor: number;
     tipo: string;
@@ -318,6 +321,78 @@ export default function Home() {
               <X size={16} />
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Leyenda de iconos */}
+      <div className="max-w-3xl mx-auto mb-5 sm:mb-7 px-4">
+        <div className="bg-white/70 backdrop-blur-sm border border-stone-200 rounded-2xl px-4 py-3 shadow-sm space-y-3">
+          <p className="text-[10px] sm:text-[11px] font-bold text-stone-500 uppercase tracking-wider text-center">
+            Guía de iconos
+          </p>
+
+          {/* Dificultad */}
+          <div>
+            <p className="text-[10px] sm:text-[11px] font-bold text-stone-600 mb-1.5 text-center sm:text-left">
+              💧 Dificultad de cuidado
+            </p>
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-1.5 text-[11px] sm:text-xs text-stone-600">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-sky-50 border border-sky-200 text-sky-600">
+                  <Droplet size={11} strokeWidth={2.5} className="fill-current" />
+                </span>
+                <span className="font-medium">Fácil</span>
+                <span className="text-stone-400">— resistente</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-600">
+                  <Droplet size={11} strokeWidth={2.5} className="fill-current" />
+                  <Droplet size={11} strokeWidth={2.5} className="fill-current" />
+                </span>
+                <span className="font-medium">Media</span>
+                <span className="text-stone-400">— riego regular</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600">
+                  <Droplet size={11} strokeWidth={2.5} className="fill-current" />
+                  <Droplet size={11} strokeWidth={2.5} className="fill-current" />
+                  <Droplet size={11} strokeWidth={2.5} className="fill-current" />
+                </span>
+                <span className="font-medium">Difícil</span>
+                <span className="text-stone-400">— necesita cuidados</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Mascotas */}
+          <div>
+            <p className="text-[10px] sm:text-[11px] font-bold text-stone-600 mb-1.5 text-center sm:text-left">
+              🐾 Compatibilidad con mascotas
+            </p>
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-1.5 text-[11px] sm:text-xs text-stone-600">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600">
+                  <MdOutlinePets size={13} />
+                </span>
+                <span className="font-medium">Apta</span>
+                <span className="text-stone-400">— segura</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-amber-50 border border-amber-200 text-amber-600">
+                  <MdOutlinePets size={13} />
+                </span>
+                <span className="font-medium">Riesgo</span>
+                <span className="text-stone-400">— irritación leve</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-rose-50 border border-rose-200 text-rose-600">
+                  <MdOutlinePets size={13} />
+                </span>
+                <span className="font-medium">Tóxica</span>
+                <span className="text-stone-400">— mantener lejos</span>
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 

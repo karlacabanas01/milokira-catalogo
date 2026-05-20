@@ -15,6 +15,9 @@ const CATEGORIAS_DISPONIBLES = [
   "IMPLEMENTOS",
 ];
 
+type Dificultad = "facil" | "media" | "dificil";
+type AptaMascotas = "apta" | "moderada" | "toxica" | "sin-info";
+
 type SavePayload = {
   name: string;
   price: number;
@@ -30,6 +33,8 @@ type SavePayload = {
   imagenUrl: string;
   imagenPosition: string;
   precioTipo: string;
+  dificultad: Dificultad;
+  aptaMascotas: AptaMascotas;
 };
 
 type Props = {
@@ -67,6 +72,8 @@ export default function ProductModal({
     imagenUrl: editingProduct?.imagenUrl || "",
     imagenPosition: editingProduct?.imagenPosition || "50% 50%",
     precioTipo: editingProduct?.precioTipo || "fijo",
+    dificultad: (editingProduct?.dificultad || "media") as Dificultad,
+    aptaMascotas: (editingProduct?.aptaMascotas || "sin-info") as AptaMascotas,
   });
 
   const [isUploading, setIsUploading] = useState(false);
@@ -226,6 +233,8 @@ export default function ProductModal({
         imagenUrl: form.imagenUrl,
         imagenPosition: form.imagenPosition,
         precioTipo: form.precioTipo,
+        dificultad: form.dificultad,
+        aptaMascotas: form.aptaMascotas,
       },
       editingProduct?.idFirebase,
     );
@@ -514,6 +523,46 @@ export default function ProductModal({
               <option value="desde">Desde</option>
               <option value="aprox">Aprox</option>
             </select>
+          </div>
+
+          {/* Dificultad de cuidado + Apta mascotas */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider px-1">
+                Dificultad
+              </label>
+              <select
+                className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-emerald-500 transition-colors"
+                value={form.dificultad}
+                onChange={(e) =>
+                  setForm({ ...form, dificultad: e.target.value as Dificultad })
+                }
+              >
+                <option value="facil">💧 Fácil</option>
+                <option value="media">💧💧 Media</option>
+                <option value="dificil">💧💧💧 Difícil</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider px-1">
+                Mascotas
+              </label>
+              <select
+                className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-emerald-500 transition-colors"
+                value={form.aptaMascotas}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    aptaMascotas: e.target.value as AptaMascotas,
+                  })
+                }
+              >
+                <option value="sin-info">Sin info</option>
+                <option value="apta">🐾 Apta</option>
+                <option value="moderada">🐾 Riesgo moderado</option>
+                <option value="toxica">🐾 Tóxica</option>
+              </select>
+            </div>
           </div>
 
           {/* Botones */}

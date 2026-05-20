@@ -3,7 +3,16 @@ import { useState } from "react";
 import { doc, deleteDoc } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 // 1. IMPORTAMOS LOS ICONOS NUEVOS
-import { Pencil, Trash2, ChevronDown, ChevronUp, Plus, Check } from "lucide-react";
+import {
+  Pencil,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Check,
+  Droplet,
+} from "lucide-react";
+import { MdOutlinePets } from "react-icons/md";
 import { useCart } from "../context/CartContext";
 
 interface Precio {
@@ -19,6 +28,8 @@ interface Planta {
   imagenUrl: string;
   imagenPosition?: string;
   categorias: string[];
+  dificultad?: "facil" | "media" | "dificil";
+  aptaMascotas?: "apta" | "moderada" | "toxica" | "sin-info";
   precio: Precio;
 }
 
@@ -42,7 +53,7 @@ const formatearPrecio = (precio: Precio): string => {
 };
 
 export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
-  const { id, nombre, descripcion, imagenUrl, imagenPosition, precio, categorias } = planta;
+  const { id, nombre, descripcion, imagenUrl, imagenPosition, precio, categorias, dificultad, aptaMascotas } = planta;
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -157,6 +168,14 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
             </span>
           ))}
         </div>
+
+        {/* Iconos de dificultad y mascotas */}
+        <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 z-10 flex gap-1.5">
+          {dificultad && <DifficultyBadge level={dificultad} />}
+          {aptaMascotas && aptaMascotas !== "sin-info" && (
+            <PetBadge level={aptaMascotas} />
+          )}
+        </div>
       </div>
 
       <div className="p-3 sm:p-5 flex flex-col flex-grow">
@@ -231,6 +250,68 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function DifficultyBadge({ level }: { readonly level: "facil" | "media" | "dificil" }) {
+  const cfg = {
+    facil: {
+      drops: 1,
+      color: "text-sky-600 bg-sky-50 border-sky-200",
+      label: "Fácil de cuidar",
+    },
+    media: {
+      drops: 2,
+      color: "text-amber-600 bg-amber-50 border-amber-200",
+      label: "Dificultad media",
+    },
+    dificil: {
+      drops: 3,
+      color: "text-rose-600 bg-rose-50 border-rose-200",
+      label: "Difícil de cuidar",
+    },
+  }[level];
+
+  return (
+    <div
+      title={cfg.label}
+      className={`h-7 sm:h-8 flex items-center gap-0.5 px-2 rounded-full bg-white/90 backdrop-blur-sm border shadow-sm ${cfg.color}`}
+    >
+      {Array.from({ length: cfg.drops }).map((_, i) => (
+        <Droplet
+          key={i}
+          size={12}
+          strokeWidth={2.5}
+          className="fill-current"
+        />
+      ))}
+    </div>
+  );
+}
+
+function PetBadge({ level }: { readonly level: "apta" | "moderada" | "toxica" }) {
+  const cfg = {
+    apta: {
+      color: "text-emerald-600 bg-emerald-50 border-emerald-200",
+      label: "Apta para mascotas",
+    },
+    moderada: {
+      color: "text-amber-600 bg-amber-50 border-amber-200",
+      label: "Riesgo moderado para mascotas",
+    },
+    toxica: {
+      color: "text-rose-600 bg-rose-50 border-rose-200",
+      label: "Tóxica para mascotas",
+    },
+  }[level];
+
+  return (
+    <div
+      title={cfg.label}
+      className={`h-7 w-7 sm:h-8 sm:w-8 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm border shadow-sm ${cfg.color}`}
+    >
+      <MdOutlinePets size={18} className="text-current" />
     </div>
   );
 }
