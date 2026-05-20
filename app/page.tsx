@@ -8,7 +8,7 @@ import Image from "next/image";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import Link from "next/link";
-import { Search, X, Truck, ArrowRight, Droplet } from "lucide-react";
+import { Search, X, Truck, Droplet, Info } from "lucide-react";
 import { MdOutlinePets } from "react-icons/md";
 import { CartProvider } from "./context/CartContext";
 import CartDrawer from "./components/cart-drawer";
@@ -127,6 +127,7 @@ export default function Home() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [logoClicks, setLogoClicks] = useState(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   // FUNCIÓN SECRETA PARA ACTIVAR EL MODO ADMIN
   const handleLogoClick = () => {
@@ -276,56 +277,26 @@ export default function Home() {
                 Un proyecto nacido del amor por las plantas y la inspiración de
                 nuestros tres peludos: Milo, Loki y Kira 🐾
               </p>
-              <a
-                href="#catalogo"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document
-                    .getElementById("catalogo")
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-                className="group mt-4 sm:mt-5 inline-flex items-center justify-center gap-2 bg-milokira-verde hover:bg-milokira-verde/90 text-white font-bold py-2.5 sm:py-3 px-5 sm:px-7 rounded-full text-xs sm:text-sm shadow-lg shadow-milokira-verde/30 transition-all duration-300 active:scale-95"
-              >
-                Ver catálogo
-                <ArrowRight
-                  size={14}
-                  strokeWidth={2.5}
-                  className="group-hover:translate-x-1 transition-transform"
-                />
-              </a>
             </div>
           </div>
         </div>
       </section>
 
 
-      <div className="max-w-xl mx-auto mt-8 mb-6 px-4 sm:px-8">
-        <div className="relative group">
-          <div className="absolute inset-0 bg-milokira-lila/20 rounded-full blur-md opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-          <Search
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-milokira-verde/60 group-focus-within:text-milokira-verde transition-colors duration-300 z-10"
-            size={18}
-          />
-          <input
-            type="text"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Busca tu plantita 🔎"
-            className="relative w-full pl-11 pr-10 py-3.5 bg-white/80 backdrop-blur-sm border-2 border-milokira-verde/20 rounded-full text-sm text-gray-700 font-medium placeholder:text-milokira-verde/40 placeholder:font-normal focus:outline-none focus:border-milokira-verde/50 focus:bg-white shadow-sm hover:shadow-md hover:border-milokira-verde/30 transition-all duration-300"
-          />
-          {busqueda && (
-            <button
-              onClick={() => setBusqueda("")}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-milokira-verde transition-colors z-10"
-            >
-              <X size={16} />
-            </button>
-          )}
-        </div>
+      {/* Botón de guía (solo mobile) */}
+      <div className="max-w-3xl mx-auto mb-4 px-4 sm:hidden">
+        <button
+          type="button"
+          onClick={() => setIsGuideOpen(true)}
+          className="w-full flex items-center justify-center gap-2 bg-white/70 backdrop-blur-sm border border-stone-200 rounded-2xl px-4 py-2.5 shadow-sm text-stone-600 text-xs font-bold uppercase tracking-wider active:scale-[0.98] transition-all"
+        >
+          <Info size={14} className="text-milokira-verde" />
+          Guía de iconos
+        </button>
       </div>
 
-      {/* Leyenda de iconos */}
-      <div className="max-w-3xl mx-auto mb-5 sm:mb-7 px-4">
+      {/* Leyenda de iconos — solo desktop */}
+      <div className="max-w-3xl mx-auto mb-5 sm:mb-7 px-4 hidden sm:block">
         <div className="bg-white/70 backdrop-blur-sm border border-stone-200 rounded-2xl px-4 py-3 shadow-sm space-y-3">
           <p className="text-[10px] sm:text-[11px] font-bold text-stone-500 uppercase tracking-wider text-center">
             Guía de iconos
@@ -421,6 +392,31 @@ export default function Home() {
             </button>
           );
         })}
+      </div>
+
+      <div className="max-w-xl mx-auto mt-2 mb-8 sm:mb-10 px-4 sm:px-8">
+        <div className="relative group">
+          <div className="absolute inset-0 bg-milokira-lila/20 rounded-full blur-md opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-milokira-verde/60 group-focus-within:text-milokira-verde transition-colors duration-300 z-10"
+            size={18}
+          />
+          <input
+            type="text"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Busca tu plantita 🔎"
+            className="relative w-full pl-11 pr-10 py-3.5 bg-white/80 backdrop-blur-sm border-2 border-milokira-verde/20 rounded-full text-sm text-gray-700 font-medium placeholder:text-milokira-verde/40 placeholder:font-normal focus:outline-none focus:border-milokira-verde/50 focus:bg-white shadow-sm hover:shadow-md hover:border-milokira-verde/30 transition-all duration-300"
+          />
+          {busqueda && (
+            <button
+              onClick={() => setBusqueda("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-milokira-verde transition-colors z-10"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* CTA "¿Dudas con tu planta?" — temporalmente oculto
@@ -588,6 +584,96 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Modal de guía de iconos (mobile) */}
+      {isGuideOpen && (
+        <button
+          type="button"
+          onClick={() => setIsGuideOpen(false)}
+          aria-label="Cerrar guía"
+          className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto text-left"
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="font-black text-stone-800 text-lg tracking-tight">
+                Guía de iconos
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsGuideOpen(false)}
+                className="text-stone-400 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-full transition-colors"
+                aria-label="Cerrar"
+              >
+                <X size={20} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            <div>
+              <p className="text-xs font-bold text-stone-600 mb-2">
+                💧 Dificultad de cuidado
+              </p>
+              <div className="space-y-2 text-sm text-stone-600">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-sky-50 border border-sky-200 text-sky-600">
+                    <Droplet size={12} strokeWidth={2.5} className="fill-current" />
+                  </span>
+                  <span className="font-medium">Fácil</span>
+                  <span className="text-stone-400">— resistente</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-600">
+                    <Droplet size={12} strokeWidth={2.5} className="fill-current" />
+                    <Droplet size={12} strokeWidth={2.5} className="fill-current" />
+                  </span>
+                  <span className="font-medium">Media</span>
+                  <span className="text-stone-400">— riego regular</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600">
+                    <Droplet size={12} strokeWidth={2.5} className="fill-current" />
+                    <Droplet size={12} strokeWidth={2.5} className="fill-current" />
+                    <Droplet size={12} strokeWidth={2.5} className="fill-current" />
+                  </span>
+                  <span className="font-medium">Difícil</span>
+                  <span className="text-stone-400">— necesita cuidados</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-bold text-stone-600 mb-2">
+                🐾 Compatibilidad con mascotas
+              </p>
+              <div className="space-y-2 text-sm text-stone-600">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600">
+                    <MdOutlinePets size={14} />
+                  </span>
+                  <span className="font-medium">Apta</span>
+                  <span className="text-stone-400">— segura</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-amber-50 border border-amber-200 text-amber-600">
+                    <MdOutlinePets size={14} />
+                  </span>
+                  <span className="font-medium">Riesgo</span>
+                  <span className="text-stone-400">— irritación leve</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center h-7 w-7 rounded-full bg-rose-50 border border-rose-200 text-rose-600">
+                    <MdOutlinePets size={14} />
+                  </span>
+                  <span className="font-medium">Tóxica</span>
+                  <span className="text-stone-400">— mantener lejos</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </button>
+      )}
     </main>
     <CartDrawer />
     <PlantChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
