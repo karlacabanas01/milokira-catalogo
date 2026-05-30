@@ -37,6 +37,7 @@ export default function Home() {
   const [busqueda, setBusqueda] = useState("");
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
     const unsubscribe = onSnapshot(
       collection(db, "Plantas"),
@@ -126,7 +127,6 @@ export default function Home() {
   );
 
   // SEGURIDAD
-  const [isAdmin, setIsAdmin] = useState(false);
   const [logoClicks, setLogoClicks] = useState(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
