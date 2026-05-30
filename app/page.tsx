@@ -93,7 +93,9 @@ export default function Home() {
       const coincideBusqueda =
         busqueda.trim() === "" ||
         planta.nombre.toLowerCase().includes(busqueda.toLowerCase());
-      return estaDisponible && coincideCategoria && coincideBusqueda;
+      // En modo admin se ven todas (incluso las agotadas); en público solo las disponibles.
+      const visiblePorEstado = isAdmin || estaDisponible;
+      return visiblePorEstado && coincideCategoria && coincideBusqueda;
     })
     .sort((a, b) =>
       a.nombre
