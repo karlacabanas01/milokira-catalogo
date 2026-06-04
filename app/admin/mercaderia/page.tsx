@@ -37,6 +37,7 @@ type CompraItem = {
   precioUnitNeto: number;
   plantasPorMaceta: number;
   ingresada: boolean;
+  precioSugeridoOverride?: number;
 };
 
 type Compra = {
@@ -1057,7 +1058,7 @@ function NuevaCompraModal({
 // =========================================================================
 // MODAL: DETALLE COMPRA — confirmar plantas que pasan al inventario
 // =========================================================================
-type CompraItemEdit = CompraItem & { precioSugeridoOverride?: number };
+type CompraItemEdit = CompraItem;
 
 function DetalleCompraModal({
   compra,
@@ -1138,9 +1139,18 @@ function DetalleCompraModal({
 
   const persistirCambios = async () => {
     const itemsParaGuardar: CompraItem[] = itemsEdit.map((i) => {
-      const { precioSugeridoOverride: _o, ...rest } = i;
-      void _o;
-      return { ...rest, nombre: rest.nombre.trim() };
+      const base: CompraItem = {
+        id: i.id,
+        nombre: i.nombre.trim(),
+        unidades: i.unidades,
+        precioUnitNeto: i.precioUnitNeto,
+        plantasPorMaceta: i.plantasPorMaceta,
+        ingresada: i.ingresada,
+      };
+      if (i.precioSugeridoOverride && i.precioSugeridoOverride > 0) {
+        base.precioSugeridoOverride = i.precioSugeridoOverride;
+      }
+      return base;
     });
     const subtotalNeto = itemsParaGuardar.reduce(
       (a, b) => a + b.precioUnitNeto * b.unidades,
@@ -1241,11 +1251,18 @@ function DetalleCompraModal({
       }
 
       const itemsActualizados: CompraItem[] = itemsEdit.map((i) => {
-        const { precioSugeridoOverride: _o, ...rest } = i;
-        void _o;
-        return idsSeleccionados.includes(i.id)
-          ? { ...rest, ingresada: true }
-          : rest;
+        const base: CompraItem = {
+          id: i.id,
+          nombre: i.nombre.trim(),
+          unidades: i.unidades,
+          precioUnitNeto: i.precioUnitNeto,
+          plantasPorMaceta: i.plantasPorMaceta,
+          ingresada: idsSeleccionados.includes(i.id) ? true : i.ingresada,
+        };
+        if (i.precioSugeridoOverride && i.precioSugeridoOverride > 0) {
+          base.precioSugeridoOverride = i.precioSugeridoOverride;
+        }
+        return base;
       });
       const todasIngresadas = itemsActualizados.every((i) => i.ingresada);
       await updateDoc(doc(db, "Compras", compra.idFirebase), {
