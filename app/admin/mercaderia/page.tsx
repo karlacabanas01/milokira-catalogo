@@ -9,6 +9,7 @@ import {
   addDoc,
   updateDoc,
   setDoc,
+  deleteDoc,
   query,
   orderBy,
 } from "firebase/firestore";
@@ -103,6 +104,22 @@ export default function MercaderiaPage() {
   }, [refreshKey]);
 
   const refresh = () => setRefreshKey((k) => k + 1);
+
+  const handleBorrarCompra = async (c: Compra, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const algunaIngresada = c.items?.some((i) => i.ingresada);
+    const msg = algunaIngresada
+      ? `Esta compra ya tiene plantas ingresadas al inventario.\n¿Borrar igual el registro de "${c.proveedor || "compra sin proveedor"}"?\n\nLas plantas en inventario NO se eliminarán.`
+      : `¿Borrar la compra de "${c.proveedor || "sin proveedor"}" del ${new Date(c.fecha).toLocaleDateString("es-CL")}?\n\nEsta acción no se puede deshacer.`;
+    if (!window.confirm(msg)) return;
+    try {
+      await deleteDoc(doc(db, "Compras", c.idFirebase));
+      refresh();
+    } catch (err) {
+      console.error(err);
+      window.alert("Error al borrar la compra.");
+    }
+  };
 
   return (
     <main className="relative min-h-screen bg-milokira-crema patron-muro text-stone-800 pb-20 sm:pb-32 font-sans overflow-x-hidden">
@@ -214,13 +231,23 @@ export default function MercaderiaPage() {
                         <StatusBadge status={c.status} />
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => setDetalleCompra(c)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-milokira-lila/20 hover:bg-milokira-lila/40 text-stone-700 border border-milokira-lila text-xs font-bold transition-all active:scale-95"
-                        >
-                          <Eye size={12} />
-                          Ver
-                        </button>
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            onClick={() => setDetalleCompra(c)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-milokira-lila/20 hover:bg-milokira-lila/40 text-stone-700 border border-milokira-lila text-xs font-bold transition-all active:scale-95"
+                          >
+                            <Eye size={12} />
+                            Ver
+                          </button>
+                          <button
+                            onClick={(e) => handleBorrarCompra(c, e)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 text-xs font-bold transition-all active:scale-95"
+                            aria-label="Borrar compra"
+                          >
+                            <Trash2 size={12} />
+                            Borrar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -245,13 +272,23 @@ export default function MercaderiaPage() {
                         {c.items?.length || 0} items · {formatCLP(c.totalConDespacho)}
                       </p>
                     </div>
-                    <button
-                      onClick={() => setDetalleCompra(c)}
-                      className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-milokira-lila/20 hover:bg-milokira-lila/40 text-stone-700 border border-milokira-lila text-[11px] font-bold"
-                    >
-                      <Eye size={11} />
-                      Ver
-                    </button>
+                    <div className="shrink-0 flex flex-col gap-1.5">
+                      <button
+                        onClick={() => setDetalleCompra(c)}
+                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-milokira-lila/20 hover:bg-milokira-lila/40 text-stone-700 border border-milokira-lila text-[11px] font-bold"
+                      >
+                        <Eye size={11} />
+                        Ver
+                      </button>
+                      <button
+                        onClick={(e) => handleBorrarCompra(c, e)}
+                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 text-[11px] font-bold"
+                        aria-label="Borrar compra"
+                      >
+                        <Trash2 size={11} />
+                        Borrar
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -336,35 +373,131 @@ function NuevaCompraModal({
   const [pasteError, setPasteError] = useState("");
 
   const parsePastedList = (text: string): CompraItem[] => {
-    const regex =
-      /^\s*(\d+)\s*x\s+(.+?)\s*-\s*\$?\s*([\d.,]+)\s*\/?\s*unid/i;
     const codigoRegex = /\s*\(c[oó]d[:\s.][^)]*\)/i;
+    // Formato A: "4x NOMBRE - $1,650/unid"
+    const regexUnid =
+      /^\s*(\d+)\s*x\s+(.+?)\s*-\s*\$?\s*([\d.,]+)\s*\/?\s*unid/i;
+    // Formato B (recibo en una sola línea): "1x KENTIA M17 $ 5,800"  o  "4x NOMBRE $ 1,650 $ 6,600"
+    const regexLineaConPrecios =
+      /^\s*(\d+)\s*x\s+(.+?)\s+\$\s*([\d.,]+)(?:\s+\$\s*([\d.,]+))?(?:\s+\$\s*([\d.,]+))?\s*$/i;
+    // Formato C (multilínea recibo): la línea es solo "4x" o "1x"
+    const regexSoloCantidad = /^\s*(\d+)\s*x\s*$/i;
+    // Línea de precios separada: "$ 1,650"  o  "$ 1,650 $ 6,600"  o  "$ 1,650 $ 1,250 $ 5,000"
+    const regexPrecios = /\$\s*([\d.,]+)/g;
 
-    const lineas = text.split(/\r?\n/);
+    const toNum = (s: string) => Number(s.replace(/[.,]/g, ""));
+
+    const lineas = text.split(/\r?\n/).map((l) => l.trim());
     const out: CompraItem[] = [];
 
-    for (const linea of lineas) {
-      const trimmed = linea.trim();
-      if (!trimmed) continue;
-      const match = regex.exec(trimmed);
-      if (!match) continue;
-
-      const unidades = Number(match[1]);
-      let nombre = match[2].trim().replace(codigoRegex, "").trim();
-      const precioStr = match[3].replace(/[.,]/g, "");
-      const precioUnitNeto = Number(precioStr);
-
-      if (!unidades || !nombre || !precioUnitNeto) continue;
-
+    const pushItem = (unidades: number, nombre: string, precio: number) => {
+      const nombreLimpio = nombre.replace(codigoRegex, "").trim();
+      if (!unidades || !nombreLimpio || !precio) return;
       out.push({
         id: newId(),
-        nombre,
+        nombre: nombreLimpio,
         unidades,
-        precioUnitNeto,
+        precioUnitNeto: precio,
         plantasPorMaceta: 1,
         ingresada: false,
       });
+    };
+
+    // Recoge todos los precios de una línea como números
+    const extraerPrecios = (s: string): number[] => {
+      const arr: number[] = [];
+      let m: RegExpExecArray | null;
+      regexPrecios.lastIndex = 0;
+      while ((m = regexPrecios.exec(s)) !== null) {
+        arr.push(toNum(m[1]));
+      }
+      return arr;
+    };
+
+    // Si hay 2 precios consecutivos en una línea sin subtotal extra, suele ser:
+    //  - tachado + efectivo (usar el menor o el segundo)
+    //  - efectivo + subtotal (usar el primero)
+    // Heurística: para Nx, precio×N == subtotal indica que el segundo es subtotal.
+    const elegirPrecioUnit = (
+      unidades: number,
+      precios: number[],
+    ): number => {
+      if (precios.length === 0) return 0;
+      if (precios.length === 1) return precios[0];
+      if (precios.length === 2) {
+        const [a, b] = precios;
+        // Caso "Nx NOMBRE $A $B": A puede ser tachado o unit, B puede ser unit o subtotal
+        if (a * unidades === b) return a; // a = unit, b = subtotal
+        if (b * unidades === a) return b; // b = unit, a = subtotal (raro)
+        // Si no, asumir tachado+efectivo → segundo (precio nuevo)
+        return b;
+      }
+      if (precios.length >= 3) {
+        // "$ tachado $ efectivo $ subtotal" → el del medio
+        const [, b, c] = precios;
+        if (b * unidades === c) return b;
+        return b;
+      }
+      return precios[0];
+    };
+
+    let i = 0;
+    while (i < lineas.length) {
+      const linea = lineas[i];
+      if (!linea) {
+        i++;
+        continue;
+      }
+
+      // Formato A — "Nx NOMBRE - $X/unid"
+      const mA = regexUnid.exec(linea);
+      if (mA) {
+        pushItem(Number(mA[1]), mA[2].trim(), toNum(mA[3]));
+        i++;
+        continue;
+      }
+
+      // Formato B — todo en una línea "Nx NOMBRE $X [$Y [$Z]]"
+      const mB = regexLineaConPrecios.exec(linea);
+      if (mB) {
+        const unidades = Number(mB[1]);
+        const nombre = mB[2].trim();
+        const precios = [mB[3], mB[4], mB[5]]
+          .filter((s): s is string => Boolean(s))
+          .map(toNum);
+        const unit = elegirPrecioUnit(unidades, precios);
+        pushItem(unidades, nombre, unit);
+        i++;
+        continue;
+      }
+
+      // Formato C — multilínea: "Nx" / "NOMBRE" / "$..."  o sin línea de precios extras
+      const mC = regexSoloCantidad.exec(linea);
+      if (mC) {
+        const unidades = Number(mC[1]);
+        const nombre = lineas[i + 1] || "";
+        if (!nombre || /^\$/.test(nombre) || /^\d+\s*x/i.test(nombre)) {
+          i++;
+          continue;
+        }
+
+        // Las siguientes 1 o 2 líneas son precios. Recolectamos hasta que se acaben.
+        const precios: number[] = [];
+        let j = i + 2;
+        while (j < lineas.length && /^\$/.test(lineas[j])) {
+          precios.push(...extraerPrecios(lineas[j]));
+          j++;
+        }
+
+        const unit = elegirPrecioUnit(unidades, precios);
+        pushItem(unidades, nombre, unit);
+        i = j;
+        continue;
+      }
+
+      i++;
     }
+
     return out;
   };
 
@@ -1144,6 +1277,43 @@ function DetalleCompraModal({
     }
   };
 
+  const handleAgregarItem = () => {
+    setItemsEdit((prev) => [
+      ...prev,
+      {
+        id: newId(),
+        nombre: "",
+        unidades: 1,
+        precioUnitNeto: 0,
+        plantasPorMaceta: 1,
+        ingresada: false,
+      },
+    ]);
+    setDirty(true);
+  };
+
+  const idsEliminables = itemsEdit.filter(
+    (i) => seleccion[i.id] && !i.ingresada,
+  );
+
+  const handleEliminarSeleccionadas = () => {
+    if (idsEliminables.length === 0) return;
+    const msg =
+      idsEliminables.length === 1
+        ? `¿Eliminar "${idsEliminables[0].nombre || "esta planta"}" de la compra?`
+        : `¿Eliminar ${idsEliminables.length} plantas seleccionadas de la compra?`;
+    if (!window.confirm(msg)) return;
+
+    const idsBorrar = new Set(idsEliminables.map((i) => i.id));
+    setItemsEdit((prev) => prev.filter((i) => !idsBorrar.has(i.id)));
+    setSeleccion((prev) => {
+      const next = { ...prev };
+      idsBorrar.forEach((id) => delete next[id]);
+      return next;
+    });
+    setDirty(true);
+  };
+
   return (
     <div className="fixed inset-0 bg-stone-900/40 z-50 flex items-end sm:items-center justify-center sm:p-6 backdrop-blur-sm">
       <div className="relative bg-white w-full sm:max-w-2xl rounded-t-3xl sm:rounded-3xl border-t sm:border border-stone-200 shadow-2xl flex flex-col max-h-dvh sm:max-h-[90vh] h-dvh sm:h-auto overflow-hidden">
@@ -1226,15 +1396,35 @@ function DetalleCompraModal({
             </div>
           </div>
 
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <button
               type="button"
-              onClick={toggleAll}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-milokira-verde/10 hover:bg-milokira-verde/20 text-milokira-verde border border-milokira-verde/40 text-[11px] font-black uppercase tracking-wider transition-all active:scale-95"
+              onClick={handleAgregarItem}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-white text-[11px] font-black uppercase tracking-wider transition-all active:scale-95 shadow-sm"
             >
-              <CheckCircle size={12} strokeWidth={2.5} />
-              {allSelected ? "Deseleccionar todas" : "Seleccionar todas"}
+              <Plus size={12} strokeWidth={3} />
+              Agregar planta
             </button>
+            <div className="flex items-center gap-2">
+              {idsEliminables.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleEliminarSeleccionadas}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 text-[11px] font-black uppercase tracking-wider transition-all active:scale-95"
+                >
+                  <Trash2 size={12} strokeWidth={2.5} />
+                  Eliminar ({idsEliminables.length})
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={toggleAll}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-milokira-verde/10 hover:bg-milokira-verde/20 text-milokira-verde border border-milokira-verde/40 text-[11px] font-black uppercase tracking-wider transition-all active:scale-95"
+              >
+                <CheckCircle size={12} strokeWidth={2.5} />
+                {allSelected ? "Deseleccionar" : "Seleccionar todas"}
+              </button>
+            </div>
           </div>
 
 
