@@ -141,14 +141,14 @@ export default function OrderListModal({ isOpen, onClose, onChange }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-zinc-900 w-full max-w-md rounded-2xl p-6 border border-zinc-800 shadow-2xl h-[85vh] flex flex-col">
-        <div className="flex justify-between items-center mb-4 pb-4 border-b border-zinc-800">
+      <div className="bg-white w-full max-w-md rounded-2xl p-6 border border-stone-200 shadow-2xl h-[85vh] flex flex-col">
+        <div className="flex justify-between items-center mb-4 pb-4 border-b border-stone-200">
           <h2 className="text-xl font-bold text-amber-500">
             Pedidos Pendientes ({orders.length})
           </h2>
           <button
             onClick={onClose}
-            className="p-2 bg-zinc-800 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors"
+            className="p-2 bg-stone-100 rounded-full text-stone-500 hover:text-stone-800 hover:bg-stone-200 transition-colors"
           >
             ✕
           </button>
@@ -156,20 +156,20 @@ export default function OrderListModal({ isOpen, onClose, onChange }: Props) {
 
         <div className="flex-1 overflow-y-auto space-y-3 pr-1">
           {loading ? (
-            <div className="text-center py-10 text-zinc-500">Cargando...</div>
+            <div className="text-center py-10 text-stone-500">Cargando...</div>
           ) : orders.length === 0 ? (
-            <div className="text-center py-10 text-zinc-600 border border-dashed border-zinc-800 rounded-xl">
+            <div className="text-center py-10 text-stone-400 border border-dashed border-stone-200 rounded-xl">
               ¡Todo limpio!
             </div>
           ) : (
             orders.map((order) => (
               <div
                 key={order.idFirebase}
-                className="bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden"
+                className="bg-milokira-crema rounded-xl border border-stone-200 overflow-hidden"
               >
                 {/* Cabecera del Pedido */}
                 <div
-                  className="p-4 flex justify-between items-center cursor-pointer hover:bg-zinc-900 transition-colors"
+                  className="p-4 flex justify-between items-center cursor-pointer hover:bg-white transition-colors"
                   onClick={() =>
                     setExpandedId(
                       expandedId === order.idFirebase ? null : order.idFirebase,
@@ -177,19 +177,19 @@ export default function OrderListModal({ isOpen, onClose, onChange }: Props) {
                   }
                 >
                   <div>
-                    <p className="text-amber-100 font-bold text-lg">
+                    <p className="text-stone-800 font-bold text-lg">
                       {order.customer_name}
                     </p>
-                    <span className="text-xs text-zinc-500 flex items-center gap-1">
+                    <span className="text-xs text-stone-500 flex items-center gap-1">
                       <Clock size={12} />{" "}
                       {new Date(order.created_at).toLocaleDateString("es-CL")}
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-amber-500 font-mono font-bold block">
+                    <span className="text-amber-600 font-mono font-bold block">
                       ${order.total_amount.toLocaleString("es-CL")}
                     </span>
-                    <div className="flex items-center justify-end gap-1 text-zinc-500 text-xs mt-1">
+                    <div className="flex items-center justify-end gap-1 text-stone-500 text-xs mt-1">
                       {order.items?.length || 0} items{" "}
                       {expandedId === order.idFirebase ? (
                         <ChevronUp size={12} />
@@ -202,16 +202,16 @@ export default function OrderListModal({ isOpen, onClose, onChange }: Props) {
 
                 {/* Detalle Desplegable */}
                 {expandedId === order.idFirebase && (
-                  <div className="bg-zinc-900/50 p-3 border-t border-zinc-800 animate-in slide-in-from-top-2">
+                  <div className="bg-white/50 p-3 border-t border-stone-200 animate-in slide-in-from-top-2">
                     <ul className="space-y-2 mb-4">
                       {order.items?.map((item, idx) => (
                         <li
                           key={idx}
-                          className="flex justify-between text-sm text-zinc-300"
+                          className="flex justify-between text-sm text-stone-700"
                         >
                           <span>
                             • {item.nombre || "Planta"}{" "}
-                            <span className="text-zinc-500 text-xs">
+                            <span className="text-stone-500 text-xs">
                               (x{item.quantity})
                             </span>
                           </span>

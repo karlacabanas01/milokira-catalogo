@@ -28,19 +28,25 @@ const StatCard = ({
 }) => {
   const styles = {
     success: {
-      text: "text-emerald-400",
-      border: "border-emerald-500/20",
-      shadow: "hover:shadow-emerald-900/20",
+      bg: "bg-emerald-50",
+      hoverBg: "hover:bg-emerald-100",
+      text: "text-emerald-700",
+      value: "text-emerald-900",
+      border: "border-emerald-200",
     },
     danger: {
-      text: "text-rose-400",
-      border: "border-rose-500/20",
-      shadow: "hover:shadow-rose-900/20",
+      bg: "bg-orange-50",
+      hoverBg: "hover:bg-orange-100",
+      text: "text-orange-700",
+      value: "text-orange-900",
+      border: "border-orange-200",
     },
     info: {
-      text: "text-blue-400",
-      border: "border-blue-500/20",
-      shadow: "",
+      bg: "bg-blue-50",
+      hoverBg: "hover:bg-blue-100",
+      text: "text-blue-700",
+      value: "text-blue-900",
+      border: "border-blue-200",
     },
   };
 
@@ -51,29 +57,21 @@ const StatCard = ({
     <Component
       onClick={onClick}
       className={`
-        relative overflow-hidden rounded-2xl bg-slate-900 p-4 text-center border transition-all duration-300 w-full
-        ${currentStyle.border}
-        ${onClick ? `hover:bg-slate-800 hover:-translate-y-1 hover:shadow-xl ${currentStyle.shadow} active:scale-95 cursor-pointer group` : ""}
+        relative overflow-hidden rounded-2xl ${currentStyle.bg} p-4 text-center border ${currentStyle.border} transition-all duration-300 w-full
+        ${onClick ? `${currentStyle.hoverBg} hover:-translate-y-1 hover:shadow-md active:scale-95 cursor-pointer` : ""}
       `}
     >
-      {/* Fondo con brillo sutil del mismo color que el texto */}
-      <div
-        className={`absolute inset-0 opacity-0 transition-opacity ${onClick ? "group-hover:opacity-10" : "opacity-5"} bg-current ${currentStyle.text}`}
-      />
-
       <div className="relative z-10 flex flex-col items-center justify-center gap-2">
-        <div className="flex items-center gap-2 opacity-90">
-          {/* Renderizamos el Icono aquí, pasando clases de Tailwind */}
+        <div className="flex items-center gap-2">
           <Icon className={`w-4 h-4 ${currentStyle.text}`} strokeWidth={2.5} />
-
           <span
-            className={`text-[10px] font-bold uppercase tracking-widest ${currentStyle.text}`}
+            className={`text-[10px] font-black uppercase tracking-widest ${currentStyle.text}`}
           >
             {label}
           </span>
         </div>
 
-        <p className="text-2xl font-black text-slate-100 tracking-tight">
+        <p className={`text-2xl font-black ${currentStyle.value} tracking-tight`}>
           {new Intl.NumberFormat("es-CL", {
             style: "currency",
             currency: "CLP",
@@ -110,7 +108,7 @@ export default function StatsOverview({
       <StatCard
         label="Ganancia"
         value={financials.profit}
-        variant={financials.profit >= 0 ? "info" : "danger"}
+        variant="info"
         icon={Wallet}
       />
     </div>

@@ -242,15 +242,15 @@ export default function ProductModal({
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-slate-900 w-full max-w-md rounded-3xl border border-slate-700 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="px-6 pt-6 pb-3 border-b border-slate-800 flex items-center justify-between shrink-0">
-          <h2 className="text-xl font-bold text-white">
+      <div className="bg-white w-full max-w-md rounded-3xl border border-stone-200 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="px-6 pt-6 pb-3 border-b border-stone-200 flex items-center justify-between shrink-0">
+          <h2 className="text-xl font-bold text-stone-800">
             {editingProduct ? "Editar Producto ✏️" : "Nuevo Producto ✨"}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 p-1.5 rounded-full transition-colors"
+            className="text-stone-500 hover:text-rose-500 hover:bg-rose-500/10 p-1.5 rounded-full transition-colors"
             aria-label="Cerrar"
           >
             <X size={18} />
@@ -260,14 +260,14 @@ export default function ProductModal({
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
           {/* Nombre */}
           <div>
-            <label className="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider px-1">
+            <label className="block text-xs font-bold text-stone-500 mb-1 uppercase tracking-wider px-1">
               Nombre de la Planta
             </label>
             <input
               autoFocus
               required
               placeholder="Ej: Monstera Deliciosa"
-              className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-emerald-500 transition-colors"
+              className="w-full p-3 bg-milokira-crema border border-stone-200 rounded-xl text-stone-800 placeholder:text-stone-400 outline-none focus:border-emerald-500 transition-colors"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
@@ -291,7 +291,7 @@ export default function ProductModal({
                   required
                   type="number"
                   min="1"
-                  className="w-full p-3 bg-slate-900/80 border border-indigo-500/20 rounded-xl text-white outline-none focus:border-indigo-400 transition-colors text-center font-bold"
+                  className="w-full p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-stone-800 placeholder:text-stone-400 outline-none focus:border-indigo-500 transition-colors text-center font-bold"
                   value={form.unidadesCompradas}
                   onChange={(e) => setForm({ ...form, unidadesCompradas: e.target.value })}
                 />
@@ -304,7 +304,7 @@ export default function ProductModal({
                   required
                   type="number"
                   placeholder="$"
-                  className="w-full p-3 bg-slate-900/80 border border-indigo-500/20 rounded-xl text-white outline-none focus:border-indigo-400 transition-colors"
+                  className="w-full p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-stone-800 placeholder:text-stone-400 outline-none focus:border-indigo-500 transition-colors"
                   value={form.unitCost}
                   onChange={(e) => setForm({ ...form, unitCost: e.target.value })}
                 />
@@ -320,7 +320,7 @@ export default function ProductModal({
                 <input
                   disabled
                   type="text"
-                  className="w-full p-3 bg-slate-900/40 border border-indigo-500/10 rounded-xl text-slate-400 outline-none font-medium cursor-not-allowed"
+                  className="w-full p-3 bg-stone-100 border border-stone-200 rounded-xl text-stone-500 outline-none font-medium cursor-not-allowed"
                   value={`$${costoCompraTotal.toLocaleString("es-CL")}`}
                 />
               </div>
@@ -332,7 +332,7 @@ export default function ProductModal({
                   required
                   type="number"
                   min="1"
-                  className="w-full p-3 bg-slate-900/80 border border-indigo-500/20 rounded-xl text-white outline-none focus:border-indigo-400 transition-colors text-center font-bold"
+                  className="w-full p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-stone-800 placeholder:text-stone-400 outline-none focus:border-indigo-500 transition-colors text-center font-bold"
                   value={form.plantsPerPot}
                   onChange={(e) => setForm({ ...form, plantsPerPot: e.target.value })}
                 />
@@ -349,7 +349,7 @@ export default function ProductModal({
                   required
                   type="number"
                   placeholder="$"
-                  className="w-full p-3 bg-slate-900/80 border border-emerald-500/30 rounded-xl text-emerald-400 font-bold outline-none focus:border-emerald-400 transition-colors"
+                  className="w-full p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-bold outline-none focus:border-emerald-500 transition-colors"
                   value={form.price}
                   onChange={(e) => setForm({ ...form, price: e.target.value })}
                 />
@@ -362,7 +362,7 @@ export default function ProductModal({
                   required
                   type="number"
                   placeholder="Cant."
-                  className="w-full p-3 bg-slate-900/80 border border-indigo-500/20 rounded-xl text-white outline-none focus:border-indigo-400 transition-colors text-center font-bold"
+                  className="w-full p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-stone-800 placeholder:text-stone-400 outline-none focus:border-indigo-500 transition-colors text-center font-bold"
                   value={form.stock}
                   onChange={(e) => setForm({ ...form, stock: e.target.value })}
                 />
@@ -370,18 +370,18 @@ export default function ProductModal({
             </div>
 
             {/* Rentabilidad */}
-            <div className="bg-slate-900/70 border border-indigo-500/20 rounded-xl p-3.5">
+            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3.5">
               <div className="flex justify-between items-center mb-2">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <span className="block text-[10px] font-bold text-stone-500 uppercase tracking-wider">
                   Costo Real Unitario
                 </span>
-                <span className="text-sm text-slate-200 font-bold bg-slate-950/80 px-3 py-1 rounded-lg border border-slate-700">
+                <span className="text-sm text-stone-700 font-bold bg-white px-3 py-1 rounded-lg border border-stone-200">
                   ${Math.round(costoTotalUnitario).toLocaleString("es-CL")}
                 </span>
               </div>
               <div className="flex justify-between items-center border-t border-slate-700/50 pt-2">
                 <div>
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span className="block text-[10px] font-bold text-stone-500 uppercase tracking-wider">
                     Ganancia Neta
                   </span>
                   <span
@@ -391,7 +391,7 @@ export default function ProductModal({
                   </span>
                 </div>
                 <div className="text-right flex flex-col items-end">
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase mb-0.5 tracking-wider">
+                  <span className="block text-[10px] font-bold text-stone-500 uppercase mb-0.5 tracking-wider">
                     Margen
                   </span>
                   <span
@@ -406,20 +406,20 @@ export default function ProductModal({
 
           {/* Separador visual */}
           <div className="flex items-center gap-2 pt-2">
-            <div className="flex-1 h-px bg-slate-800" />
-            <span className="text-[10px] font-black uppercase tracking-[2px] text-slate-500">
+            <div className="flex-1 h-px bg-stone-200" />
+            <span className="text-[10px] font-black uppercase tracking-[2px] text-stone-500">
               🌿 Datos del catálogo
             </span>
-            <div className="flex-1 h-px bg-slate-800" />
+            <div className="flex-1 h-px bg-stone-200" />
           </div>
 
           {/* Imagen + preview con drag */}
           <div>
-            <label className="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider px-1">
+            <label className="block text-xs font-bold text-stone-500 mb-1 uppercase tracking-wider px-1">
               Imagen (opcional)
             </label>
             <div className="flex gap-3 items-start">
-              <label className="flex-1 flex items-center justify-center gap-2 p-3 bg-slate-800 border border-dashed border-slate-700 rounded-xl text-slate-400 text-xs font-bold cursor-pointer hover:bg-slate-700/60 hover:border-emerald-500/50 hover:text-emerald-400 transition-colors">
+              <label className="flex-1 flex items-center justify-center gap-2 p-3 bg-milokira-crema border border-dashed border-stone-300 rounded-xl text-stone-600 text-xs font-bold cursor-pointer hover:bg-stone-100 hover:border-emerald-500/50 hover:text-emerald-700 transition-colors">
                 <ImagePlus size={14} />
                 {isUploading ? "Subiendo..." : form.imagenUrl ? "Cambiar" : "Subir imagen"}
                 <input
@@ -437,7 +437,7 @@ export default function ProductModal({
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
                   onPointerCancel={handlePointerUp}
-                  className="relative w-20 aspect-[4/5] rounded-lg overflow-hidden border border-slate-700 shadow-sm cursor-grab active:cursor-grabbing select-none touch-none bg-slate-800"
+                  className="relative w-20 aspect-[4/5] rounded-lg overflow-hidden border border-stone-200 shadow-sm cursor-grab active:cursor-grabbing select-none touch-none bg-stone-100"
                   title="Arrastra para reposicionar"
                 >
                   <img
@@ -469,13 +469,13 @@ export default function ProductModal({
 
           {/* Descripción */}
           <div>
-            <label className="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider px-1">
+            <label className="block text-xs font-bold text-stone-500 mb-1 uppercase tracking-wider px-1">
               Descripción (opcional)
             </label>
             <textarea
               rows={3}
               placeholder="Características, medidas, cuidados..."
-              className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-emerald-500 transition-colors resize-none"
+              className="w-full p-3 bg-milokira-crema border border-stone-200 rounded-xl text-stone-800 placeholder:text-stone-400 outline-none focus:border-emerald-500 transition-colors resize-none"
               value={form.descripcion}
               onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
             />
@@ -483,7 +483,7 @@ export default function ProductModal({
 
           {/* Categorías */}
           <div>
-            <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider px-1">
+            <label className="block text-xs font-bold text-stone-500 mb-2 uppercase tracking-wider px-1">
               Categorías <span className="text-rose-400">*</span>
             </label>
             <div className="flex flex-wrap gap-2">
@@ -497,7 +497,7 @@ export default function ProductModal({
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all ${
                       isSelected
                         ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
-                        : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600"
+                        : "bg-milokira-crema border-stone-200 text-stone-600 hover:border-stone-300"
                     }`}
                   >
                     {cat === "COLECCION"
@@ -511,11 +511,11 @@ export default function ProductModal({
 
           {/* Tipo de Precio */}
           <div>
-            <label className="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider px-1">
+            <label className="block text-xs font-bold text-stone-500 mb-1 uppercase tracking-wider px-1">
               Tipo de Precio
             </label>
             <select
-              className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-emerald-500 transition-colors"
+              className="w-full p-3 bg-milokira-crema border border-stone-200 rounded-xl text-stone-800 placeholder:text-stone-400 outline-none focus:border-emerald-500 transition-colors"
               value={form.precioTipo}
               onChange={(e) => setForm({ ...form, precioTipo: e.target.value })}
             >
@@ -528,11 +528,11 @@ export default function ProductModal({
           {/* Dificultad de cuidado + Apta mascotas */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider px-1">
+              <label className="block text-xs font-bold text-stone-500 mb-1 uppercase tracking-wider px-1">
                 Dificultad
               </label>
               <select
-                className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-emerald-500 transition-colors"
+                className="w-full p-3 bg-milokira-crema border border-stone-200 rounded-xl text-stone-800 placeholder:text-stone-400 outline-none focus:border-emerald-500 transition-colors"
                 value={form.dificultad}
                 onChange={(e) =>
                   setForm({ ...form, dificultad: e.target.value as Dificultad })
@@ -544,11 +544,11 @@ export default function ProductModal({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider px-1">
+              <label className="block text-xs font-bold text-stone-500 mb-1 uppercase tracking-wider px-1">
                 Mascotas
               </label>
               <select
-                className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-emerald-500 transition-colors"
+                className="w-full p-3 bg-milokira-crema border border-stone-200 rounded-xl text-stone-800 placeholder:text-stone-400 outline-none focus:border-emerald-500 transition-colors"
                 value={form.aptaMascotas}
                 onChange={(e) =>
                   setForm({
@@ -570,7 +570,7 @@ export default function ProductModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3.5 bg-slate-800 text-slate-300 font-bold rounded-xl hover:bg-slate-700 transition-colors"
+              className="flex-1 py-3.5 bg-stone-100 text-stone-700 font-bold rounded-xl hover:bg-stone-200 transition-colors"
             >
               Cancelar
             </button>

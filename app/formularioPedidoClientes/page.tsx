@@ -26,15 +26,11 @@ import {
 const WHATSAPP_NUMBER = "56994955949";
 
 const SECTORES = [
-  "Bicentenario",
-  "Las Rastras",
-  "Faustino",
-  "La Florida",
-  "Valles de Talca",
-  "Doña Ignacia",
-  "Nueva Holanda",
-  "Barrio Norte",
-  "Otro",
+  "Norte Oriente (Bicentenario, Las Rastras)",
+  "Norte Poniente (Barrio Norte, Las Américas, Sandoval)",
+  "Sur Oriente (Valles de Talca, San Miguel, Don Sebastián)",
+  "Sur Poniente (La Florida, Faustino, Nueva Holanda, Doña Ignacia)",
+  "Otro sector",
 ];
 
 type DeliveryType = "delivery" | "retiro";
@@ -46,6 +42,8 @@ export default function PedidoPublicoPage() {
   const [diaEntrega, setDiaEntrega] = useState("");
   const [direccion, setDireccion] = useState("");
   const [sector, setSector] = useState("");
+  const [sectorOtro, setSectorOtro] = useState("");
+  const sectorFinal = sector === "Otro sector" ? sectorOtro.trim() : sector;
   const [notas, setNotas] = useState("");
   const [plantasList, setPlantasList] = useState<string[]>([""]);
 
@@ -63,6 +61,8 @@ export default function PedidoPublicoPage() {
     if (plantasLimpias.length === 0) return "Cuéntanos qué plantitas quieres.";
     if (tipoEntrega === "delivery") {
       if (!sector) return "Elige el sector de entrega.";
+      if (sector === "Otro sector" && !sectorOtro.trim())
+        return "Escribe el nombre de tu sector.";
       if (!direccion.trim()) return "Necesitamos la dirección de entrega.";
       if (!diaEntrega) return "Elige el día de entrega.";
     }
@@ -104,7 +104,7 @@ export default function PedidoPublicoPage() {
         delivery_type: tipoEntrega,
         delivery_day: tipoEntrega === "delivery" ? diaEntrega : "",
         address: tipoEntrega === "delivery" ? direccion.trim() : "",
-        sector: tipoEntrega === "delivery" ? sector : "",
+        sector: tipoEntrega === "delivery" ? sectorFinal : "",
         notes: notas.trim(),
         items: plantasLimpias.map((nombre) => ({
           nombre,
@@ -349,7 +349,10 @@ export default function PedidoPublicoPage() {
                     className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-lila transition-colors"
                   >
                     <option value="">Elige un día...</option>
+                    <option value="lunes">Lunes</option>
                     <option value="martes">Martes</option>
+                    <option value="miercoles">Miércoles</option>
+                    <option value="jueves">Jueves</option>
                     <option value="viernes">Viernes</option>
                     <option value="otro">Otro día (lo coordinamos)</option>
                   </select>
@@ -372,6 +375,14 @@ export default function PedidoPublicoPage() {
                     </option>
                   ))}
                 </select>
+                {sector === "Otro sector" && (
+                  <input
+                    value={sectorOtro}
+                    onChange={(e) => setSectorOtro(e.target.value)}
+                    placeholder="Escribe el nombre de tu sector"
+                    className="w-full mt-2 px-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-lila transition-colors placeholder:text-stone-400"
+                  />
+                )}
               </div>
 
               <div>

@@ -91,15 +91,15 @@ export default function ExpenseListModal({ isOpen, onClose, onChange }: Props) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-zinc-900 w-full max-w-md rounded-2xl p-6 border border-zinc-800 shadow-2xl h-[80vh] flex flex-col">
+    <div className="fixed inset-0 bg-stone-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-md rounded-2xl p-6 border border-stone-200 shadow-2xl h-[80vh] flex flex-col">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-rose-400">
             Historial de Gastos
           </h2>
           <button
             onClick={onClose}
-            className="p-2 bg-zinc-800 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors"
+            className="p-2 bg-stone-100 rounded-full text-stone-500 hover:text-stone-800 hover:bg-stone-200 transition-colors"
           >
             <X size={20} />
           </button>
@@ -107,22 +107,22 @@ export default function ExpenseListModal({ isOpen, onClose, onChange }: Props) {
 
         <div className="flex-1 overflow-y-auto space-y-2 pr-2">
           {loading ? (
-            <div className="text-center text-zinc-500 py-10">Cargando...</div>
+            <div className="text-center text-stone-500 py-10">Cargando...</div>
           ) : expenses.length === 0 ? (
-            <div className="text-center text-zinc-500 py-10 border border-dashed border-zinc-800 rounded-xl">
+            <div className="text-center text-stone-500 py-10 border border-dashed border-stone-200 rounded-xl">
               Sin gastos.
             </div>
           ) : (
             expenses.map((expense) => (
               <div
                 key={expense.idFirebase}
-                className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 flex justify-between items-center"
+                className="bg-milokira-crema p-4 rounded-xl border border-stone-200 flex justify-between items-center"
               >
                 <div>
-                  <p className="text-white font-medium">
+                  <p className="text-stone-800 font-medium">
                     {expense.description}
                   </p>
-                  <p className="text-xs text-zinc-500 mt-1">
+                  <p className="text-xs text-stone-500 mt-1">
                     {new Date(expense.created_at).toLocaleDateString("es-CL", {
                       day: "2-digit",
                       month: "short",
@@ -135,7 +135,7 @@ export default function ExpenseListModal({ isOpen, onClose, onChange }: Props) {
                   </span>
                   <button
                     onClick={() => handleDelete(expense.idFirebase)}
-                    className="text-xs text-zinc-600 hover:text-rose-400 mt-1 underline"
+                    className="text-xs text-stone-400 hover:text-rose-400 mt-1 underline"
                   >
                     Borrar
                   </button>

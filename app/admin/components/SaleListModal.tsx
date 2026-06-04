@@ -182,15 +182,15 @@ export default function SaleListModal({ isOpen, onClose, onChange }: Props) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-zinc-900 w-full max-w-md rounded-2xl p-6 border border-zinc-800 shadow-2xl h-[80vh] flex flex-col">
+    <div className="fixed inset-0 bg-stone-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-md rounded-2xl p-6 border border-stone-200 shadow-2xl h-[80vh] flex flex-col">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-emerald-400">
             Historial de Ventas
           </h2>
           <button
             onClick={onClose}
-            className="p-2 bg-zinc-800 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors"
+            className="p-2 bg-stone-100 rounded-full text-stone-500 hover:text-stone-800 hover:bg-stone-200 transition-colors"
           >
             <X size={20} />
           </button>
@@ -198,27 +198,27 @@ export default function SaleListModal({ isOpen, onClose, onChange }: Props) {
 
         <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-hide">
           {loading ? (
-            <div className="text-center text-zinc-500 py-10">Cargando...</div>
+            <div className="text-center text-stone-500 py-10">Cargando...</div>
           ) : salesByDay.length === 0 ? (
-            <div className="text-center text-zinc-500 py-10 border border-dashed border-zinc-800 rounded-xl">
+            <div className="text-center text-stone-500 py-10 border border-dashed border-stone-200 rounded-xl">
               Sin ventas registradas.
             </div>
           ) : (
             salesByDay.map((dayGroup) => (
               <div
                 key={dayGroup.date}
-                className="bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden"
+                className="bg-milokira-crema rounded-xl border border-stone-200 overflow-hidden"
               >
                 {/* Header del día */}
                 <button
                   onClick={() => toggleDay(dayGroup.date)}
-                  className="w-full p-4 flex justify-between items-center hover:bg-zinc-800/50 transition-colors"
+                  className="w-full p-4 flex justify-between items-center hover:bg-stone-100 transition-colors"
                 >
                   <div className="text-left">
-                    <p className="text-white font-medium capitalize">
+                    <p className="text-stone-800 font-medium capitalize">
                       {dayGroup.dateLabel}
                     </p>
-                    <p className="text-xs text-zinc-500 mt-0.5">
+                    <p className="text-xs text-stone-500 mt-0.5">
                       {dayGroup.items.length} registro
                       {dayGroup.items.length !== 1 ? "s" : ""}
                     </p>
@@ -228,33 +228,33 @@ export default function SaleListModal({ isOpen, onClose, onChange }: Props) {
                       ${dayGroup.total.toLocaleString("es-CL")}
                     </span>
                     {expandedDays.has(dayGroup.date) ? (
-                      <ChevronUp size={20} className="text-zinc-500" />
+                      <ChevronUp size={20} className="text-stone-500" />
                     ) : (
-                      <ChevronDown size={20} className="text-zinc-500" />
+                      <ChevronDown size={20} className="text-stone-500" />
                     )}
                   </div>
                 </button>
 
                 {/* Desglose de ventas del día */}
                 {expandedDays.has(dayGroup.date) && (
-                  <div className="border-t border-zinc-800 divide-y divide-zinc-800/50">
+                  <div className="border-t border-stone-200 divide-y divide-stone-200">
                     {dayGroup.items.map((item) => (
                       <div
                         key={item.idFirebase}
-                        className="px-4 py-3 flex justify-between items-center bg-zinc-900/30 group"
+                        className="px-4 py-3 flex justify-between items-center bg-milokira-crema/30 group"
                       >
                         <div className="flex-1 pr-4">
-                          <p className="text-zinc-300 text-sm leading-snug">
+                          <p className="text-stone-700 text-sm leading-snug">
                             {item.description}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
                             {/* Etiqueta visual para distinguir Pedidos Completados de Ventas Rápidas */}
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-zinc-800 text-zinc-400 uppercase tracking-wider">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-stone-100 text-stone-500 uppercase tracking-wider">
                               {item.tipo === "pedido"
                                 ? "Pedido"
                                 : "Venta Directa"}
                             </span>
-                            <span className="text-xs text-zinc-600">
+                            <span className="text-xs text-stone-400">
                               {new Date(item.date).toLocaleTimeString("es-CL", {
                                 hour: "2-digit",
                                 minute: "2-digit",
@@ -268,7 +268,7 @@ export default function SaleListModal({ isOpen, onClose, onChange }: Props) {
                           </span>
                           <button
                             onClick={() => handleDelete(item)}
-                            className="mt-1 flex items-center gap-1 text-[11px] text-zinc-600 hover:text-rose-400 transition-colors"
+                            className="mt-1 flex items-center gap-1 text-[11px] text-stone-400 hover:text-rose-400 transition-colors"
                           >
                             <Trash2 size={12} />
                             Anular

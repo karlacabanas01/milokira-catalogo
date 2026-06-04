@@ -48,21 +48,21 @@ export default function ProductGroupCard({
   // Si solo hay una variante, mostrar como tarjeta simple
   if (products.length === 1) {
     return (
-      <div className="bg-zinc-900 p-4 rounded-2xl shadow-sm border border-zinc-800 relative group hover:border-zinc-600 transition-all flex flex-col justify-between h-full">
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 relative group hover:border-stone-400 transition-all flex flex-col justify-between h-full">
         {/* Botones de Gestión - En móvil van arriba en fila */}
         <div className="flex justify-end mb-2 sm:mb-0 sm:absolute sm:top-3 sm:right-3 z-10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-          <div className="bg-zinc-900/90 backdrop-blur-sm border border-zinc-800 rounded-lg flex p-1 shadow-lg">
+          <div className="bg-white/90 backdrop-blur-sm border border-stone-200 rounded-lg flex p-1 shadow-lg">
             <button
               onClick={() => onEdit(currentProduct)}
-              className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-md transition-colors"
+              className="p-1.5 text-stone-500 hover:text-stone-800 hover:bg-stone-200 rounded-md transition-colors"
               title="Editar"
             >
               <Pencil size={16} />
             </button>
-            <div className="w-[1px] bg-zinc-800 mx-0.5 my-1"></div>
+            <div className="w-[1px] bg-stone-100 mx-0.5 my-1"></div>
             <button
               onClick={() => onDelete(currentProduct.id)}
-              className="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-rose-900/20 rounded-md transition-colors"
+              className="p-1.5 text-stone-500 hover:text-rose-400 hover:bg-rose-900/20 rounded-md transition-colors"
               title="Eliminar"
             >
               <Trash2 size={16} />
@@ -72,21 +72,21 @@ export default function ProductGroupCard({
 
         {/* Info Principal */}
         <div className="mb-4 sm:pr-2 sm:pt-1">
-          <h3 className="font-bold text-zinc-100 text-lg leading-tight line-clamp-2 min-h-10">
+          <h3 className="font-bold text-stone-800 text-lg leading-tight line-clamp-2 min-h-10">
             {groupName}
           </h3>
           <div className="flex items-center gap-2 mt-2">
             <p className="text-emerald-400 font-bold text-lg">
               {formatPrice(currentProduct.price)}
             </p>
-            <span className="text-zinc-700 text-xs">|</span>
-            <p className="text-sm text-zinc-400 font-medium">
+            <span className="text-stone-600 text-xs">|</span>
+            <p className="text-sm text-stone-500 font-medium">
               Stock:{" "}
               <span
                 className={
                   currentProduct.stock < 3
                     ? "text-rose-400 font-bold bg-rose-500/10 px-1.5 py-0.5 rounded"
-                    : "text-zinc-300"
+                    : "text-stone-700"
                 }
               >
                 {currentProduct.stock}
@@ -97,10 +97,10 @@ export default function ProductGroupCard({
 
         {/* Zona de Acción */}
         <div className="flex flex-col sm:flex-row gap-2 items-stretch">
-          <div className="flex items-center bg-zinc-950 rounded-xl border border-zinc-800 h-12 sm:w-1/3 sm:min-w-25">
+          <div className="flex items-center bg-milokira-crema rounded-xl border border-stone-200 h-12 sm:w-1/3 sm:min-w-25">
             <button
               onClick={() => setQty(Math.max(1, qty - 1))}
-              className="w-12 sm:w-10 h-full flex items-center justify-center text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-l-xl transition-colors active:bg-zinc-700"
+              className="w-12 sm:w-10 h-full flex items-center justify-center text-stone-500 hover:text-stone-800 hover:bg-stone-100 rounded-l-xl transition-colors active:bg-stone-200"
             >
               <Minus size={16} />
             </button>
@@ -110,11 +110,11 @@ export default function ProductGroupCard({
               max={currentProduct.stock}
               value={qty}
               onChange={(e) => setQty(Number(e.target.value))}
-              className="w-full bg-transparent text-center text-zinc-200 font-bold outline-none appearance-none m-0 text-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-full bg-transparent text-center text-stone-800 font-bold outline-none appearance-none m-0 text-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             <button
               onClick={() => setQty(Math.min(currentProduct.stock, qty + 1))}
-              className="w-12 sm:w-10 h-full flex items-center justify-center text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-r-xl transition-colors active:bg-zinc-700"
+              className="w-12 sm:w-10 h-full flex items-center justify-center text-stone-500 hover:text-stone-800 hover:bg-stone-100 rounded-r-xl transition-colors active:bg-stone-200"
             >
               <Plus size={16} />
             </button>
@@ -132,19 +132,19 @@ export default function ProductGroupCard({
 
   // Múltiples variantes - mostrar agrupado
   return (
-    <div className="bg-zinc-900 p-4 rounded-2xl shadow-sm border border-zinc-800 relative group hover:border-zinc-600 transition-all flex flex-col justify-between h-full col-span-2">
+    <div className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 relative group hover:border-stone-400 transition-all flex flex-col justify-between h-full col-span-2">
       {/* Header con nombre y total */}
       <div className="mb-3">
         <div className="flex items-start justify-between">
-          <h3 className="font-bold text-zinc-100 text-lg leading-tight">
+          <h3 className="font-bold text-stone-800 text-lg leading-tight">
             {groupName}
           </h3>
-          <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-1 rounded-full">
+          <span className="text-xs text-stone-500 bg-stone-100 px-2 py-1 rounded-full">
             {products.length} variantes
           </span>
         </div>
-        <p className="text-sm text-zinc-500 mt-1">
-          Stock total: <span className="text-zinc-300 font-medium">{totalStock}</span>
+        <p className="text-sm text-stone-500 mt-1">
+          Stock total: <span className="text-stone-700 font-medium">{totalStock}</span>
         </p>
       </div>
 
@@ -160,13 +160,13 @@ export default function ProductGroupCard({
             className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
               products.indexOf(product) === selectedVariant
                 ? "bg-emerald-600/20 border border-emerald-500/50"
-                : "bg-zinc-800/50 border border-transparent hover:border-zinc-700"
+                : "bg-stone-100 border border-transparent hover:border-stone-300"
             }`}
           >
             <div className="flex items-center gap-3">
               <div
                 className={`w-2 h-2 rounded-full ${
-                  products.indexOf(product) === selectedVariant ? "bg-emerald-500" : "bg-zinc-600"
+                  products.indexOf(product) === selectedVariant ? "bg-emerald-500" : "bg-stone-300"
                 }`}
               />
               <span className="text-emerald-400 font-bold">
@@ -178,7 +178,7 @@ export default function ProductGroupCard({
                 className={`text-sm ${
                   product.stock < 3
                     ? "text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded"
-                    : "text-zinc-400"
+                    : "text-stone-500"
                 }`}
               >
                 Stock: {product.stock}
@@ -190,7 +190,7 @@ export default function ProductGroupCard({
                     e.stopPropagation();
                     onEdit(product);
                   }}
-                  className="p-1 text-zinc-500 hover:text-white hover:bg-zinc-700 rounded transition-colors"
+                  className="p-1 text-stone-500 hover:text-stone-800 hover:bg-stone-200 rounded transition-colors"
                 >
                   <Pencil size={14} />
                 </button>
@@ -199,7 +199,7 @@ export default function ProductGroupCard({
                     e.stopPropagation();
                     onDelete(product.id);
                   }}
-                  className="p-1 text-zinc-500 hover:text-rose-400 hover:bg-rose-900/20 rounded transition-colors"
+                  className="p-1 text-stone-500 hover:text-rose-400 hover:bg-rose-900/20 rounded transition-colors"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -212,7 +212,7 @@ export default function ProductGroupCard({
         {products.length > 3 && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full flex items-center justify-center gap-1 py-2 text-zinc-500 hover:text-zinc-300 text-sm transition-colors"
+            className="w-full flex items-center justify-center gap-1 py-2 text-stone-500 hover:text-stone-700 text-sm transition-colors"
           >
             {isExpanded ? (
               <>
@@ -229,10 +229,10 @@ export default function ProductGroupCard({
 
       {/* Zona de Acción */}
       <div className="flex flex-col sm:flex-row gap-2 items-stretch">
-        <div className="flex items-center bg-zinc-950 rounded-xl border border-zinc-800 h-12 sm:w-1/3 sm:min-w-25">
+        <div className="flex items-center bg-milokira-crema rounded-xl border border-stone-200 h-12 sm:w-1/3 sm:min-w-25">
           <button
             onClick={() => setQty(Math.max(1, qty - 1))}
-            className="w-12 sm:w-10 h-full flex items-center justify-center text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-l-xl transition-colors active:bg-zinc-700"
+            className="w-12 sm:w-10 h-full flex items-center justify-center text-stone-500 hover:text-stone-800 hover:bg-stone-100 rounded-l-xl transition-colors active:bg-stone-200"
           >
             <Minus size={16} />
           </button>
@@ -242,11 +242,11 @@ export default function ProductGroupCard({
             max={currentProduct.stock}
             value={qty}
             onChange={(e) => setQty(Number(e.target.value))}
-            className="w-full bg-transparent text-center text-zinc-200 font-bold outline-none appearance-none m-0 text-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="w-full bg-transparent text-center text-stone-800 font-bold outline-none appearance-none m-0 text-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
           <button
             onClick={() => setQty(Math.min(currentProduct.stock, qty + 1))}
-            className="w-12 sm:w-10 h-full flex items-center justify-center text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-r-xl transition-colors active:bg-zinc-700"
+            className="w-12 sm:w-10 h-full flex items-center justify-center text-stone-500 hover:text-stone-800 hover:bg-stone-100 rounded-r-xl transition-colors active:bg-stone-200"
           >
             <Plus size={16} />
           </button>

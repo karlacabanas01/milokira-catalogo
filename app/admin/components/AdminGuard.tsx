@@ -36,7 +36,7 @@ export default function AdminGuard({ children }: { readonly children: ReactNode 
 
   if (status === "checking") {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen bg-milokira-crema flex items-center justify-center">
         <div className="w-10 h-10 border-[3px] border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
       </div>
     );
@@ -44,8 +44,8 @@ export default function AdminGuard({ children }: { readonly children: ReactNode 
 
   if (status === "denied") {
     return (
-      <main className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center p-4">
-        <div className="w-full max-w-sm bg-gradient-to-br from-zinc-900 to-zinc-900/60 border border-zinc-800 rounded-2xl p-8 shadow-2xl">
+      <main className="min-h-screen bg-milokira-crema text-stone-800 flex items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-gradient-to-br from-white to-stone-50 border border-stone-200 rounded-2xl p-8 shadow-2xl">
           <div className="flex justify-center mb-5">
             <div className="relative">
               <div className="absolute inset-0 bg-emerald-500/30 rounded-2xl blur-xl" />
@@ -58,7 +58,7 @@ export default function AdminGuard({ children }: { readonly children: ReactNode 
           <h1 className="text-xl font-black text-center tracking-tight mb-1">
             Acceso restringido
           </h1>
-          <p className="text-center text-zinc-400 text-sm mb-6">
+          <p className="text-center text-stone-500 text-sm mb-6">
             Ingresa la clave para continuar al panel.
           </p>
 
@@ -70,7 +70,7 @@ export default function AdminGuard({ children }: { readonly children: ReactNode 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Clave secreta"
-                className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-white placeholder-zinc-600 outline-none focus:border-emerald-500 transition-colors text-sm"
+                className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-800 placeholder-stone-400 outline-none focus:bg-white focus:border-milokira-verde transition-colors text-sm"
               />
               {error && (
                 <p className="text-rose-400 text-xs font-semibold mt-2 text-center">
@@ -90,7 +90,7 @@ export default function AdminGuard({ children }: { readonly children: ReactNode 
             <button
               type="button"
               onClick={() => router.push("/")}
-              className="w-full text-zinc-500 hover:text-zinc-300 text-xs font-semibold py-1 transition-colors"
+              className="w-full text-stone-500 hover:text-stone-700 text-xs font-semibold py-1 transition-colors"
             >
               Volver al catálogo
             </button>

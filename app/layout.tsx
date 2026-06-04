@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Quicksand } from "next/font/google";
 import "./globals.css";
 
@@ -21,6 +21,13 @@ const quicksand = Quicksand({
 export const metadata: Metadata = {
   title: "Milokira",
   description: "Catálogo de plantitas Milokira — Talca, Chile 🌿",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

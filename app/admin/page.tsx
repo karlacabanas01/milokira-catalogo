@@ -28,6 +28,7 @@ import {
   Plus,
   ArrowLeft,
   BookOpen,
+  Truck,
 } from "lucide-react";
 
 import StatsOverview from "./components/StatsOverview";
@@ -214,45 +215,46 @@ export default function AdminPage() {
   };
 
   return (
-    <main className="relative min-h-screen bg-zinc-950 text-zinc-100 pb-20 sm:pb-32 font-sans selection:bg-emerald-500/30 overflow-x-hidden">
+    <main className="relative min-h-screen bg-milokira-crema text-stone-800 pb-20 sm:pb-32 font-sans selection:bg-emerald-500/30 overflow-x-hidden">
       {/* Fondo decorativo con gradientes */}
-      <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute -top-40 -left-40 w-125 h-125 bg-emerald-500/10 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 -right-40 w-125 h-125 bg-indigo-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 w-100 h-100 bg-teal-500/5 rounded-full blur-3xl" />
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-125 h-125 bg-milokira-lila/30 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 -right-40 w-125 h-125 bg-milokira-verde/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 w-100 h-100 bg-milokira-verde/10 rounded-full blur-3xl" />
       </div>
 
-      <div className="sticky top-0 z-20 bg-zinc-950/70 backdrop-blur-2xl border-b border-zinc-800/60">
-        <div className="px-4 sm:px-8 py-4 w-full max-w-400 mx-auto flex items-center justify-between gap-4">
+      <div className="sticky top-0 z-20 bg-white/70 backdrop-blur-2xl border-b border-stone-200">
+        <div className="px-4 sm:px-8 py-4 w-full max-w-7xl mx-auto flex items-center justify-between gap-4">
           <Link href="/" className="shrink-0">
-            <button className="group flex items-center gap-2 text-zinc-400 hover:text-white bg-zinc-900/60 hover:bg-zinc-800/80 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all text-xs sm:text-sm font-semibold border border-zinc-800 hover:border-zinc-700">
+            <button className="group flex items-center gap-2 text-stone-500 hover:text-stone-800 bg-white hover:bg-stone-100 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all text-xs sm:text-sm font-semibold border border-stone-200 hover:border-stone-300">
               <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
               <span className="hidden xs:inline">Volver</span>
             </button>
           </Link>
 
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-linear-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-900/40 shrink-0">
-              <Package size={18} className="text-white sm:w-5 sm:h-5" strokeWidth={2.5} />
-            </div>
+            <img
+              src="/img/logo.png"
+              alt="Milokira"
+              className="h-14 w-14 sm:h-20 sm:w-20 object-contain shrink-0"
+            />
             <div className="min-w-0">
-              <h1 className="text-base sm:text-xl font-black tracking-tight truncate">
-                Milokira<span className="bg-linear-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">App</span>
-              </h1>
-              <p className="text-[10px] sm:text-xs text-zinc-500 font-medium hidden sm:block">Panel de administración</p>
+              <p className="text-base sm:text-2xl text-milokira-verde font-black uppercase tracking-widest">
+                Panel de administración
+              </p>
             </div>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
-            <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400" />
-            <span className="text-xs text-zinc-400 font-medium">En línea</span>
+          <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-stone-200">
+            <div className="h-2 w-2 rounded-full bg-milokira-verde animate-pulse shadow-sm shadow-milokira-verde" />
+            <span className="text-xs text-stone-500 font-medium">En línea</span>
           </div>
         </div>
       </div>
 
-      <div className="relative z-10 p-4 sm:p-8 w-full max-w-400 mx-auto space-y-6 sm:space-y-8 mt-2">
+      <div className="relative z-10 p-4 sm:p-8 w-full max-w-7xl mx-auto space-y-6 sm:space-y-8 mt-2">
         {loading ? (
-          <div className="text-center py-4 text-zinc-500 text-sm">
+          <div className="text-center py-4 text-stone-500 text-sm">
             Cargando datos...
           </div>
         ) : (
@@ -265,26 +267,26 @@ export default function AdminPage() {
 
         {/* Botones de acción principales */}
         <div>
-          <h2 className="text-[10px] sm:text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 sm:mb-4 px-1">
+          <h2 className="text-[10px] sm:text-xs font-bold text-stone-500 uppercase tracking-widest mb-3 sm:mb-4 px-1">
             Acciones rápidas
           </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
             <button
               onClick={() => setIsSaleModalOpen(true)}
-              className="group relative overflow-hidden py-5 sm:py-6 bg-linear-to-br from-zinc-900 to-zinc-900/60 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-zinc-200 font-bold hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
+              className="group relative overflow-hidden py-5 sm:py-6 bg-white border border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-stone-800 font-bold hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
             >
               <div className="absolute inset-0 bg-linear-to-br from-emerald-500/0 to-emerald-500/0 group-hover:from-emerald-500/10 group-hover:to-transparent transition-all" />
-              <div className="relative p-2.5 sm:p-3 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20 group-hover:scale-110 group-hover:bg-emerald-500/20 transition-all">
+              <div className="relative p-2.5 sm:p-3 bg-emerald-500/10 rounded-xl text-emerald-600 border border-emerald-500/30 group-hover:scale-110 group-hover:bg-emerald-500/20 transition-all">
                 <TrendingUp size={22} strokeWidth={2.5} />
               </div>
               <span className="relative text-xs sm:text-sm tracking-wide">Venta</span>
             </button>
             <button
               onClick={() => setIsExpenseModalOpen(true)}
-              className="group relative overflow-hidden py-5 sm:py-6 bg-linear-to-br from-zinc-900 to-zinc-900/60 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-zinc-200 font-bold hover:border-rose-500/40 hover:shadow-xl hover:shadow-rose-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
+              className="group relative overflow-hidden py-5 sm:py-6 bg-white border border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-stone-800 font-bold hover:border-rose-500/40 hover:shadow-xl hover:shadow-rose-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
             >
               <div className="absolute inset-0 bg-linear-to-br from-rose-500/0 to-rose-500/0 group-hover:from-rose-500/10 group-hover:to-transparent transition-all" />
-              <div className="relative p-2.5 sm:p-3 bg-rose-500/10 rounded-xl text-rose-400 border border-rose-500/20 group-hover:scale-110 group-hover:bg-rose-500/20 transition-all">
+              <div className="relative p-2.5 sm:p-3 bg-rose-500/10 rounded-xl text-rose-600 border border-rose-500/30 group-hover:scale-110 group-hover:bg-rose-500/20 transition-all">
                 <TrendingDown size={22} strokeWidth={2.5} />
               </div>
               <span className="relative text-xs sm:text-sm tracking-wide">Gasto</span>
@@ -294,30 +296,40 @@ export default function AdminPage() {
                 setEditingOrder(null);
                 setIsOrderModalOpen(true);
               }}
-              className="group relative overflow-hidden py-5 sm:py-6 bg-linear-to-br from-zinc-900 to-zinc-900/60 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-zinc-200 font-bold hover:border-amber-500/40 hover:shadow-xl hover:shadow-amber-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
+              className="group relative overflow-hidden py-5 sm:py-6 bg-white border border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-stone-800 font-bold hover:border-amber-500/40 hover:shadow-xl hover:shadow-amber-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
             >
               <div className="absolute inset-0 bg-linear-to-br from-amber-500/0 to-amber-500/0 group-hover:from-amber-500/10 group-hover:to-transparent transition-all" />
-              <div className="relative p-2.5 sm:p-3 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20 group-hover:scale-110 group-hover:bg-amber-500/20 transition-all">
+              <div className="relative p-2.5 sm:p-3 bg-amber-500/10 rounded-xl text-amber-600 border border-amber-500/30 group-hover:scale-110 group-hover:bg-amber-500/20 transition-all">
                 <ClipboardList size={22} strokeWidth={2.5} />
               </div>
               <span className="relative text-xs sm:text-sm tracking-wide">Pedido</span>
             </button>
             <button
               onClick={() => setIsProductListOpen(true)}
-              className="group relative overflow-hidden py-5 sm:py-6 bg-linear-to-br from-zinc-900 to-zinc-900/60 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-zinc-200 font-bold hover:border-indigo-500/40 hover:shadow-xl hover:shadow-indigo-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
+              className="group relative overflow-hidden py-5 sm:py-6 bg-white border border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-stone-800 font-bold hover:border-indigo-500/40 hover:shadow-xl hover:shadow-indigo-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
             >
               <div className="absolute inset-0 bg-linear-to-br from-indigo-500/0 to-indigo-500/0 group-hover:from-indigo-500/10 group-hover:to-transparent transition-all" />
-              <div className="relative p-2.5 sm:p-3 bg-indigo-500/10 rounded-xl text-indigo-400 border border-indigo-500/20 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all">
+              <div className="relative p-2.5 sm:p-3 bg-indigo-500/10 rounded-xl text-indigo-600 border border-indigo-500/30 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all">
                 <Package size={22} strokeWidth={2.5} />
               </div>
               <span className="relative text-xs sm:text-sm tracking-wide">Inventario</span>
             </button>
+            <Link
+              href="/admin/mercaderia"
+              className="group relative overflow-hidden py-5 sm:py-6 bg-white border border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-stone-800 font-bold hover:border-milokira-verde/40 hover:shadow-xl hover:shadow-milokira-verde/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
+            >
+              <div className="absolute inset-0 bg-linear-to-br from-milokira-verde/0 to-milokira-verde/0 group-hover:from-milokira-verde/10 group-hover:to-transparent transition-all" />
+              <div className="relative p-2.5 sm:p-3 bg-milokira-verde/10 rounded-xl text-milokira-verde border border-milokira-verde/20 group-hover:scale-110 group-hover:bg-milokira-verde/20 transition-all">
+                <Truck size={22} strokeWidth={2.5} />
+              </div>
+              <span className="relative text-xs sm:text-sm tracking-wide text-center">Mercadería</span>
+            </Link>
             <button
               onClick={() => setIsKnowledgeOpen(true)}
-              className="group relative overflow-hidden py-5 sm:py-6 bg-linear-to-br from-zinc-900 to-zinc-900/60 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-zinc-200 font-bold hover:border-teal-500/40 hover:shadow-xl hover:shadow-teal-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
+              className="group relative overflow-hidden py-5 sm:py-6 bg-white border border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-stone-800 font-bold hover:border-teal-500/40 hover:shadow-xl hover:shadow-teal-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
             >
               <div className="absolute inset-0 bg-linear-to-br from-teal-500/0 to-teal-500/0 group-hover:from-teal-500/10 group-hover:to-transparent transition-all" />
-              <div className="relative p-2.5 sm:p-3 bg-teal-500/10 rounded-xl text-teal-400 border border-teal-500/20 group-hover:scale-110 group-hover:bg-teal-500/20 transition-all">
+              <div className="relative p-2.5 sm:p-3 bg-teal-500/10 rounded-xl text-teal-600 border border-teal-500/30 group-hover:scale-110 group-hover:bg-teal-500/20 transition-all">
                 <BookOpen size={22} strokeWidth={2.5} />
               </div>
               <span className="relative text-xs sm:text-sm tracking-wide">Cerebro Kira</span>
@@ -329,14 +341,14 @@ export default function AdminPage() {
         {!loading && (
           <div className="mt-6">
             <div className="flex items-center justify-between mb-4 sm:mb-5">
-              <h2 className="text-xs sm:text-sm font-bold text-zinc-300 uppercase tracking-widest flex items-center gap-2.5 sm:gap-3">
-                <div className="p-2 bg-amber-500/10 rounded-xl text-amber-400 border border-amber-500/20 shadow-sm shadow-amber-900/20">
+              <h2 className="text-xs sm:text-sm font-bold text-stone-700 uppercase tracking-widest flex items-center gap-2.5 sm:gap-3">
+                <div className="p-2 bg-amber-500/10 rounded-xl text-amber-600 border border-amber-500/30 shadow-sm">
                   <Clock size={14} className="sm:w-4 sm:h-4" />
                 </div>
                 Pedidos pendientes
               </h2>
               <span
-                className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-black shadow-md transition-colors ${orders.length > 0 ? "bg-linear-to-r from-emerald-400 to-emerald-500 text-emerald-950 shadow-emerald-900/30" : "bg-zinc-800 text-zinc-500 border border-zinc-700"}`}
+                className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-black shadow-md transition-colors ${orders.length > 0 ? "bg-linear-to-r from-emerald-500 to-emerald-600 text-white shadow-emerald-900/30" : "bg-stone-100 text-stone-500 border border-stone-300"}`}
               >
                 {orders.length} {orders.length === 1 ? "pedido" : "pedidos"}
               </span>
@@ -347,11 +359,11 @@ export default function AdminPage() {
                 {orders.map((order) => (
                   <div
                     key={order.idFirebase}
-                    className="bg-linear-to-br from-zinc-900 to-zinc-900/60 rounded-2xl border border-zinc-800 overflow-hidden hover:border-zinc-700 transition-all shadow-lg shadow-black/20"
+                    className="bg-white rounded-2xl border border-stone-200 overflow-hidden hover:border-stone-300 transition-all shadow-sm"
                   >
                     <button
                       type="button"
-                      className="w-full p-3 sm:p-4 flex justify-between items-center cursor-pointer hover:bg-zinc-800 transition-colors text-left"
+                      className="w-full p-3 sm:p-4 flex justify-between items-center cursor-pointer hover:bg-stone-50 transition-colors text-left"
                       onClick={() =>
                         setExpandedOrderId(
                           expandedOrderId === order.idFirebase
@@ -362,15 +374,15 @@ export default function AdminPage() {
                     >
                       <div className="min-w-0 flex-1 pr-2">
                         <div className="flex items-center gap-2 mb-0.5 sm:mb-1">
-                          <p className="text-amber-100 font-bold text-sm sm:text-base truncate">
+                          <p className="text-stone-800 font-bold text-sm sm:text-base truncate">
                             {order.customer_name}
                           </p>
                           {order.delivery_type && (
                             <span
                               className={`px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wide shrink-0 ${
                                 order.delivery_type === "delivery"
-                                  ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
-                                  : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                                  : "bg-emerald-50 text-emerald-700 border border-emerald-200"
                               }`}
                             >
                               {order.delivery_type === "delivery"
@@ -379,16 +391,16 @@ export default function AdminPage() {
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] sm:text-xs text-zinc-500 flex items-center gap-1">
+                        <span className="text-[10px] sm:text-xs text-stone-500 flex items-center gap-1">
                           <Clock size={10} className="sm:w-3 sm:h-3" />{" "}
                           {new Date(order.created_at).toLocaleDateString()}
                         </span>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-amber-500 font-mono font-bold text-sm sm:text-base block">
+                        <span className="text-amber-600 font-mono font-bold text-sm sm:text-base block">
                           ${order.total_amount.toLocaleString()}
                         </span>
-                        <div className="flex items-center justify-end gap-1 text-zinc-500 text-[10px] sm:text-xs mt-0.5 sm:mt-1">
+                        <div className="flex items-center justify-end gap-1 text-stone-500 text-[10px] sm:text-xs mt-0.5 sm:mt-1">
                           {order.items?.length || 0} items{" "}
                           {expandedOrderId === order.idFirebase ? (
                             <ChevronUp size={12} />
@@ -400,16 +412,16 @@ export default function AdminPage() {
                     </button>
 
                     {expandedOrderId === order.idFirebase && (
-                      <div className="bg-black/40 p-3 sm:p-4 border-t border-zinc-800">
+                      <div className="bg-milokira-crema/50 p-3 sm:p-4 border-t border-stone-200">
                         <ul className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
                           {order.items?.map((item, idx) => (
                             <li
                               key={idx}
-                              className="flex justify-between text-xs sm:text-sm text-zinc-300"
+                              className="flex justify-between text-xs sm:text-sm text-stone-700"
                             >
                               <span className="truncate pr-2">
                                 • {item.nombre || "Planta"}{" "}
-                                <span className="text-zinc-500 text-[10px] sm:text-xs">
+                                <span className="text-stone-500 text-[10px] sm:text-xs">
                                   (x{item.quantity})
                                 </span>
                               </span>
@@ -426,7 +438,7 @@ export default function AdminPage() {
                         {order.delivery_type === "delivery" &&
                           order.delivery_fee != null &&
                           order.delivery_fee > 0 && (
-                            <div className="flex justify-between text-xs sm:text-sm text-indigo-400 mb-3 sm:mb-4 pt-1 border-t border-zinc-800/50">
+                            <div className="flex justify-between text-xs sm:text-sm text-indigo-700 font-semibold mb-3 sm:mb-4 pt-1 border-t border-stone-200/60">
                               <span>Delivery</span>
                               <span>
                                 ${order.delivery_fee.toLocaleString()}
@@ -471,17 +483,17 @@ export default function AdminPage() {
                 ))}
               </div>
             ) : (
-              <div className="bg-linear-to-br from-zinc-900/60 to-zinc-900/20 border border-dashed border-zinc-800 rounded-3xl p-10 sm:p-16 flex flex-col items-center justify-center text-center">
+              <div className="bg-white/60 border border-dashed border-stone-200 rounded-3xl p-10 sm:p-16 flex flex-col items-center justify-center text-center">
                 <div className="relative mb-5">
                   <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-2xl" />
                   <div className="relative bg-linear-to-br from-indigo-500/20 to-indigo-600/10 p-5 rounded-2xl border border-indigo-500/20">
                     <ClipboardList size={32} className="text-indigo-400" strokeWidth={2} />
                   </div>
                 </div>
-                <h3 className="text-zinc-200 text-base sm:text-lg font-bold mb-1.5">
+                <h3 className="text-stone-800 text-base sm:text-lg font-bold mb-1.5">
                   Todo en orden
                 </h3>
-                <p className="text-zinc-500 text-xs sm:text-sm mb-6 font-medium max-w-xs">
+                <p className="text-stone-500 text-xs sm:text-sm mb-6 font-medium max-w-xs">
                   No tienes pedidos pendientes por completar. ¡Aprovecha para registrar uno nuevo!
                 </p>
                 <button

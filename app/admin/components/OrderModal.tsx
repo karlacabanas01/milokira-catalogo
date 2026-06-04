@@ -34,15 +34,11 @@ type CartItem = {
 type DeliveryType = "delivery" | "retiro";
 
 const SECTORES = [
-  "Bicentenario",
-  "Las Rastras",
-  "Faustino",
-  "La Florida",
-  "Valles de Talca",
-  "Doña Ignacia",
-  "Nueva Holanda",
-  "Barrio Norte",
-  "Otro",
+  "Norte Oriente (Bicentenario, Las Rastras)",
+  "Norte Poniente (Barrio Norte, Las Américas, Sandoval)",
+  "Sur Oriente (Valles de Talca, San Miguel, Don Sebastián)",
+  "Sur Poniente (La Florida, Faustino, Nueva Holanda, Doña Ignacia)",
+  "Otro sector",
 ];
 
 type EditingOrderType = {
@@ -89,6 +85,7 @@ export default function OrderModal({
   const [notes, setNotes] = useState("");
   const [deliveryDay, setDeliveryDay] = useState("");
   const [sector, setSector] = useState("");
+  const [sectorOtro, setSectorOtro] = useState("");
   const [manualTotal, setManualTotal] = useState("");
 
   // Form para nuevo item
@@ -105,7 +102,14 @@ export default function OrderModal({
       setPhone(editingOrder.phone || "");
       setNotes(editingOrder.notes || "");
       setDeliveryDay(editingOrder.delivery_day || "");
-      setSector(editingOrder.sector || "");
+      const sectorGuardado = editingOrder.sector || "";
+      if (sectorGuardado && !SECTORES.includes(sectorGuardado)) {
+        setSector("Otro sector");
+        setSectorOtro(sectorGuardado);
+      } else {
+        setSector(sectorGuardado);
+        setSectorOtro("");
+      }
 
       // Si el total guardado no coincide con el subtotal calculado, asumimos que fue manual
       const calcSubtotal = editingOrder.items.reduce(
@@ -138,6 +142,7 @@ export default function OrderModal({
       setNotes("");
       setDeliveryDay("");
       setSector("");
+      setSectorOtro("");
       setManualTotal("");
     }
     setItemName("");
@@ -207,7 +212,12 @@ export default function OrderModal({
         phone: phone.trim(),
         notes: notes.trim(),
         delivery_day: deliveryType === "delivery" ? deliveryDay : "",
-        sector: deliveryType === "delivery" ? sector : "",
+        sector:
+          deliveryType === "delivery"
+            ? sector === "Otro sector"
+              ? sectorOtro.trim()
+              : sector
+            : "",
       };
 
       if (editingOrder) {
@@ -250,7 +260,7 @@ export default function OrderModal({
 
   return (
     <div className="fixed inset-0 bg-stone-900/40 z-50 flex items-end sm:items-center justify-center sm:p-6 backdrop-blur-sm animate-in fade-in">
-      <div className="relative bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border border-stone-200 shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
+      <div className="relative bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border border-stone-200 shadow-2xl flex flex-col max-h-dvh sm:max-h-[90vh] h-dvh sm:h-auto overflow-hidden">
         {/* Fondo decorativo */}
         <div className="pointer-events-none absolute inset-0 opacity-50">
           <div className="absolute -top-20 -left-20 w-64 h-64 bg-amber-300/30 rounded-full blur-3xl" />
@@ -495,27 +505,30 @@ export default function OrderModal({
                   value={deliveryFee || ""}
                   onChange={(e) => setDeliveryFee(Number(e.target.value) || 0)}
                 />
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div className="relative">
                     <CalendarDays
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"
                       size={14}
                     />
                     <select
                       value={deliveryDay}
                       onChange={(e) => setDeliveryDay(e.target.value)}
-                      className="w-full pl-9 pr-2 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-milokira-lila text-xs sm:text-sm"
+                      className="w-full pl-9 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-milokira-lila text-base appearance-none"
                     >
                       <option value="">Día...</option>
+                      <option value="lunes">Lunes</option>
                       <option value="martes">Martes</option>
+                      <option value="miercoles">Miércoles</option>
+                      <option value="jueves">Jueves</option>
                       <option value="viernes">Viernes</option>
-                      <option value="otro">Otro</option>
+                      <option value="otro">Otro día</option>
                     </select>
                   </div>
                   <select
                     value={sector}
                     onChange={(e) => setSector(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-milokira-lila text-xs sm:text-sm"
+                    className="w-full px-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-milokira-lila text-base appearance-none"
                   >
                     <option value="">Sector...</option>
                     {SECTORES.map((s) => (
@@ -525,6 +538,14 @@ export default function OrderModal({
                     ))}
                   </select>
                 </div>
+                {sector === "Otro sector" && (
+                  <input
+                    value={sectorOtro}
+                    onChange={(e) => setSectorOtro(e.target.value)}
+                    placeholder="Escribe el sector"
+                    className="w-full px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-milokira-lila text-xs sm:text-sm placeholder:text-stone-400"
+                  />
+                )}
                 <div className="relative">
                   <MapPin className="absolute left-3 top-3 text-stone-400" size={14} />
                   <textarea
@@ -579,7 +600,10 @@ export default function OrderModal({
         </div>
 
         {/* Totales + acciones */}
-        <div className="relative z-10 shrink-0 border-t border-stone-100 bg-white/90 backdrop-blur-xl px-5 sm:px-7 py-4 space-y-3">
+        <div
+          className="relative z-10 shrink-0 border-t border-stone-100 bg-white/90 backdrop-blur-xl px-5 sm:px-7 py-4 space-y-3"
+          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        >
           <div className="space-y-1">
             {deliveryType === "delivery" && deliveryFee > 0 && (
               <>
