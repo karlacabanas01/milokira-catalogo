@@ -224,31 +224,20 @@ export default function AdminPage() {
       </div>
 
       <div className="sticky top-0 z-20 bg-white/70 backdrop-blur-2xl border-b border-stone-200">
-        <div className="px-4 sm:px-8 py-4 w-full max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <Link href="/" className="shrink-0">
+        <div className="relative px-4 sm:px-8 py-4 w-full max-w-7xl mx-auto flex items-center justify-center">
+          <Link
+            href="/"
+            className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 shrink-0"
+          >
             <button className="group flex items-center gap-2 text-stone-500 hover:text-stone-800 bg-white hover:bg-stone-100 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all text-xs sm:text-sm font-semibold border border-stone-200 hover:border-stone-300">
               <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
               <span className="hidden xs:inline">Volver</span>
             </button>
           </Link>
 
-          <div className="flex items-center gap-3 min-w-0">
-            <img
-              src="/img/logo.png"
-              alt="Milokira"
-              className="h-14 w-14 sm:h-20 sm:w-20 object-contain shrink-0"
-            />
-            <div className="min-w-0">
-              <p className="text-base sm:text-2xl text-milokira-verde font-black uppercase tracking-widest">
-                Panel de administración
-              </p>
-            </div>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-stone-200">
-            <div className="h-2 w-2 rounded-full bg-milokira-verde animate-pulse shadow-sm shadow-milokira-verde" />
-            <span className="text-xs text-stone-500 font-medium">En línea</span>
-          </div>
+          <p className="text-base sm:text-2xl text-milokira-verde font-black uppercase tracking-widest text-center">
+            Panel de administración
+          </p>
         </div>
       </div>
 
@@ -291,11 +280,8 @@ export default function AdminPage() {
               </div>
               <span className="relative text-xs sm:text-sm tracking-wide">Gasto</span>
             </button>
-            <button
-              onClick={() => {
-                setEditingOrder(null);
-                setIsOrderModalOpen(true);
-              }}
+            <Link
+              href="/admin/pedidos"
               className="group relative overflow-hidden py-5 sm:py-6 bg-white border border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-stone-800 font-bold hover:border-amber-500/40 hover:shadow-xl hover:shadow-amber-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
             >
               <div className="absolute inset-0 bg-linear-to-br from-amber-500/0 to-amber-500/0 group-hover:from-amber-500/10 group-hover:to-transparent transition-all" />
@@ -303,7 +289,7 @@ export default function AdminPage() {
                 <ClipboardList size={22} strokeWidth={2.5} />
               </div>
               <span className="relative text-xs sm:text-sm tracking-wide">Pedido</span>
-            </button>
+            </Link>
             <button
               onClick={() => setIsProductListOpen(true)}
               className="group relative overflow-hidden py-5 sm:py-6 bg-white border border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-stone-800 font-bold hover:border-indigo-500/40 hover:shadow-xl hover:shadow-indigo-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
@@ -416,7 +402,7 @@ export default function AdminPage() {
                         <ul className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
                           {order.items?.map((item, idx) => (
                             <li
-                              key={idx}
+                              key={`${order.idFirebase}-${item.product_id || item.nombre || idx}`}
                               className="flex justify-between text-xs sm:text-sm text-stone-700"
                             >
                               <span className="truncate pr-2">

@@ -206,7 +206,7 @@ export default function OrderListModal({ isOpen, onClose, onChange }: Props) {
                     <ul className="space-y-2 mb-4">
                       {order.items?.map((item, idx) => (
                         <li
-                          key={idx}
+                          key={`${order.idFirebase}-${item.product_id || item.nombre || idx}`}
                           className="flex justify-between text-sm text-stone-700"
                         >
                           <span>

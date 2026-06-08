@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   collection,
@@ -44,6 +44,8 @@ import {
   Edit3,
   Layers,
   FileText,
+  LayoutGrid,
+  Table as TableIcon,
 } from "lucide-react";
 
 type DeliveryDay = string;
@@ -136,6 +138,7 @@ export default function PedidosPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("todos");
   const [sortMode, setSortMode] = useState<SortMode>("manual");
+  const [vista, setVista] = useState<"cards" | "tabla">("cards");
   const [geocoding, setGeocoding] = useState(false);
 
   const ensureCoords = async () => {
@@ -582,31 +585,328 @@ export default function PedidosPage() {
             </p>
           </div>
         ) : (
-          <ul className="space-y-3">
-            {visibleOrders.map((order, idx) => (
-              <OrderCard
-                key={order.idFirebase}
-                order={order}
-                position={idx + 1}
-                isFirst={idx === 0}
-                isLast={idx === visibleOrders.length - 1}
-                expanded={expanded === order.idFirebase}
-                onToggleExpand={() =>
-                  setExpanded(expanded === order.idFirebase ? null : order.idFirebase)
-                }
-                onMoveUp={() => moveOrder(order.idFirebase, -1)}
-                onMoveDown={() => moveOrder(order.idFirebase, 1)}
-                onComplete={() => handleComplete(order)}
-                onDelete={() => handleDelete(order)}
-                onSaveAdminNotes={(notes) => handleSaveAdminNotes(order, notes)}
-                onEdit={() => {
-                  setEditingOrder(order);
-                  setIsOrderModalOpen(true);
-                }}
-                onPdf={() => openTicketPage([order])}
-              />
-            ))}
-          </ul>
+          <>
+            <div className="flex items-center justify-end">
+              <div className="inline-flex bg-stone-100 rounded-lg p-0.5 border border-stone-200">
+                <button
+                  type="button"
+                  onClick={() => setVista("cards")}
+                  aria-label="Vista cards"
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${
+                    vista === "cards"
+                      ? "bg-white text-milokira-verde shadow-sm"
+                      : "text-stone-500 hover:text-stone-700"
+                  }`}
+                >
+                  <LayoutGrid size={11} strokeWidth={2.5} />
+                  Cards
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVista("tabla")}
+                  aria-label="Vista tabla"
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${
+                    vista === "tabla"
+                      ? "bg-white text-milokira-verde shadow-sm"
+                      : "text-stone-500 hover:text-stone-700"
+                  }`}
+                >
+                  <TableIcon size={11} strokeWidth={2.5} />
+                  Tabla
+                </button>
+              </div>
+            </div>
+
+            {vista === "cards" ? (
+              <ul className="space-y-3">
+                {visibleOrders.map((order, idx) => (
+                  <OrderCard
+                    key={order.idFirebase}
+                    order={order}
+                    position={idx + 1}
+                    isFirst={idx === 0}
+                    isLast={idx === visibleOrders.length - 1}
+                    expanded={expanded === order.idFirebase}
+                    onToggleExpand={() =>
+                      setExpanded(expanded === order.idFirebase ? null : order.idFirebase)
+                    }
+                    onMoveUp={() => moveOrder(order.idFirebase, -1)}
+                    onMoveDown={() => moveOrder(order.idFirebase, 1)}
+                    onComplete={() => handleComplete(order)}
+                    onDelete={() => handleDelete(order)}
+                    onSaveAdminNotes={(notes) => handleSaveAdminNotes(order, notes)}
+                    onEdit={() => {
+                      setEditingOrder(order);
+                      setIsOrderModalOpen(true);
+                    }}
+                    onPdf={() => openTicketPage([order])}
+                  />
+                ))}
+              </ul>
+            ) : (
+              <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs sm:text-sm">
+                    <thead className="bg-milokira-crema/60">
+                      <tr className="text-[9px] sm:text-[10px] font-black text-stone-500 uppercase tracking-wider">
+                        {sortMode === "manual" && (
+                          <th className="px-1 py-2 text-center w-10">Orden</th>
+                        )}
+                        <th className="px-2 sm:px-3 py-2 text-center w-8">#</th>
+                        <th className="px-2 sm:px-3 py-2 text-left">Cliente</th>
+                        <th className="px-2 py-2 text-left hidden md:table-cell">
+                          Sector
+                        </th>
+                        <th className="px-2 py-2 text-left hidden lg:table-cell">
+                          Día
+                        </th>
+                        <th className="px-2 py-2 text-center hidden md:table-cell">
+                          Hora
+                        </th>
+                        <th className="px-2 py-2 text-center">Tipo</th>
+                        <th className="px-2 py-2 text-right">Total</th>
+                        <th className="px-2 py-2 text-right">Acciones</th>
+                        <th className="px-1 py-2 w-8" aria-label="Expandir" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-200">
+                      {visibleOrders.map((order, idx) => {
+                        const isExpanded = expanded === order.idFirebase;
+                        const colSpan = sortMode === "manual" ? 10 : 9;
+                        return (
+                          <Fragment key={order.idFirebase}>
+                            <tr className="hover:bg-milokira-crema/30 transition-colors">
+                              {sortMode === "manual" && (
+                                <td className="px-1 py-2">
+                                  <div className="flex flex-col items-center gap-0.5">
+                                    <button
+                                      onClick={() =>
+                                        moveOrder(order.idFirebase, -1)
+                                      }
+                                      disabled={idx === 0}
+                                      className="text-stone-400 hover:text-milokira-verde disabled:opacity-25 disabled:cursor-not-allowed p-0.5"
+                                      title="Subir"
+                                      aria-label="Subir"
+                                    >
+                                      <ChevronUp size={14} strokeWidth={2.5} />
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        moveOrder(order.idFirebase, 1)
+                                      }
+                                      disabled={idx === visibleOrders.length - 1}
+                                      className="text-stone-400 hover:text-milokira-verde disabled:opacity-25 disabled:cursor-not-allowed p-0.5"
+                                      title="Bajar"
+                                      aria-label="Bajar"
+                                    >
+                                      <ChevronDown
+                                        size={14}
+                                        strokeWidth={2.5}
+                                      />
+                                    </button>
+                                  </div>
+                                </td>
+                              )}
+                              <td className="px-2 sm:px-3 py-2 text-center text-stone-500 font-bold">
+                                {idx + 1}
+                              </td>
+                              <td className="px-2 sm:px-3 py-2">
+                                <p className="font-bold text-stone-800 truncate max-w-35 sm:max-w-50">
+                                  {order.customer_name}
+                                </p>
+                                {order.phone && (
+                                  <p className="text-[10px] text-stone-500 truncate max-w-35 sm:max-w-50">
+                                    {order.phone}
+                                  </p>
+                                )}
+                              </td>
+                              <td className="px-2 py-2 hidden md:table-cell">
+                                <span className="text-stone-700 text-[11px] truncate block max-w-35">
+                                  {order.sector || "—"}
+                                </span>
+                              </td>
+                              <td className="px-2 py-2 hidden lg:table-cell">
+                                <span className="text-stone-700 text-[11px] capitalize">
+                                  {order.delivery_day || "—"}
+                                </span>
+                              </td>
+                              <td className="px-2 py-2 text-center hidden md:table-cell">
+                                <span className="text-stone-700 text-[11px] font-mono">
+                                  {new Date(order.created_at).toLocaleTimeString(
+                                    "es-CL",
+                                    { hour: "2-digit", minute: "2-digit" },
+                                  )}
+                                </span>
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                <span
+                                  className={`inline-flex px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-black uppercase tracking-wide ${
+                                    order.delivery_type === "delivery"
+                                      ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                                      : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                  }`}
+                                >
+                                  {order.delivery_type === "delivery"
+                                    ? "Delivery"
+                                    : "Retiro"}
+                                </span>
+                              </td>
+                              <td className="px-2 py-2 text-right font-mono font-bold text-amber-600 whitespace-nowrap">
+                                ${order.total_amount.toLocaleString("es-CL")}
+                              </td>
+                              <td className="px-2 py-2">
+                                <div className="flex items-center justify-end gap-0.5">
+                                  <button
+                                    onClick={() => openTicketPage([order])}
+                                    className="text-stone-500 hover:text-stone-800 p-1.5 rounded hover:bg-stone-100 transition-colors"
+                                    title="Imprimir ticket"
+                                    aria-label="Imprimir"
+                                  >
+                                    <Printer size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingOrder(order);
+                                      setIsOrderModalOpen(true);
+                                    }}
+                                    className="text-stone-500 hover:text-indigo-700 p-1.5 rounded hover:bg-indigo-50 transition-colors"
+                                    title="Editar"
+                                    aria-label="Editar"
+                                  >
+                                    <Edit3 size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleComplete(order)}
+                                    className="text-stone-500 hover:text-milokira-verde p-1.5 rounded hover:bg-milokira-verde/10 transition-colors"
+                                    title="Completar"
+                                    aria-label="Completar"
+                                  >
+                                    <CheckCircle size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(order)}
+                                    className="text-stone-500 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition-colors"
+                                    title="Eliminar"
+                                    aria-label="Eliminar"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="px-1 py-2 text-center">
+                                <button
+                                  onClick={() =>
+                                    setExpanded(
+                                      isExpanded ? null : order.idFirebase,
+                                    )
+                                  }
+                                  className="text-stone-500 hover:text-stone-800 p-1.5 rounded hover:bg-stone-100 transition-colors"
+                                  title={
+                                    isExpanded ? "Cerrar detalle" : "Ver detalle"
+                                  }
+                                  aria-label="Detalle"
+                                  aria-expanded={isExpanded}
+                                >
+                                  {isExpanded ? (
+                                    <ChevronUp size={14} />
+                                  ) : (
+                                    <ChevronDown size={14} />
+                                  )}
+                                </button>
+                              </td>
+                            </tr>
+                            {isExpanded && (
+                              <tr className="bg-milokira-crema/40">
+                                <td
+                                  colSpan={colSpan}
+                                  className="px-3 sm:px-5 py-4"
+                                >
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                    <div>
+                                      <p className="text-[10px] font-black text-stone-500 uppercase tracking-wider mb-1">
+                                        Items ({order.items?.length || 0})
+                                      </p>
+                                      <ul className="space-y-1">
+                                        {order.items?.map((item, i) => (
+                                          <li
+                                            key={`${order.idFirebase}-${item.product_id || item.nombre || i}`}
+                                            className="flex justify-between gap-2 text-stone-700"
+                                          >
+                                            <span className="truncate">
+                                              • {item.nombre || "Planta"}{" "}
+                                              <span className="text-stone-500">
+                                                (x{item.quantity})
+                                              </span>
+                                            </span>
+                                            <span className="font-mono shrink-0">
+                                              $
+                                              {(
+                                                item.unit_price * item.quantity
+                                              ).toLocaleString("es-CL")}
+                                            </span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                      {order.delivery_type === "delivery" &&
+                                        order.delivery_fee != null &&
+                                        order.delivery_fee > 0 && (
+                                          <div className="flex justify-between mt-2 pt-2 border-t border-stone-200 text-indigo-700 font-semibold">
+                                            <span>Delivery</span>
+                                            <span className="font-mono">
+                                              $
+                                              {order.delivery_fee.toLocaleString(
+                                                "es-CL",
+                                              )}
+                                            </span>
+                                          </div>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      {order.address && (
+                                        <div>
+                                          <p className="text-[10px] font-black text-stone-500 uppercase tracking-wider">
+                                            Dirección
+                                          </p>
+                                          <p className="text-stone-700">
+                                            {order.address}
+                                          </p>
+                                        </div>
+                                      )}
+                                      {order.notes && (
+                                        <div>
+                                          <p className="text-[10px] font-black text-stone-500 uppercase tracking-wider">
+                                            Notas del cliente
+                                          </p>
+                                          <p className="text-stone-700 whitespace-pre-wrap">
+                                            {order.notes}
+                                          </p>
+                                        </div>
+                                      )}
+                                      {order.admin_notes && (
+                                        <div>
+                                          <p className="text-[10px] font-black text-amber-700 uppercase tracking-wider">
+                                            Notas admin
+                                          </p>
+                                          <p className="text-stone-700 whitespace-pre-wrap">
+                                            {order.admin_notes}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

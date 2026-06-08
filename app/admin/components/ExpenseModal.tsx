@@ -17,7 +17,7 @@ export default function ExpenseModal({
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
     await onSave({
       description: form.description,

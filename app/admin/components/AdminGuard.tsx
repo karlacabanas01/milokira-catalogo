@@ -17,7 +17,7 @@ export default function AdminGuard({ children }: { readonly children: ReactNode 
     setStatus(authed ? "authed" : "denied");
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: { preventDefault: () => void }) => {
     e.preventDefault();
     const expected = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
     if (!expected) {

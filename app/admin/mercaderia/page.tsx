@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   collection,
   getDocs,
+  getDoc,
   doc,
   addDoc,
   updateDoc,
@@ -12,8 +13,14 @@ import {
   deleteDoc,
   query,
   orderBy,
+  type DocumentSnapshot,
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
+import {
+  slugify,
+  redondearComercial,
+  parsePastedList as parsePastedListPure,
+} from "./helpers";
 import {
   ArrowLeft,
   Plus,
@@ -63,16 +70,6 @@ const formatCLP = (n: number) =>
     currency: "CLP",
     maximumFractionDigits: 0,
   }).format(n);
-
-const slugify = (name: string) =>
-  name
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^\w\s]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
 
 export default function MercaderiaPage() {
   const [compras, setCompras] = useState<Compra[]>([]);
@@ -373,134 +370,15 @@ function NuevaCompraModal({
   const [pasteParsed, setPasteParsed] = useState<CompraItem[]>([]);
   const [pasteError, setPasteError] = useState("");
 
-  const parsePastedList = (text: string): CompraItem[] => {
-    const codigoRegex = /\s*\(c[oó]d[:\s.][^)]*\)/i;
-    // Formato A: "4x NOMBRE - $1,650/unid"
-    const regexUnid =
-      /^\s*(\d+)\s*x\s+(.+?)\s*-\s*\$?\s*([\d.,]+)\s*\/?\s*unid/i;
-    // Formato B (recibo en una sola línea): "1x KENTIA M17 $ 5,800"  o  "4x NOMBRE $ 1,650 $ 6,600"
-    const regexLineaConPrecios =
-      /^\s*(\d+)\s*x\s+(.+?)\s+\$\s*([\d.,]+)(?:\s+\$\s*([\d.,]+))?(?:\s+\$\s*([\d.,]+))?\s*$/i;
-    // Formato C (multilínea recibo): la línea es solo "4x" o "1x"
-    const regexSoloCantidad = /^\s*(\d+)\s*x\s*$/i;
-    // Línea de precios separada: "$ 1,650"  o  "$ 1,650 $ 6,600"  o  "$ 1,650 $ 1,250 $ 5,000"
-    const regexPrecios = /\$\s*([\d.,]+)/g;
-
-    const toNum = (s: string) => Number(s.replace(/[.,]/g, ""));
-
-    const lineas = text.split(/\r?\n/).map((l) => l.trim());
-    const out: CompraItem[] = [];
-
-    const pushItem = (unidades: number, nombre: string, precio: number) => {
-      const nombreLimpio = nombre.replace(codigoRegex, "").trim();
-      if (!unidades || !nombreLimpio || !precio) return;
-      out.push({
-        id: newId(),
-        nombre: nombreLimpio,
-        unidades,
-        precioUnitNeto: precio,
-        plantasPorMaceta: 1,
-        ingresada: false,
-      });
-    };
-
-    // Recoge todos los precios de una línea como números
-    const extraerPrecios = (s: string): number[] => {
-      const arr: number[] = [];
-      let m: RegExpExecArray | null;
-      regexPrecios.lastIndex = 0;
-      while ((m = regexPrecios.exec(s)) !== null) {
-        arr.push(toNum(m[1]));
-      }
-      return arr;
-    };
-
-    // Si hay 2 precios consecutivos en una línea sin subtotal extra, suele ser:
-    //  - tachado + efectivo (usar el menor o el segundo)
-    //  - efectivo + subtotal (usar el primero)
-    // Heurística: para Nx, precio×N == subtotal indica que el segundo es subtotal.
-    const elegirPrecioUnit = (
-      unidades: number,
-      precios: number[],
-    ): number => {
-      if (precios.length === 0) return 0;
-      if (precios.length === 1) return precios[0];
-      if (precios.length === 2) {
-        const [a, b] = precios;
-        // Caso "Nx NOMBRE $A $B": A puede ser tachado o unit, B puede ser unit o subtotal
-        if (a * unidades === b) return a; // a = unit, b = subtotal
-        if (b * unidades === a) return b; // b = unit, a = subtotal (raro)
-        // Si no, asumir tachado+efectivo → segundo (precio nuevo)
-        return b;
-      }
-      if (precios.length >= 3) {
-        // "$ tachado $ efectivo $ subtotal" → el del medio
-        const [, b, c] = precios;
-        if (b * unidades === c) return b;
-        return b;
-      }
-      return precios[0];
-    };
-
-    let i = 0;
-    while (i < lineas.length) {
-      const linea = lineas[i];
-      if (!linea) {
-        i++;
-        continue;
-      }
-
-      // Formato A — "Nx NOMBRE - $X/unid"
-      const mA = regexUnid.exec(linea);
-      if (mA) {
-        pushItem(Number(mA[1]), mA[2].trim(), toNum(mA[3]));
-        i++;
-        continue;
-      }
-
-      // Formato B — todo en una línea "Nx NOMBRE $X [$Y [$Z]]"
-      const mB = regexLineaConPrecios.exec(linea);
-      if (mB) {
-        const unidades = Number(mB[1]);
-        const nombre = mB[2].trim();
-        const precios = [mB[3], mB[4], mB[5]]
-          .filter((s): s is string => Boolean(s))
-          .map(toNum);
-        const unit = elegirPrecioUnit(unidades, precios);
-        pushItem(unidades, nombre, unit);
-        i++;
-        continue;
-      }
-
-      // Formato C — multilínea: "Nx" / "NOMBRE" / "$..."  o sin línea de precios extras
-      const mC = regexSoloCantidad.exec(linea);
-      if (mC) {
-        const unidades = Number(mC[1]);
-        const nombre = lineas[i + 1] || "";
-        if (!nombre || /^\$/.test(nombre) || /^\d+\s*x/i.test(nombre)) {
-          i++;
-          continue;
-        }
-
-        // Las siguientes 1 o 2 líneas son precios. Recolectamos hasta que se acaben.
-        const precios: number[] = [];
-        let j = i + 2;
-        while (j < lineas.length && /^\$/.test(lineas[j])) {
-          precios.push(...extraerPrecios(lineas[j]));
-          j++;
-        }
-
-        const unit = elegirPrecioUnit(unidades, precios);
-        pushItem(unidades, nombre, unit);
-        i = j;
-        continue;
-      }
-
-      i++;
-    }
-
-    return out;
-  };
+  const parsePastedList = (text: string): CompraItem[] =>
+    parsePastedListPure(text).map((p) => ({
+      id: newId(),
+      nombre: p.nombre,
+      unidades: p.unidades,
+      precioUnitNeto: p.precioUnitNeto,
+      plantasPorMaceta: p.plantasPorMaceta,
+      ingresada: false,
+    }));
 
   const openPaste = () => {
     setPasteText("");
@@ -1205,6 +1083,47 @@ function DetalleCompraModal({
         await persistirCambios();
       }
 
+      // 1) Pre-fetch: ver cuáles ya existen en inventario y con qué stock.
+      const itemsAProcesar = idsSeleccionados
+        .map((id) => calc.find((c) => c.id === id))
+        .filter((x): x is NonNullable<typeof x> => Boolean(x));
+
+      const existentes: { item: typeof itemsAProcesar[number]; stockActual: number }[] = [];
+      const snaps = new Map<string, DocumentSnapshot>();
+      for (const item of itemsAProcesar) {
+        const slug = slugify(item.nombre);
+        const plantaRef = doc(db, "Plantas", slug);
+        const plantaSnap = await getDoc(plantaRef);
+        snaps.set(slug, plantaSnap);
+        if (plantaSnap.exists()) {
+          const stockActual = Number(plantaSnap.data().stock) || 0;
+          existentes.push({ item, stockActual });
+        }
+      }
+
+      // 2) Si hay existentes, preguntar Sumar / Reemplazar.
+      // OK → Sumar (recomendado para entradas reales). Cancelar → Reemplazar.
+      let modoStock: "sumar" | "reemplazar" = "sumar";
+      if (existentes.length > 0) {
+        const detalle = existentes
+          .map(
+            ({ item, stockActual }) =>
+              `• ${item.nombre}: ${stockActual} actual + ${item.plantasTotales} ingresan`,
+          )
+          .join("\n");
+        const sumarTotal = existentes.reduce(
+          (a, b) => a + b.stockActual + b.item.plantasTotales,
+          0,
+        );
+        const msg =
+          `Hay ${existentes.length} planta(s) que ya existen en inventario:\n\n` +
+          `${detalle}\n\n` +
+          `Aceptar → SUMAR al stock actual (total quedaría en ${sumarTotal} entre ellas).\n` +
+          `Cancelar → REEMPLAZAR el stock por el de esta compra.\n\n` +
+          `¿Sumar al stock actual?`;
+        modoStock = window.confirm(msg) ? "sumar" : "reemplazar";
+      }
+
       for (const id of idsSeleccionados) {
         const item = calc.find((c) => c.id === id);
         if (!item) continue;
@@ -1212,7 +1131,7 @@ function DetalleCompraModal({
 
         const costoCompraTotal = item.precioUnitNeto * item.unidades;
         const stockEntrante = item.plantasTotales;
-        const precioVenta = Math.round(item.precioSugerido);
+        const precioVenta = redondearComercial(item.precioSugerido);
         const costoUnitario = Math.round(item.costoRealPorPlanta);
         const margen =
           costoUnitario > 0
@@ -1223,9 +1142,31 @@ function DetalleCompraModal({
               )
             : 0;
 
-        await setDoc(
-          doc(db, "Plantas", slug),
-          {
+        const plantaRef = doc(db, "Plantas", slug);
+        const plantaSnap = snaps.get(slug) ?? (await getDoc(plantaRef));
+
+        if (plantaSnap.exists()) {
+          // Planta ya existe: solo actualizamos lo que viene de esta compra.
+          // No tocamos descripcion, categorias, imagenUrl, imagenPosition,
+          // dificultad, aptaMascotas, ni el flag `precio.disponible`.
+          const stockActual = Number(plantaSnap.data().stock) || 0;
+          const stockFinal =
+            modoStock === "sumar" ? stockActual + stockEntrante : stockEntrante;
+          await updateDoc(plantaRef, {
+            nombre: item.nombre,
+            stock: stockFinal,
+            costo: costoUnitario,
+            margen,
+            costoOriginalTotal: costoCompraTotal,
+            unidadesCompradas: item.unidades,
+            precioCompraUnitaria: item.precioUnitNeto,
+            plantasPorMaceta: item.plantasPorMaceta,
+            "precio.valor": precioVenta,
+            "precio.tipo": "fijo",
+          });
+        } else {
+          // Planta nueva: la creamos con los defaults.
+          await setDoc(plantaRef, {
             nombre: item.nombre,
             stock: stockEntrante,
             costo: costoUnitario,
@@ -1245,9 +1186,8 @@ function DetalleCompraModal({
               tipo: "fijo",
               disponible: true,
             },
-          },
-          { merge: true },
-        );
+          });
+        }
       }
 
       const itemsActualizados: CompraItem[] = itemsEdit.map((i) => {
@@ -1328,6 +1268,83 @@ function DetalleCompraModal({
       idsBorrar.forEach((id) => delete next[id]);
       return next;
     });
+    setDirty(true);
+  };
+
+  const idsReingresables = itemsEdit.filter(
+    (i) => seleccion[i.id] && i.ingresada,
+  );
+
+  const handleCorregirCostos = async () => {
+    const ingresadas = calc.filter((i) => i.ingresada);
+    if (ingresadas.length === 0) {
+      window.alert("No hay plantas ingresadas al inventario en esta compra.");
+      return;
+    }
+    const msg = `Corregir costo + margen en inventario para ${ingresadas.length} plantas ya ingresadas?\n\nUsará el cálculo actual (IVA ${ivaEdit}% + despacho + margen ${margenEdit}%). No toca stock, descripción, imágenes ni categorías.`;
+    if (!window.confirm(msg)) return;
+
+    setIsSaving(true);
+    setError("");
+    let okCount = 0;
+    let skipCount = 0;
+    try {
+      for (const item of ingresadas) {
+        const slug = slugify(item.nombre);
+        const plantaRef = doc(db, "Plantas", slug);
+        const snap = await getDoc(plantaRef);
+        if (!snap.exists()) {
+          skipCount++;
+          continue;
+        }
+        const precioVenta = redondearComercial(item.precioSugerido);
+        const costoUnitario = Math.round(item.costoRealPorPlanta);
+        const costoCompraTotal = item.precioUnitNeto * item.unidades;
+        const margen =
+          costoUnitario > 0
+            ? Number(
+                (((precioVenta - costoUnitario) / costoUnitario) * 100).toFixed(
+                  1,
+                ),
+              )
+            : 0;
+        await updateDoc(plantaRef, {
+          costo: costoUnitario,
+          margen,
+          costoOriginalTotal: costoCompraTotal,
+          unidadesCompradas: item.unidades,
+          precioCompraUnitaria: item.precioUnitNeto,
+          plantasPorMaceta: item.plantasPorMaceta,
+          "precio.valor": precioVenta,
+        });
+        okCount++;
+      }
+      window.alert(
+        `Listo. ${okCount} plantas actualizadas` +
+          (skipCount > 0
+            ? `. ${skipCount} no encontradas en inventario (no se modificaron).`
+            : "."),
+      );
+    } catch (err) {
+      console.error(err);
+      setError("Error al corregir costos en inventario.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleReabrirSeleccionadas = () => {
+    if (idsReingresables.length === 0) return;
+    const msg =
+      idsReingresables.length === 1
+        ? `Reabrir "${idsReingresables[0].nombre}" para volver a pasarla al inventario con el costo correcto?`
+        : `Reabrir ${idsReingresables.length} plantas para volver a pasarlas al inventario con el costo correcto?`;
+    if (!window.confirm(msg)) return;
+
+    const idsReabrir = new Set(idsReingresables.map((i) => i.id));
+    setItemsEdit((prev) =>
+      prev.map((i) => (idsReabrir.has(i.id) ? { ...i, ingresada: false } : i)),
+    );
     setDirty(true);
   };
 
@@ -1422,7 +1439,18 @@ function DetalleCompraModal({
               <Plus size={12} strokeWidth={3} />
               Agregar planta
             </button>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {idsReingresables.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleReabrirSeleccionadas}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 text-[11px] font-black uppercase tracking-wider transition-all active:scale-95"
+                  title="Marcar como no ingresada para volver a pasarla al inventario con el costo correcto"
+                >
+                  <PackageCheck size={12} strokeWidth={2.5} />
+                  Reabrir ({idsReingresables.length})
+                </button>
+              )}
               {idsEliminables.length > 0 && (
                 <button
                   type="button"
@@ -1567,16 +1595,23 @@ function DetalleCompraModal({
                               disabled={it.ingresada}
                               value={
                                 it.precioSugerido > 0
-                                  ? formatCLP(Math.round(it.precioSugerido))
+                                  ? formatCLP(
+                                      it.precioSugeridoOverride &&
+                                        it.precioSugeridoOverride > 0
+                                        ? Math.round(it.precioSugerido)
+                                        : redondearComercial(it.precioSugerido),
+                                    )
                                   : ""
                               }
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                const limpio = e.target.value.replace(/\D/g, "");
+                                const n = Number(limpio);
                                 updateItem(
                                   it.id,
                                   "precioSugeridoOverride",
-                                  Number(e.target.value.replace(/\D/g, "")) || 0,
-                                )
-                              }
+                                  limpio === "" || n <= 0 ? undefined : n,
+                                );
+                              }}
                               className={`${inputCls} text-right font-mono font-black text-milokira-verde`}
                             />
                           </td>
@@ -1660,6 +1695,18 @@ function DetalleCompraModal({
               className="w-full py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 font-bold rounded-xl text-xs uppercase tracking-wider transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isSaving ? "Guardando…" : "Guardar cambios"}
+            </button>
+          )}
+          {calc.some((i) => i.ingresada) && (
+            <button
+              onClick={handleCorregirCostos}
+              disabled={isSaving}
+              className="w-full py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 font-bold rounded-xl text-xs uppercase tracking-wider transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+              title="Reescribe costo y margen en inventario para las plantas ya ingresadas. No toca stock ni otros campos."
+            >
+              {isSaving
+                ? "Corrigiendo…"
+                : `Corregir costo en inventario (${calc.filter((i) => i.ingresada).length})`}
             </button>
           )}
           <button

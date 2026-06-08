@@ -10,6 +10,7 @@
   ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38B2AC?logo=tailwind-css&logoColor=white)
   ![Firebase](https://img.shields.io/badge/Firebase-12-FFCA28?logo=firebase&logoColor=white)
   ![Gemini](https://img.shields.io/badge/Google_Gemini-AI-4285F4?logo=google&logoColor=white)
+  ![Vitest](https://img.shields.io/badge/Tests-24%20passing-6E9F18?logo=vitest&logoColor=white)
   ![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000?logo=vercel&logoColor=white)
 
   <p>
@@ -82,6 +83,16 @@ Es un proyecto real, en producción, que usa mi mamá 💚 para gestionar el dí
   <img src="public/docs/04-pedidos.png" alt="Panel de pedidos" width="420" />
   <p><sub>Ruta del día con filtros, ordenamiento por cercanía y acciones rápidas por pedido.</sub></p>
 </div>
+
+### Ingreso de mercadería 📦
+- 🧾 **Parser de listas pegadas**: pega el detalle del recibo del proveedor (3 formatos detectados: con `/unid`, todo en una línea, multilínea con precios separados) y el sistema crea las plantas. Detecta precios tachados y usa el efectivo.
+- 💸 **Cálculo de costo real por planta**: prorratea IVA (configurable) + despacho entre las unidades totales y divide por `plantasPorMaceta`. Cero matemática manual.
+- 🎯 **Precio sugerido con redondeo comercial**: aplica un margen configurable y redondea al múltiplo de $500 (bajo $10k) o $1.000 (sobre $10k) más cercano. Editable a mano cuando el negocio manda.
+- ✅ **Confirmación pre-ingreso al inventario**: detecta si una planta ya existe y pregunta *"Sumar al stock actual o Reemplazar"*, evitando duplicar stock por error.
+- 🛠️ **Botón "Corregir costo"**: recalcula y actualiza el costo/margen en inventario sin tocar fotos, descripciones ni categorías editadas a mano. Útil cuando se descubre un error en una compra ya cerrada.
+- 📊 **Resumen de ganancia esperada**: para las plantas seleccionadas muestra inversión, ingreso esperado y ganancia con margen real efectivo.
+
+<!-- Pendiente: screenshot del módulo de Mercadería (public/docs/05-mercaderia.png) -->
 
 ### IA: Kira 🐶
 - 🤖 Chat con personalidad (la perrita oficial de Milokira) usando **Google Gemini 2.5 Flash Lite**.
@@ -250,6 +261,37 @@ Sin embeddings, sin vector DB, sin costos. Suficiente para un dominio acotado.
 
 ### 4. Seguridad client-side honesta
 El panel admin se protege con clave en `sessionStorage` — sé que **no es seguridad real**. Para evitar accesos directos a Firestore agrego security rules estrictas. El gate es solo para que un usuario casual no descubra `/admin` por URL.
+
+### 5. Parser tolerante a 3 formatos de recibo
+El recibo del proveedor llega en HTML→texto plano con quiebres de línea inconsistentes. En vez de pedirle al usuario que normalice, hice un parser que reconoce:
+
+- **Formato A** (compacto explícito): `4x ARR. HYPOESTE B20 (Cód: PHYPOESTE20) - $1,650/unid`
+- **Formato B** (todo en una línea): `4x ARR. HYPOESTE B20 $ 1,650 $ 6,600` — usa `unit × N === subtotal` como heurística para distinguir cuál precio es el unitario.
+- **Formato C** (multilínea): `4x` / `NOMBRE` / `$ 1,550 $ 1,250` / `$ 5,000` — donde el primer precio puede ser tachado y el segundo el efectivo.
+
+Todo cubierto por tests con el recibo real del vivero. El parser está extraído a `helpers.ts` puro, sin dependencias de React.
+
+---
+
+## 🧪 Testing
+
+Tests unitarios con **Vitest** sobre la lógica pura del módulo de mercadería:
+
+```bash
+npm test              # una pasada
+npm run test:watch    # watch mode
+npm run test:coverage # con coverage
+npm run typecheck     # tsc --noEmit
+```
+
+Cubre:
+
+- `parsePastedList` — 9 tests sobre los 3 formatos del recibo + el recibo real completo (7 items mixtos).
+- `redondearComercial` — 4 tests sobre redondeo por rango.
+- `slugify` — 4 tests sobre normalización de nombres.
+- `calcularCostoYsugerido` — 7 tests sobre IVA, despacho prorrateado, plantas/maceta y margen.
+
+Total: **24 tests verdes en <200ms.**
 
 ---
 

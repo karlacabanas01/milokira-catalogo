@@ -211,7 +211,7 @@ export default function ProductModal({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
     if (form.categorias.length === 0) {
       alert("Debes elegir al menos una categoría.");
