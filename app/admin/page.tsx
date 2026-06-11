@@ -60,6 +60,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [financials, setFinancials] = useState({
     income: 0,
+    incomeWeek: 0,
     expenses: 0,
     profit: 0,
   });
@@ -95,8 +96,10 @@ export default function AdminPage() {
         if (isCancelled) return;
 
         let totalIncome = 0;
+        let weekIncome = 0;
         let totalExpenses = 0;
         const pendingOrders: OrderType[] = [];
+        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
         txSnap.forEach((documento) => {
           const data = documento.data();
@@ -105,6 +108,12 @@ export default function AdminPage() {
 
           if (estado !== "pending") {
             totalIncome += monto;
+            const createdAt = data.created_at
+              ? new Date(data.created_at).getTime()
+              : 0;
+            if (createdAt >= weekAgo) {
+              weekIncome += monto;
+            }
           } else if (data.tipo === "pedido") {
             pendingOrders.push({
               idFirebase: documento.id,
@@ -124,6 +133,7 @@ export default function AdminPage() {
 
         setFinancials({
           income: totalIncome,
+          incomeWeek: weekIncome,
           expenses: totalExpenses,
           profit: totalIncome - totalExpenses,
         });

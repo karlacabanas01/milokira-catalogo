@@ -1,8 +1,9 @@
 import React from "react";
-import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, CalendarDays } from "lucide-react";
 
 type Financials = {
   income: number;
+  incomeWeek: number;
   expenses: number;
   profit: number;
 };
@@ -15,16 +16,18 @@ type Props = {
 
 const StatCard = ({
   label,
+  sublabel,
   value,
   onClick,
   variant,
   icon: Icon,
 }: {
   label: string;
+  sublabel?: string;
   value: number;
   onClick?: () => void;
-  variant: "success" | "danger" | "info";
-  icon: React.ElementType; // Tipo para componentes de React (Lucide, Fa, etc.)
+  variant: "success" | "danger" | "info" | "week";
+  icon: React.ElementType;
 }) => {
   const styles = {
     success: {
@@ -47,6 +50,13 @@ const StatCard = ({
       text: "text-blue-700",
       value: "text-blue-900",
       border: "border-blue-200",
+    },
+    week: {
+      bg: "bg-milokira-lila/30",
+      hoverBg: "hover:bg-milokira-lila/50",
+      text: "text-purple-700",
+      value: "text-purple-900",
+      border: "border-milokira-lila",
     },
   };
 
@@ -77,6 +87,14 @@ const StatCard = ({
             currency: "CLP",
           }).format(value)}
         </p>
+
+        {sublabel && (
+          <span
+            className={`text-[10px] font-bold ${currentStyle.text} opacity-80`}
+          >
+            {sublabel}
+          </span>
+        )}
       </div>
     </Component>
   );
@@ -88,7 +106,15 @@ export default function StatsOverview({
   onSalesClick,
 }: Props) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 w-full">
+      <StatCard
+        label="Esta semana"
+        sublabel="últimos 7 días"
+        value={financials.incomeWeek}
+        variant="week"
+        icon={CalendarDays}
+      />
+
       <StatCard
         label="Ventas"
         value={financials.income}
