@@ -109,7 +109,7 @@ export default function StatsOverview({
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 w-full">
       <StatCard
         label="Esta semana"
-        sublabel="últimos 7 días"
+        sublabel="lun → dom"
         value={financials.incomeWeek}
         variant="week"
         icon={CalendarDays}

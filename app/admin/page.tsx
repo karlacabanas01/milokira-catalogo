@@ -99,7 +99,13 @@ export default function AdminPage() {
         let weekIncome = 0;
         let totalExpenses = 0;
         const pendingOrders: OrderType[] = [];
-        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        // Lunes 00:00 de la semana en curso (calendario, lun→dom)
+        const lunes = new Date();
+        const diaSemana = lunes.getDay(); // 0=dom, 1=lun, …, 6=sáb
+        const offset = (diaSemana + 6) % 7; // días desde el lunes
+        lunes.setDate(lunes.getDate() - offset);
+        lunes.setHours(0, 0, 0, 0);
+        const inicioSemana = lunes.getTime();
 
         txSnap.forEach((documento) => {
           const data = documento.data();
@@ -111,7 +117,7 @@ export default function AdminPage() {
             const createdAt = data.created_at
               ? new Date(data.created_at).getTime()
               : 0;
-            if (createdAt >= weekAgo) {
+            if (createdAt >= inicioSemana) {
               weekIncome += monto;
             }
           } else if (data.tipo === "pedido") {
