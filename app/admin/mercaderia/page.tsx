@@ -11,6 +11,7 @@ import {
   updateDoc,
   setDoc,
   deleteDoc,
+  deleteField,
   query,
   orderBy,
   type DocumentSnapshot,
@@ -60,6 +61,7 @@ type Compra = {
   totalIva: number;
   totalConIva: number;
   totalConDespacho: number;
+  gastoId?: string;
 };
 
 const newId = () => `i-${Math.random().toString(36).slice(2, 10)}`;
@@ -226,7 +228,17 @@ export default function MercaderiaPage() {
                         {formatCLP(c.totalConDespacho)}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <StatusBadge status={c.status} />
+                        <div className="inline-flex flex-col items-center gap-1">
+                          <StatusBadge status={c.status} />
+                          {c.gastoId && (
+                            <span
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200 text-[9px] font-black uppercase tracking-wide"
+                              title="Gasto registrado"
+                            >
+                              $ Gasto
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="inline-flex items-center gap-1.5">
@@ -1348,6 +1360,55 @@ function DetalleCompraModal({
     setDirty(true);
   };
 
+  const handleRegistrarComoGasto = async () => {
+    if (compra.gastoId) return;
+    const monto = Math.round(compra.totalConDespacho);
+    const proveedorTxt = compra.proveedor.trim() || "compra sin proveedor";
+    const msg = `¿Registrar esta compra como gasto?\n\nProveedor: ${proveedorTxt}\nMonto: ${formatCLP(monto)}\nFecha del gasto: ${new Date(compra.fecha).toLocaleDateString("es-CL")}\n\nAparecerá en la card "Gastos" y descontará de la ganancia.`;
+    if (!window.confirm(msg)) return;
+
+    setIsSaving(true);
+    setError("");
+    try {
+      const gastoRef = await addDoc(collection(db, "Gastos"), {
+        description: `Mercadería - ${proveedorTxt}`,
+        amount: monto,
+        created_at: new Date(compra.fecha).toISOString(),
+        compraId: compra.idFirebase,
+      });
+      await updateDoc(doc(db, "Compras", compra.idFirebase), {
+        gastoId: gastoRef.id,
+      });
+      onChange();
+    } catch (err) {
+      console.error(err);
+      setError("Error al registrar el gasto.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDesvincularGasto = async () => {
+    if (!compra.gastoId) return;
+    const msg = `¿Eliminar el gasto vinculado a esta compra?\n\nSe borrará el registro de gasto. El inventario y la compra no se modifican.`;
+    if (!window.confirm(msg)) return;
+
+    setIsSaving(true);
+    setError("");
+    try {
+      await deleteDoc(doc(db, "Gastos", compra.gastoId));
+      await updateDoc(doc(db, "Compras", compra.idFirebase), {
+        gastoId: deleteField(),
+      });
+      onChange();
+    } catch (err) {
+      console.error(err);
+      setError("Error al desvincular el gasto.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-stone-900/40 z-50 flex items-end sm:items-center justify-center sm:p-6 backdrop-blur-sm">
       <div className="relative bg-white w-full sm:max-w-2xl rounded-t-3xl sm:rounded-3xl border-t sm:border border-stone-200 shadow-2xl flex flex-col max-h-dvh sm:max-h-[90vh] h-dvh sm:h-auto overflow-hidden">
@@ -1707,6 +1768,25 @@ function DetalleCompraModal({
               {isSaving
                 ? "Corrigiendo…"
                 : `Corregir costo en inventario (${calc.filter((i) => i.ingresada).length})`}
+            </button>
+          )}
+          {compra.gastoId ? (
+            <button
+              onClick={handleDesvincularGasto}
+              disabled={isSaving}
+              className="w-full py-2.5 bg-stone-50 hover:bg-stone-100 text-stone-600 border border-stone-300 font-bold rounded-xl text-xs uppercase tracking-wider transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+              title="Borra el gasto vinculado. La compra y el inventario no se tocan."
+            >
+              ✓ Gasto registrado · borrar
+            </button>
+          ) : (
+            <button
+              onClick={handleRegistrarComoGasto}
+              disabled={isSaving}
+              className="w-full py-2.5 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-300 font-bold rounded-xl text-xs uppercase tracking-wider transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+              title="Crea un gasto por el total con IVA y despacho. Suma a la card 'Gastos' del dashboard."
+            >
+              Registrar como gasto ({formatCLP(Math.round(compra.totalConDespacho))})
             </button>
           )}
           <button
