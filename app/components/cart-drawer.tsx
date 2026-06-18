@@ -39,7 +39,7 @@ export default function CartDrawer() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-5 right-5 z-40 group bg-milokira-verde hover:bg-milokira-lila text-white p-4 rounded-full shadow-xl shadow-milokira-verde/40 transition-all duration-300 hover:scale-110 active:scale-95"
+        className="fixed bottom-24 right-5 sm:bottom-24 sm:right-6 z-40 group bg-milokira-verde hover:bg-milokira-lila text-white p-4 rounded-full shadow-xl shadow-milokira-verde/40 transition-all duration-300 hover:scale-110 active:scale-95"
         aria-label="Abrir carrito"
       >
         <ShoppingBag size={22} strokeWidth={2.5} />

@@ -161,6 +161,7 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
           </div>
         )}
 
+
         <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 flex flex-wrap gap-1 justify-end max-w-[70%]">
           {categorias?.map((cat) => (
             <span key={cat} className="bg-white/80 backdrop-blur-sm text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full text-stone-600 uppercase tracking-tighter shadow-sm border border-stone-100">
@@ -209,7 +210,7 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mt-auto">
           <div
-            className={`font-black text-base sm:text-xl tracking-tight ${estaDisponible ? "text-milokira-verde" : "text-gray-400 italic"}`}
+            className={`font-black text-lg sm:text-2xl tracking-tight leading-none ${estaDisponible ? "text-milokira-verde" : "text-gray-400 italic"}`}
           >
             {formatearPrecio(precio)}
           </div>
