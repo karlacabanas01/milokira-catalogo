@@ -12,6 +12,7 @@ type Props = {
   financials: Financials;
   onExpensesClick: () => void;
   onSalesClick: () => void;
+  onWeekClick: () => void;
 };
 
 const StatCard = ({
@@ -104,6 +105,7 @@ export default function StatsOverview({
   financials,
   onExpensesClick,
   onSalesClick,
+  onWeekClick,
 }: Props) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 w-full">
@@ -111,6 +113,7 @@ export default function StatsOverview({
         label="Esta semana"
         sublabel="lun → dom"
         value={financials.incomeWeek}
+        onClick={onWeekClick}
         variant="week"
         icon={CalendarDays}
       />

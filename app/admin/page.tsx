@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 
 import StatsOverview from "./components/StatsOverview";
+import StatsModal, { type ChartPoint } from "./components/StatsModal";
 import ExpenseModal from "./components/ExpenseModal";
 import SaleModal from "./components/SaleModal";
 import SaleListModal from "./components/SaleListModal";
@@ -64,8 +65,18 @@ export default function AdminPage() {
     expenses: 0,
     profit: 0,
   });
+  const [statsSeries, setStatsSeries] = useState<{
+    allTime: ChartPoint[];
+    month: ChartPoint[];
+    week: ChartPoint[];
+  }>({
+    allTime: [],
+    month: [],
+    week: [],
+  });
 
   // Modales
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
@@ -99,6 +110,22 @@ export default function AdminPage() {
         let weekIncome = 0;
         let totalExpenses = 0;
         const pendingOrders: OrderType[] = [];
+        const monthNames = [
+          "Ene",
+          "Feb",
+          "Mar",
+          "Abr",
+          "May",
+          "Jun",
+          "Jul",
+          "Ago",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dic",
+        ];
+        const dayNames = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
         // Lunes 00:00 de la semana en curso (calendario, lun→dom)
         const lunes = new Date();
         const diaSemana = lunes.getDay(); // 0=dom, 1=lun, …, 6=sáb
@@ -107,8 +134,164 @@ export default function AdminPage() {
         lunes.setHours(0, 0, 0, 0);
         const inicioSemana = lunes.getTime();
 
-        txSnap.forEach((documento) => {
-          const data = documento.data();
+        const monthStart = new Date();
+        monthStart.setDate(1);
+        monthStart.setHours(0, 0, 0, 0);
+        const monthStartTime = monthStart.getTime();
+
+        const txData = txSnap.docs.map((documento) => ({
+          idFirebase: documento.id,
+          ...documento.data(),
+        }));
+        const expenseData = gastosSnap.docs.map((documento) => ({
+          idFirebase: documento.id,
+          ...documento.data(),
+        }));
+
+        const buildDateKey = (date: Date) =>
+          `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+            date.getDate(),
+          ).padStart(2, "0")}`;
+
+        const buildMonthlySeries = () => {
+          const grouped = new Map<string, { ventas: number; gastos: number }>();
+
+          const addValue = (
+            key: string,
+            label: string,
+            type: "venta" | "gasto",
+            amount: number,
+          ) => {
+            if (!grouped.has(key)) {
+              grouped.set(key, { ventas: 0, gastos: 0 });
+            }
+            const current = grouped.get(key)!;
+            if (type === "venta") current.ventas += amount;
+            else current.gastos += amount;
+          };
+
+          txData.forEach((data) => {
+            const estado = data.status ? data.status.toLowerCase() : "completado";
+            if (estado === "pending") return;
+            const createdAt = data.created_at ? new Date(data.created_at) : null;
+            if (!createdAt || Number.isNaN(createdAt.getTime())) return;
+            const key = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, "0")}`;
+            const label = `${monthNames[createdAt.getMonth()]} ${createdAt.getFullYear()}`;
+            addValue(key, label, "venta", Number(data.total_amount) || 0);
+          });
+
+          expenseData.forEach((data) => {
+            const createdAt = data.created_at ? new Date(data.created_at) : null;
+            if (!createdAt || Number.isNaN(createdAt.getTime())) return;
+            const key = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, "0")}`;
+            const label = `${monthNames[createdAt.getMonth()]} ${createdAt.getFullYear()}`;
+            addValue(key, label, "gasto", Number(data.amount) || 0);
+          });
+
+          return Array.from(grouped.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, values]) => {
+              const [year, month] = key.split("-");
+              const label = `${monthNames[Number(month) - 1]} ${year}`;
+              return {
+                label,
+                ventas: values.ventas,
+                gastos: values.gastos,
+                ganancia: values.ventas - values.gastos,
+              };
+            });
+        };
+
+        const buildPeriodSeries = (mode: "month" | "week") => {
+          const grouped = new Map<string, { ventas: number; gastos: number }>();
+          const reference = new Date();
+          const isWeek = mode === "week";
+
+          const start = new Date(reference);
+          if (isWeek) {
+            const day = start.getDay();
+            const offset = (day + 6) % 7;
+            start.setDate(start.getDate() - offset);
+          } else {
+            start.setDate(1);
+          }
+          start.setHours(0, 0, 0, 0);
+
+          const end = new Date(start);
+          if (isWeek) {
+            end.setDate(end.getDate() + 6);
+          } else {
+            end.setMonth(end.getMonth() + 1);
+            end.setDate(0);
+          }
+          end.setHours(23, 59, 59, 999);
+
+          const add = (key: string, label: string, type: "venta" | "gasto", amount: number) => {
+            if (!grouped.has(key)) grouped.set(key, { ventas: 0, gastos: 0 });
+            const current = grouped.get(key)!;
+            if (type === "venta") current.ventas += amount;
+            else current.gastos += amount;
+          };
+
+          txData.forEach((data) => {
+            const estado = data.status ? data.status.toLowerCase() : "completado";
+            if (estado === "pending") return;
+            const createdAt = data.created_at ? new Date(data.created_at) : null;
+            if (!createdAt || Number.isNaN(createdAt.getTime())) return;
+            if (createdAt < start || createdAt > end) return;
+            const key = isWeek
+              ? buildDateKey(createdAt)
+              : `${createdAt.getDate()}`;
+            const label = isWeek
+              ? dayNames[(createdAt.getDay() + 6) % 7]
+              : `${createdAt.getDate()}`;
+            add(key, label, "venta", Number(data.total_amount) || 0);
+          });
+
+          expenseData.forEach((data) => {
+            const createdAt = data.created_at ? new Date(data.created_at) : null;
+            if (!createdAt || Number.isNaN(createdAt.getTime())) return;
+            if (createdAt < start || createdAt > end) return;
+            const key = isWeek
+              ? buildDateKey(createdAt)
+              : `${createdAt.getDate()}`;
+            const label = isWeek
+              ? dayNames[(createdAt.getDay() + 6) % 7]
+              : `${createdAt.getDate()}`;
+            add(key, label, "gasto", Number(data.amount) || 0);
+          });
+
+          const byLabel = isWeek
+            ? Array.from({ length: 7 }, (_, index) => {
+                const date = new Date(start);
+                date.setDate(start.getDate() + index);
+                const key = buildDateKey(date);
+                const label = dayNames[index];
+                const values = grouped.get(key) || { ventas: 0, gastos: 0 };
+                return {
+                  label,
+                  ventas: values.ventas,
+                  gastos: values.gastos,
+                  ganancia: values.ventas - values.gastos,
+                };
+              })
+            : Array.from({ length: new Date(reference.getFullYear(), reference.getMonth() + 1, 0).getDate() }, (_, index) => {
+                const day = index + 1;
+                const key = `${day}`;
+                const values = grouped.get(key) || { ventas: 0, gastos: 0 };
+                return {
+                  label: `${day}`,
+                  ventas: values.ventas,
+                  gastos: values.gastos,
+                  ganancia: values.ventas - values.gastos,
+                };
+              });
+
+          return byLabel;
+        };
+
+        txData.forEach((documento) => {
+          const data = documento;
           const monto = Number(data.total_amount) || 0;
           const estado = data.status ? data.status.toLowerCase() : "completado";
 
@@ -122,14 +305,14 @@ export default function AdminPage() {
             }
           } else if (data.tipo === "pedido") {
             pendingOrders.push({
-              idFirebase: documento.id,
+              idFirebase: documento.idFirebase,
               ...data,
             } as OrderType);
           }
         });
 
-        gastosSnap.forEach((documento) => {
-          totalExpenses += Number(documento.data().amount) || 0;
+        expenseData.forEach((documento) => {
+          totalExpenses += Number(documento.amount) || 0;
         });
 
         pendingOrders.sort(
@@ -142,6 +325,11 @@ export default function AdminPage() {
           incomeWeek: weekIncome,
           expenses: totalExpenses,
           profit: totalIncome - totalExpenses,
+        });
+        setStatsSeries({
+          allTime: buildMonthlySeries(),
+          month: buildPeriodSeries("month"),
+          week: buildPeriodSeries("week"),
         });
         setOrders(pendingOrders);
       } catch (error) {
@@ -267,6 +455,7 @@ export default function AdminPage() {
             financials={financials}
             onExpensesClick={() => setIsExpenseListOpen(true)}
             onSalesClick={() => setIsSaleListOpen(true)}
+            onWeekClick={() => setIsStatsModalOpen(true)}
           />
         )}
 
@@ -515,6 +704,16 @@ export default function AdminPage() {
       </div>
 
       {/* Renderizado condicional de Modales */}
+      {isStatsModalOpen && (
+        <StatsModal
+          isOpen={isStatsModalOpen}
+          onClose={() => setIsStatsModalOpen(false)}
+          allTime={statsSeries.allTime}
+          month={statsSeries.month}
+          week={statsSeries.week}
+        />
+      )}
+
       {isOrderModalOpen && (
         <OrderModal
           isOpen={isOrderModalOpen}
