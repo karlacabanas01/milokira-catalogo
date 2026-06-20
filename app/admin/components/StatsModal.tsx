@@ -158,7 +158,13 @@ export default function StatsModal({
               <XAxis dataKey="label" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={52} />
               <Tooltip
-                formatter={(value: number) => currency.format(value)}
+                formatter={(value) => {
+                  const numericValue =
+                    typeof value === "number"
+                      ? value
+                      : Number(value ?? 0);
+                  return currency.format(numericValue);
+                }}
                 contentStyle={{
                   borderRadius: 16,
                   border: "1px solid #e7e5e4",

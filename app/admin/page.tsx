@@ -57,6 +57,22 @@ export type OrderType = {
   }[];
 };
 
+type TransactionData = {
+  idFirebase: string;
+  status?: string;
+  created_at?: string;
+  total_amount?: number | string;
+  tipo?: string;
+  [key: string]: unknown;
+};
+
+type ExpenseData = {
+  idFirebase: string;
+  amount?: number | string;
+  created_at?: string;
+  [key: string]: unknown;
+};
+
 export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [financials, setFinancials] = useState({
@@ -139,14 +155,18 @@ export default function AdminPage() {
         monthStart.setHours(0, 0, 0, 0);
         const monthStartTime = monthStart.getTime();
 
-        const txData = txSnap.docs.map((documento) => ({
-          idFirebase: documento.id,
-          ...documento.data(),
-        }));
-        const expenseData = gastosSnap.docs.map((documento) => ({
-          idFirebase: documento.id,
-          ...documento.data(),
-        }));
+        const txData = txSnap.docs.map(
+          (documento): TransactionData => ({
+            idFirebase: documento.id,
+            ...(documento.data() as Record<string, unknown>),
+          }),
+        );
+        const expenseData = gastosSnap.docs.map(
+          (documento): ExpenseData => ({
+            idFirebase: documento.id,
+            ...(documento.data() as Record<string, unknown>),
+          }),
+        );
 
         const buildDateKey = (date: Date) =>
           `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
@@ -305,8 +325,8 @@ export default function AdminPage() {
             }
           } else if (data.tipo === "pedido") {
             pendingOrders.push({
+              ...(data as OrderType),
               idFirebase: documento.idFirebase,
-              ...data,
             } as OrderType);
           }
         });

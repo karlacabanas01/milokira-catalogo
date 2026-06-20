@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   collection,
   doc,
+  getDocs,
   setDoc,
 } from "firebase/firestore";
 import { db } from "../firebaseConfig";
@@ -21,19 +22,26 @@ import {
   Loader2,
   Plus,
   Trash2,
+  Search,
 } from "lucide-react";
 
 const WHATSAPP_NUMBER = "56994955949";
 
 const SECTORES = [
-  "Norte Oriente (Bicentenario, Las Rastras)",
-  "Norte Poniente (Barrio Norte, Las Américas, Sandoval)",
-  "Sur Oriente (Valles de Talca, San Miguel, Don Sebastián)",
-  "Sur Poniente (La Florida, Faustino, Nueva Holanda, Doña Ignacia)",
-  "Otro sector",
-];
+  { value: "Norte Oriente (Bicentenario, Las Rastras)", price: 1000 },
+  { value: "Norte Poniente (Barrio Norte, Las Américas, Sandoval)", price: 1500 },
+  { value: "Sur Oriente (Valles de Talca, San Miguel, Don Sebastián)", price: 2500 },
+  { value: "Sur Poniente (La Florida, Faustino, Nueva Holanda, Doña Ignacia)", price: 2500 },
+  { value: "Otro sector", price: 0 },
+] as const;
 
 type DeliveryType = "delivery" | "retiro";
+type CatalogPlant = {
+  id: string;
+  nombre: string;
+  stock: number;
+  disponible: boolean;
+};
 
 export default function PedidoPublicoPage() {
   const [nombre, setNombre] = useState("");
@@ -43,22 +51,84 @@ export default function PedidoPublicoPage() {
   const [direccion, setDireccion] = useState("");
   const [sector, setSector] = useState("");
   const [sectorOtro, setSectorOtro] = useState("");
-  const sectorFinal = sector === "Otro sector" ? sectorOtro.trim() : sector;
   const [notas, setNotas] = useState("");
   const [plantasList, setPlantasList] = useState<string[]>([""]);
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingCatalog, setIsLoadingCatalog] = useState(true);
+  const [catalogoPlantas, setCatalogoPlantas] = useState<CatalogPlant[]>([]);
+  const [buscadorPlanta, setBuscadorPlanta] = useState("");
   const [error, setError] = useState("");
   const [enviado, setEnviado] = useState<{ id: string; resumen: string } | null>(null);
 
-  const plantasLimpias = plantasList.map((p) => p.trim()).filter(Boolean);
   const telefonoCompleto = telefono ? `+56 9 ${telefono}` : "";
+  const sectorFinal = sector === "Otro sector" ? sectorOtro.trim() : sector;
+  const deliveryFee =
+    tipoEntrega === "delivery"
+      ? SECTORES.find((s) => s.value === sector)?.price ?? 0
+      : 0;
+  const deliveryFeeDisplay =
+    tipoEntrega === "delivery" && sector === "Otro sector"
+      ? "Se coordina"
+      : tipoEntrega === "delivery" && deliveryFee > 0
+        ? `$${deliveryFee.toLocaleString("es-CL")}`
+        : "";
+  const plantasSeleccionadas = plantasList
+    .map((id) => {
+      const planta = catalogoPlantas.find((p) => p.id === id);
+      return planta ? { id: planta.id, nombre: planta.nombre } : null;
+    })
+    .filter(Boolean) as { id: string; nombre: string }[];
+  const plantasDisponiblesFiltradas = catalogoPlantas.filter((planta) =>
+    planta.nombre.toLowerCase().includes(buscadorPlanta.toLowerCase())
+  );
+
+  useEffect(() => {
+    let mounted = true;
+
+    const cargarCatalogo = async () => {
+      try {
+        const snap = await getDocs(collection(db, "Plantas"));
+        if (!mounted) return;
+
+        const lista = snap.docs
+          .map((docSnap) => {
+            const data = docSnap.data();
+            const stock = Number(data.stock) || 0;
+            const disponible =
+              data.precio?.disponible !== false && stock > 0;
+
+            return {
+              id: docSnap.id,
+              nombre: data.nombre || docSnap.id,
+              stock,
+              disponible,
+            };
+          })
+          .filter((planta) => planta.disponible)
+          .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+        setCatalogoPlantas(lista);
+      } catch (error) {
+        console.error("Error cargando catálogo:", error);
+      } finally {
+        if (mounted) setIsLoadingCatalog(false);
+      }
+    };
+
+    cargarCatalogo();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const validar = () => {
     if (!nombre.trim()) return "Necesitamos tu nombre.";
     if (telefono.length !== 8)
       return "Tu teléfono debe tener 8 números después del 9.";
-    if (plantasLimpias.length === 0) return "Cuéntanos qué plantitas quieres.";
+    if (plantasSeleccionadas.length === 0)
+      return "Selecciona al menos una planta del catálogo.";
     if (tipoEntrega === "delivery") {
       if (!sector) return "Elige el sector de entrega.";
       if (sector === "Otro sector" && !sectorOtro.trim())
@@ -106,13 +176,14 @@ export default function PedidoPublicoPage() {
         address: tipoEntrega === "delivery" ? direccion.trim() : "",
         sector: tipoEntrega === "delivery" ? sectorFinal : "",
         notes: notas.trim(),
-        items: plantasLimpias.map((nombre) => ({
+        items: plantasSeleccionadas.map(({ id, nombre }) => ({
+          product_id: id,
           nombre,
           quantity: 1,
           unit_price: 0,
         })),
-        total_amount: 0,
-        delivery_fee: 0,
+        total_amount: deliveryFee,
+        delivery_fee: deliveryFee,
         created_at: new Date().toISOString(),
         source: "publico",
       };
@@ -125,10 +196,16 @@ export default function PedidoPublicoPage() {
         `*Nombre:* ${nombre.trim()}`,
         `*Teléfono:* ${telefonoCompleto}`,
         `*Entrega:* ${tipoEntrega === "delivery" ? `Delivery (${diaEntrega})` : "Retiro"}`,
+        tipoEntrega === "delivery" && sectorFinal
+          ? `*Sector:* ${sectorFinal}`
+          : null,
+        tipoEntrega === "delivery" && deliveryFee > 0
+          ? `*Costo delivery:* $${deliveryFee.toLocaleString("es-CL")}`
+          : null,
         tipoEntrega === "delivery" ? `*Dirección:* ${direccion.trim()}` : null,
         ``,
         `*Plantas:*`,
-        ...plantasLimpias.map((p) => `- ${p}`),
+        ...plantasSeleccionadas.map((p) => `- ${p.nombre}`),
         notas.trim() ? `\n*Notas:* ${notas.trim()}` : null,
       ]
         .filter(Boolean)
@@ -251,26 +328,45 @@ export default function PedidoPublicoPage() {
           {/* Plantas */}
           <div>
             <label className="text-[11px] font-bold text-stone-500 uppercase tracking-widest ml-1 mb-1.5 block">
-              ¿Qué plantitas quieres? <span className="text-rose-500">*</span>
+              ¿Qué plantas quieres? <span className="text-rose-500">*</span>
             </label>
+            <div className="relative mb-2">
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
+              />
+              <input
+                value={buscadorPlanta}
+                onChange={(e) => setBuscadorPlanta(e.target.value)}
+                placeholder="Buscar planta por nombre"
+                className="w-full pl-10 pr-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-verde transition-colors placeholder:text-stone-400"
+              />
+            </div>
             <div className="space-y-2">
-              {plantasList.map((planta, idx) => (
+              {plantasList.map((plantaId, idx) => (
                 <div key={idx} className="relative flex items-center gap-2">
                   <div className="relative flex-1">
                     <Leaf
                       size={16}
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-milokira-verde"
                     />
-                    <input
-                      value={planta}
+                    <select
+                      value={plantaId}
                       onChange={(e) => updatePlanta(idx, e.target.value)}
-                      placeholder={
-                        idx === 0
-                          ? "Ej: 2 singonio pink"
-                          : "Ej: 1 monstera adansonii"
-                      }
-                      className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-verde transition-colors placeholder:text-stone-400"
-                    />
+                      disabled={isLoadingCatalog}
+                      className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-verde transition-colors disabled:opacity-50"
+                    >
+                      <option value="">
+                        {isLoadingCatalog
+                          ? "Cargando catálogo..."
+                          : "Selecciona una planta del catálogo"}
+                      </option>
+                      {plantasDisponiblesFiltradas.map((planta) => (
+                        <option key={planta.id} value={planta.id}>
+                          {planta.nombre}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   {plantasList.length > 1 && (
                     <button
@@ -284,17 +380,23 @@ export default function PedidoPublicoPage() {
                   )}
                 </div>
               ))}
+              {buscadorPlanta && plantasDisponiblesFiltradas.length === 0 && (
+                <p className="text-[11px] text-stone-500 ml-1">
+                  No encontramos plantas con ese nombre en stock.
+                </p>
+              )}
               <button
                 type="button"
                 onClick={addPlanta}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-milokira-verde/10 hover:bg-milokira-verde/20 text-milokira-verde border-2 border-dashed border-milokira-verde/40 hover:border-milokira-verde/70 transition-colors text-xs font-bold uppercase tracking-wider"
+                disabled={isLoadingCatalog}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-milokira-verde/10 hover:bg-milokira-verde/20 text-milokira-verde border-2 border-dashed border-milokira-verde/40 hover:border-milokira-verde/70 transition-colors text-xs font-bold uppercase tracking-wider disabled:opacity-50"
               >
                 <Plus size={14} strokeWidth={3} />
                 Agregar otra planta
               </button>
             </div>
             <p className="text-[10px] text-stone-400 mt-1.5 ml-1">
-              Escríbelas con detalle, te confirmamos precios al contactarte.
+              Solo se muestran plantas visibles en el catálogo público.
             </p>
           </div>
 
@@ -370,8 +472,8 @@ export default function PedidoPublicoPage() {
                 >
                   <option value="">Elige tu sector...</option>
                   {SECTORES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
+                    <option key={s.value} value={s.value}>
+                      {s.value} {s.price > 0 ? `($${s.price.toLocaleString("es-CL")})` : "(se coordina)"}
                     </option>
                   ))}
                 </select>
@@ -382,6 +484,13 @@ export default function PedidoPublicoPage() {
                     placeholder="Escribe el nombre de tu sector"
                     className="w-full mt-2 px-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-lila transition-colors placeholder:text-stone-400"
                   />
+                )}
+                {sector && (
+                  <div className="mt-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs text-emerald-700 font-medium">
+                    {sector === "Otro sector"
+                      ? "Precio del delivery se coordina según tu ubicación"
+                      : `Delivery estimado: ${deliveryFeeDisplay}`}
+                  </div>
                 )}
               </div>
 
@@ -434,13 +543,18 @@ export default function PedidoPublicoPage() {
 
           <button
             type="submit"
-            disabled={isSaving}
+            disabled={isSaving || isLoadingCatalog}
             className="w-full mt-2 bg-linear-to-r from-emerald-600 to-milokira-verde hover:from-emerald-500 hover:to-emerald-600 text-white font-black py-4 rounded-xl text-sm tracking-wide shadow-lg shadow-emerald-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98] flex items-center justify-center gap-2"
           >
             {isSaving ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
                 Enviando…
+              </>
+            ) : isLoadingCatalog ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Cargando catálogo…
               </>
             ) : (
               <>
