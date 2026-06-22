@@ -41,6 +41,14 @@ type CatalogPlant = {
   nombre: string;
   stock: number;
   disponible: boolean;
+  imagenUrl: string;
+  imagenPosition: string;
+};
+
+type SelectedPlant = {
+  id: string;
+  nombre: string;
+  quantity: number;
 };
 
 export default function PedidoPublicoPage() {
@@ -52,14 +60,27 @@ export default function PedidoPublicoPage() {
   const [sector, setSector] = useState("");
   const [sectorOtro, setSectorOtro] = useState("");
   const [notas, setNotas] = useState("");
-  const [plantasList, setPlantasList] = useState<string[]>([""]);
+  const [plantasSeleccionadas, setPlantasSeleccionadas] = useState<
+    SelectedPlant[]
+  >([]);
 
+  const PAGE_SIZE = 6;
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(true);
   const [catalogoPlantas, setCatalogoPlantas] = useState<CatalogPlant[]>([]);
   const [buscadorPlanta, setBuscadorPlanta] = useState("");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [lastSearch, setLastSearch] = useState("");
   const [error, setError] = useState("");
-  const [enviado, setEnviado] = useState<{ id: string; resumen: string } | null>(null);
+  const [enviado, setEnviado] = useState<{ id: string; resumen: string } | null>(
+    null,
+  );
+
+  // Reset visibleCount cuando cambia la búsqueda (derived state pattern)
+  if (lastSearch !== buscadorPlanta) {
+    setVisibleCount(PAGE_SIZE);
+    setLastSearch(buscadorPlanta);
+  }
 
   const telefonoCompleto = telefono ? `+56 9 ${telefono}` : "";
   const sectorFinal = sector === "Otro sector" ? sectorOtro.trim() : sector;
@@ -73,14 +94,12 @@ export default function PedidoPublicoPage() {
       : tipoEntrega === "delivery" && deliveryFee > 0
         ? `$${deliveryFee.toLocaleString("es-CL")}`
         : "";
-  const plantasSeleccionadas = plantasList
-    .map((id) => {
-      const planta = catalogoPlantas.find((p) => p.id === id);
-      return planta ? { id: planta.id, nombre: planta.nombre } : null;
-    })
-    .filter(Boolean) as { id: string; nombre: string }[];
   const plantasDisponiblesFiltradas = catalogoPlantas.filter((planta) =>
-    planta.nombre.toLowerCase().includes(buscadorPlanta.toLowerCase())
+    planta.nombre.toLowerCase().includes(buscadorPlanta.toLowerCase()),
+  );
+  const totalPlantitas = plantasSeleccionadas.reduce(
+    (a, b) => a + b.quantity,
+    0,
   );
 
   useEffect(() => {
@@ -103,6 +122,8 @@ export default function PedidoPublicoPage() {
               nombre: data.nombre || docSnap.id,
               stock,
               disponible,
+              imagenUrl: data.imagenUrl || "",
+              imagenPosition: data.imagenPosition || "50% 50%",
             };
           })
           .filter((planta) => planta.disponible)
@@ -139,20 +160,34 @@ export default function PedidoPublicoPage() {
     return null;
   };
 
-  const updatePlanta = (idx: number, value: string) => {
-    setPlantasList((prev) => prev.map((p, i) => (i === idx ? value : p)));
-  };
-
-  const addPlanta = () => {
-    setPlantasList((prev) => [...prev, ""]);
-  };
-
-  const removePlanta = (idx: number) => {
-    setPlantasList((prev) => {
-      if (prev.length <= 1) return [""];
-      return prev.filter((_, i) => i !== idx);
+  const agregarPlanta = (planta: CatalogPlant) => {
+    setPlantasSeleccionadas((prev) => {
+      const yaEsta = prev.find((p) => p.id === planta.id);
+      if (yaEsta) {
+        return prev.map((p) =>
+          p.id === planta.id
+            ? { ...p, quantity: Math.min(p.quantity + 1, planta.stock) }
+            : p,
+        );
+      }
+      return [...prev, { id: planta.id, nombre: planta.nombre, quantity: 1 }];
     });
   };
+
+  const quitarUnaUnidad = (id: string) => {
+    setPlantasSeleccionadas((prev) =>
+      prev
+        .map((p) => (p.id === id ? { ...p, quantity: p.quantity - 1 } : p))
+        .filter((p) => p.quantity > 0),
+    );
+  };
+
+  const quitarPlanta = (id: string) => {
+    setPlantasSeleccionadas((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const cantidadDePlanta = (id: string) =>
+    plantasSeleccionadas.find((p) => p.id === id)?.quantity ?? 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,10 +211,10 @@ export default function PedidoPublicoPage() {
         address: tipoEntrega === "delivery" ? direccion.trim() : "",
         sector: tipoEntrega === "delivery" ? sectorFinal : "",
         notes: notas.trim(),
-        items: plantasSeleccionadas.map(({ id, nombre }) => ({
+        items: plantasSeleccionadas.map(({ id, nombre, quantity }) => ({
           product_id: id,
           nombre,
-          quantity: 1,
+          quantity,
           unit_price: 0,
         })),
         total_amount: deliveryFee,
@@ -205,7 +240,9 @@ export default function PedidoPublicoPage() {
         tipoEntrega === "delivery" ? `*Dirección:* ${direccion.trim()}` : null,
         ``,
         `*Plantas:*`,
-        ...plantasSeleccionadas.map((p) => `- ${p.nombre}`),
+        ...plantasSeleccionadas.map(
+          (p) => `- ${p.nombre}${p.quantity > 1 ? ` ×${p.quantity}` : ""}`,
+        ),
         notas.trim() ? `\n*Notas:* ${notas.trim()}` : null,
       ]
         .filter(Boolean)
@@ -259,7 +296,7 @@ export default function PedidoPublicoPage() {
   }
 
   return (
-    <main className="min-h-screen bg-linear-to-br from-milokira-crema via-white to-milokira-lila/10 py-6 sm:py-10 px-4">
+    <main className="min-h-screen bg-linear-to-br from-milokira-crema via-white to-milokira-lila/10 py-6 sm:py-10 px-4 pb-32 sm:pb-32">
       <div className="max-w-md mx-auto">
         {/* Header simple */}
         <div className="text-center mb-6">
@@ -276,6 +313,7 @@ export default function PedidoPublicoPage() {
 
         {/* Form */}
         <form
+          id="pedidoForm"
           onSubmit={handleSubmit}
           className="bg-white rounded-3xl border border-stone-200 shadow-sm p-5 sm:p-6 space-y-4"
         >
@@ -293,7 +331,7 @@ export default function PedidoPublicoPage() {
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
                 placeholder="Ej: María González"
-                className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-verde transition-colors placeholder:text-stone-400"
+                className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-base sm:text-sm outline-none focus:bg-white focus:border-milokira-verde transition-colors placeholder:text-stone-400"
               />
             </div>
           </div>
@@ -317,7 +355,7 @@ export default function PedidoPublicoPage() {
                   setTelefono(e.target.value.replace(/\D/g, "").slice(0, 8))
                 }
                 placeholder="12345678"
-                className="flex-1 px-3 py-3 bg-transparent text-stone-700 text-sm outline-none placeholder:text-stone-400"
+                className="flex-1 px-3 py-3 bg-transparent text-stone-700 text-base sm:text-sm outline-none placeholder:text-stone-400"
               />
             </div>
             <p className="text-[10px] text-stone-400 mt-1 ml-1">
@@ -325,11 +363,50 @@ export default function PedidoPublicoPage() {
             </p>
           </div>
 
-          {/* Plantas */}
+          {/* Plantas — selección visual */}
           <div>
             <label className="text-[11px] font-bold text-stone-500 uppercase tracking-widest ml-1 mb-1.5 block">
               ¿Qué plantas quieres? <span className="text-rose-500">*</span>
             </label>
+
+            {/* Chips de plantas seleccionadas */}
+            {plantasSeleccionadas.length > 0 && (
+              <div className="mb-3 bg-milokira-verde/10 border border-milokira-verde/30 rounded-xl p-2.5">
+                <div className="flex items-center justify-between mb-1.5 px-1">
+                  <span className="text-[10px] font-black text-milokira-verde uppercase tracking-wider">
+                    Tu pedido ({totalPlantitas}{" "}
+                    {totalPlantitas === 1 ? "planta" : "plantas"})
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {plantasSeleccionadas.map((p) => (
+                    <div
+                      key={p.id}
+                      className="inline-flex items-center gap-1 bg-white border border-milokira-verde/40 rounded-full pl-2.5 pr-1 py-0.5 shadow-sm"
+                    >
+                      <span className="text-xs font-bold text-stone-700 max-w-32 truncate">
+                        {p.nombre}
+                      </span>
+                      {p.quantity > 1 && (
+                        <span className="text-[10px] font-black text-milokira-verde">
+                          ×{p.quantity}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => quitarPlanta(p.id)}
+                        className="ml-0.5 p-0.5 rounded-full text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        aria-label={`Quitar ${p.nombre}`}
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Buscador */}
             <div className="relative mb-2">
               <Search
                 size={16}
@@ -339,64 +416,144 @@ export default function PedidoPublicoPage() {
                 value={buscadorPlanta}
                 onChange={(e) => setBuscadorPlanta(e.target.value)}
                 placeholder="Buscar planta por nombre"
-                className="w-full pl-10 pr-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-verde transition-colors placeholder:text-stone-400"
+                className="w-full pl-10 pr-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-base sm:text-sm outline-none focus:bg-white focus:border-milokira-verde transition-colors placeholder:text-stone-400"
               />
             </div>
-            <div className="space-y-2">
-              {plantasList.map((plantaId, idx) => (
-                <div key={idx} className="relative flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <Leaf
-                      size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-milokira-verde"
-                    />
-                    <select
-                      value={plantaId}
-                      onChange={(e) => updatePlanta(idx, e.target.value)}
-                      disabled={isLoadingCatalog}
-                      className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-verde transition-colors disabled:opacity-50"
-                    >
-                      <option value="">
-                        {isLoadingCatalog
-                          ? "Cargando catálogo..."
-                          : "Selecciona una planta del catálogo"}
-                      </option>
-                      {plantasDisponiblesFiltradas.map((planta) => (
-                        <option key={planta.id} value={planta.id}>
-                          {planta.nombre}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {plantasList.length > 1 && (
+
+            {/* Grilla visual */}
+            {isLoadingCatalog ? (
+              <div className="grid grid-cols-2 gap-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="bg-stone-100 animate-pulse rounded-xl aspect-square"
+                  />
+                ))}
+              </div>
+            ) : plantasDisponiblesFiltradas.length === 0 ? (
+              <p className="text-xs text-stone-500 text-center py-6 bg-stone-50 rounded-xl border border-dashed border-stone-200">
+                No encontramos plantas con ese nombre en stock.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {plantasDisponiblesFiltradas.slice(0, visibleCount).map((planta) => {
+                  const cantidad = cantidadDePlanta(planta.id);
+                  const seleccionada = cantidad > 0;
+                  const sinStock = cantidad >= planta.stock;
+                  return (
                     <button
+                      key={planta.id}
                       type="button"
-                      onClick={() => removePlanta(idx)}
-                      className="shrink-0 p-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-500 border border-rose-200 transition-colors"
-                      aria-label="Quitar planta"
+                      onClick={() => !sinStock && agregarPlanta(planta)}
+                      disabled={sinStock}
+                      className={`relative group rounded-xl overflow-hidden border-2 transition-all text-left ${
+                        seleccionada
+                          ? "border-milokira-verde bg-milokira-verde/5 shadow-sm"
+                          : "border-stone-200 bg-white hover:border-milokira-verde/40"
+                      } ${sinStock ? "opacity-60 cursor-not-allowed" : "active:scale-95"}`}
                     >
-                      <Trash2 size={14} />
+                      <div className="relative aspect-square bg-linear-to-br from-milokira-crema via-milokira-lila/10 to-milokira-verde/10 overflow-hidden">
+                        {/* Placeholder shimmer: visible hasta que carga la imagen */}
+                        <div
+                          className="absolute inset-0 flex items-center justify-center text-2xl text-milokira-verde/30 animate-pulse"
+                          aria-hidden="true"
+                        >
+                          🌿
+                        </div>
+                        {planta.imagenUrl ? (
+                          <img
+                            src={planta.imagenUrl}
+                            alt={planta.nombre}
+                            loading="lazy"
+                            decoding="async"
+                            style={{ objectPosition: planta.imagenPosition }}
+                            onLoad={(e) => {
+                              e.currentTarget.style.opacity = "1";
+                            }}
+                            className="relative w-full h-full object-cover opacity-0 transition-opacity duration-500"
+                          />
+                        ) : null}
+                        {seleccionada && (
+                          <div className="absolute top-1 right-1 z-10 bg-milokira-verde text-white text-[10px] font-black h-6 min-w-6 px-1.5 rounded-full flex items-center justify-center shadow-md border-2 border-white">
+                            ×{cantidad}
+                          </div>
+                        )}
+                      </div>
+                      <div className="px-2 py-1.5">
+                        <p className="text-[11px] sm:text-xs font-bold text-stone-700 line-clamp-2 leading-tight">
+                          {planta.nombre}
+                        </p>
+                        {seleccionada ? (
+                          <div className="mt-1 flex items-center justify-between gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                quitarUnaUnidad(planta.id);
+                              }}
+                              className="h-6 w-6 rounded-full bg-stone-100 text-stone-600 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center transition-colors"
+                              aria-label="Quitar uno"
+                            >
+                              <span className="text-sm font-black leading-none">
+                                −
+                              </span>
+                            </button>
+                            <span className="text-xs font-black text-milokira-verde">
+                              {cantidad}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!sinStock) agregarPlanta(planta);
+                              }}
+                              disabled={sinStock}
+                              className="h-6 w-6 rounded-full bg-milokira-verde text-white hover:bg-milokira-verde/90 disabled:opacity-40 flex items-center justify-center transition-colors"
+                              aria-label="Agregar uno"
+                            >
+                              <Plus size={12} strokeWidth={3} />
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="text-[10px] text-milokira-verde font-bold mt-0.5">
+                            {sinStock ? "Sin stock" : "+ Agregar"}
+                          </p>
+                        )}
+                      </div>
                     </button>
-                  )}
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Botón "Ver más" */}
+            {!isLoadingCatalog &&
+              plantasDisponiblesFiltradas.length > visibleCount && (
+                <div className="mt-3 flex flex-col items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setVisibleCount((c) =>
+                        Math.min(
+                          c + PAGE_SIZE,
+                          plantasDisponiblesFiltradas.length,
+                        ),
+                      )
+                    }
+                    className="inline-flex items-center gap-1.5 bg-white border-2 border-milokira-verde/40 text-milokira-verde hover:bg-milokira-verde hover:text-white font-bold px-5 py-2.5 rounded-full shadow-sm hover:shadow-md active:scale-95 transition-all text-xs uppercase tracking-wider"
+                  >
+                    Ver más plantitas
+                    <Plus size={14} strokeWidth={3} />
+                  </button>
+                  <span className="text-[10px] text-stone-400 font-medium">
+                    Mostrando {visibleCount} de{" "}
+                    {plantasDisponiblesFiltradas.length}
+                  </span>
                 </div>
-              ))}
-              {buscadorPlanta && plantasDisponiblesFiltradas.length === 0 && (
-                <p className="text-[11px] text-stone-500 ml-1">
-                  No encontramos plantas con ese nombre en stock.
-                </p>
               )}
-              <button
-                type="button"
-                onClick={addPlanta}
-                disabled={isLoadingCatalog}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-milokira-verde/10 hover:bg-milokira-verde/20 text-milokira-verde border-2 border-dashed border-milokira-verde/40 hover:border-milokira-verde/70 transition-colors text-xs font-bold uppercase tracking-wider disabled:opacity-50"
-              >
-                <Plus size={14} strokeWidth={3} />
-                Agregar otra planta
-              </button>
-            </div>
-            <p className="text-[10px] text-stone-400 mt-1.5 ml-1">
-              Solo se muestran plantas visibles en el catálogo público.
+
+            <p className="text-[10px] text-stone-400 mt-2 ml-1">
+              Toca cualquier planta para agregarla a tu pedido.
             </p>
           </div>
 
@@ -448,7 +605,7 @@ export default function PedidoPublicoPage() {
                   <select
                     value={diaEntrega}
                     onChange={(e) => setDiaEntrega(e.target.value)}
-                    className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-lila transition-colors"
+                    className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-base sm:text-sm outline-none focus:bg-white focus:border-milokira-lila transition-colors"
                   >
                     <option value="">Elige un día...</option>
                     <option value="lunes">Lunes</option>
@@ -468,7 +625,7 @@ export default function PedidoPublicoPage() {
                 <select
                   value={sector}
                   onChange={(e) => setSector(e.target.value)}
-                  className="w-full px-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-lila transition-colors"
+                  className="w-full px-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-base sm:text-sm outline-none focus:bg-white focus:border-milokira-lila transition-colors"
                 >
                   <option value="">Elige tu sector...</option>
                   {SECTORES.map((s) => (
@@ -482,7 +639,7 @@ export default function PedidoPublicoPage() {
                     value={sectorOtro}
                     onChange={(e) => setSectorOtro(e.target.value)}
                     placeholder="Escribe el nombre de tu sector"
-                    className="w-full mt-2 px-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-lila transition-colors placeholder:text-stone-400"
+                    className="w-full mt-2 px-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-base sm:text-sm outline-none focus:bg-white focus:border-milokira-lila transition-colors placeholder:text-stone-400"
                   />
                 )}
                 {sector && (
@@ -508,7 +665,7 @@ export default function PedidoPublicoPage() {
                     value={direccion}
                     onChange={(e) => setDireccion(e.target.value)}
                     placeholder="Calle y número"
-                    className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-lila transition-colors placeholder:text-stone-400 resize-none"
+                    className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-base sm:text-sm outline-none focus:bg-white focus:border-milokira-lila transition-colors placeholder:text-stone-400 resize-none"
                   />
                 </div>
               </div>
@@ -530,7 +687,7 @@ export default function PedidoPublicoPage() {
                 value={notas}
                 onChange={(e) => setNotas(e.target.value)}
                 placeholder="Ej: para regalo, portón verde, no tocar timbre..."
-                className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-sm outline-none focus:bg-white focus:border-milokira-verde transition-colors placeholder:text-stone-400 resize-none"
+                className="w-full pl-10 pr-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 text-base sm:text-sm outline-none focus:bg-white focus:border-milokira-verde transition-colors placeholder:text-stone-400 resize-none"
               />
             </div>
           </div>
@@ -541,33 +698,63 @@ export default function PedidoPublicoPage() {
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={isSaving || isLoadingCatalog}
-            className="w-full mt-2 bg-linear-to-r from-emerald-600 to-milokira-verde hover:from-emerald-500 hover:to-emerald-600 text-white font-black py-4 rounded-xl text-sm tracking-wide shadow-lg shadow-emerald-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                Enviando…
-              </>
-            ) : isLoadingCatalog ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                Cargando catálogo…
-              </>
-            ) : (
-              <>
-                <Send size={16} strokeWidth={2.5} />
-                Enviar pedido
-              </>
-            )}
+          {/* Submit invisible para que Enter dentro del form lo dispare */}
+          <button type="submit" className="sr-only" tabIndex={-1}>
+            Enviar pedido
           </button>
         </form>
 
         <p className="text-center text-[11px] text-stone-400 mt-4">
           Milokira · Talca, Chile 🌿
         </p>
+      </div>
+
+      {/* Sticky bar inferior: contador + CTA siempre visible */}
+      <div
+        className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-stone-200 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      >
+        <div className="max-w-md mx-auto px-4 pt-3 flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+              Tu pedido
+            </p>
+            <p className="text-sm font-black text-stone-800 truncate">
+              {totalPlantitas === 0
+                ? "Sin plantas aún"
+                : `${totalPlantitas} ${totalPlantitas === 1 ? "plantita" : "plantitas"}`}
+              {tipoEntrega === "delivery" && deliveryFee > 0 && (
+                <span className="text-milokira-verde font-bold">
+                  {" "}
+                  + ${deliveryFee.toLocaleString("es-CL")}
+                </span>
+              )}
+            </p>
+          </div>
+          <button
+            type="submit"
+            form="pedidoForm"
+            disabled={isSaving || isLoadingCatalog || totalPlantitas === 0}
+            className="shrink-0 bg-linear-to-r from-emerald-600 to-milokira-verde hover:from-emerald-500 hover:to-emerald-600 text-white font-black px-5 py-3 rounded-xl text-sm tracking-wide shadow-md shadow-emerald-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95 flex items-center justify-center gap-2"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Enviando…
+              </>
+            ) : isLoadingCatalog ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Cargando…
+              </>
+            ) : (
+              <>
+                <Send size={14} strokeWidth={2.5} />
+                Enviar pedido
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </main>
   );
