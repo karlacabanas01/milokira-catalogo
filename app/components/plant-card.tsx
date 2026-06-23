@@ -30,6 +30,7 @@ interface Planta {
   categorias: string[];
   dificultad?: "facil" | "media" | "dificil";
   aptaMascotas?: "apta" | "moderada" | "toxica" | "sin-info";
+  opcionesLitros?: { litros: number; precio: number }[];
   precio: Precio;
 }
 
@@ -54,6 +55,7 @@ const formatearPrecio = (precio: Precio): string => {
 
 export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
   const { id, nombre, descripcion, imagenUrl, imagenPosition, precio, categorias, dificultad, aptaMascotas } = planta;
+  const opcionesLitros = planta.opcionesLitros;
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -209,10 +211,27 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
         </button>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mt-auto">
-          <div
-            className={`font-black text-lg sm:text-2xl tracking-tight leading-none ${estaDisponible ? "text-milokira-verde" : "text-gray-400 italic"}`}
-          >
-            {formatearPrecio(precio)}
+          <div className="flex flex-col gap-1">
+            {opcionesLitros && opcionesLitros.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {opcionesLitros.map((opc, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800"
+                  >
+                    <span className="font-black text-sm">{opc.litros}L</span>
+                    <span className="font-bold text-sm">-</span>
+                    <span className="text-sm font-bold">
+                      ${opc.precio.toLocaleString("es-CL")}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className={`font-black text-lg sm:text-2xl tracking-tight leading-none ${estaDisponible ? "text-milokira-verde" : "text-gray-400 italic"}`}>
+                {formatearPrecio(precio)}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">

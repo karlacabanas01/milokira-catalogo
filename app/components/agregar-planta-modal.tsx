@@ -3,7 +3,9 @@ import { doc, setDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../firebaseConfig";
 
-import { X, Leaf, Save, TerminalSquare } from "lucide-react";
+import { X, Leaf, Save, TerminalSquare, Plus } from "lucide-react";
+
+type OpcionLitro = { litros: string; precio: string };
 
 interface Planta {
   id: string;
@@ -14,6 +16,7 @@ interface Planta {
   categorias: string[];
   dificultad?: "facil" | "media" | "dificil";
   aptaMascotas?: "apta" | "moderada" | "toxica" | "sin-info";
+  opcionesLitros?: OpcionLitro[];
   precio: {
     valor: number;
     tipo: string;
@@ -63,6 +66,10 @@ export default function AgregarPlantaModal({
     aptaMascotas: "sin-info" as "apta" | "moderada" | "toxica" | "sin-info",
   });
 
+  const [opcionesLitros, setOpcionesLitros] = useState<OpcionLitro[]>([
+    { litros: "", precio: "" },
+  ]);
+
   const [imgNaturalSize, setImgNaturalSize] = useState<{
     w: number;
     h: number;
@@ -87,6 +94,14 @@ export default function AgregarPlantaModal({
         dificultad: plantaAEditar.dificultad || "media",
         aptaMascotas: plantaAEditar.aptaMascotas || "sin-info",
       });
+      setOpcionesLitros(
+        plantaAEditar.opcionesLitros?.length
+          ? plantaAEditar.opcionesLitros.map((o) => ({
+              litros: o.litros.toString(),
+              precio: o.precio.toString(),
+            }))
+          : [{ litros: "", precio: "" }],
+      );
       setPestaña("manual");
     } else {
       setFormData({
@@ -101,6 +116,7 @@ export default function AgregarPlantaModal({
         dificultad: "media",
         aptaMascotas: "sin-info",
       });
+      setOpcionesLitros([{ litros: "", precio: "" }]);
     }
   }, [plantaAEditar, isOpen]);
 
@@ -256,25 +272,40 @@ export default function AgregarPlantaModal({
     }
   };
 
+  const esImplemento = formData.categorias.includes("IMPLEMENTOS");
+
   const handleSubmitManual = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setCargando(true);
 
     try {
-      const dataParaSubir = {
+      const dataParaSubir: Record<string, unknown> = {
         nombre: formData.nombre,
         descripcion: formData.descripcion,
         categorias: formData.categorias,
         imagenUrl: formData.imagenUrl,
         imagenPosition: formData.imagenPosition,
-        dificultad: formData.dificultad,
-        aptaMascotas: formData.aptaMascotas,
         precio: {
           valor: Number(formData.precioValor),
           tipo: formData.precioTipo,
           disponible: formData.disponible === "true",
         },
       };
+
+      if (esImplemento) {
+        const opcValidas = opcionesLitros.filter(
+          (o) => o.litros.trim() !== "" && o.precio.trim() !== "",
+        );
+        if (opcValidas.length > 0) {
+          dataParaSubir.opcionesLitros = opcValidas.map((o) => ({
+            litros: Number(o.litros),
+            precio: Number(o.precio),
+          }));
+        }
+      } else {
+        dataParaSubir.dificultad = formData.dificultad;
+        dataParaSubir.aptaMascotas = formData.aptaMascotas;
+      }
 
       if (plantaAEditar) {
         await updateDoc(doc(db, "Plantas", plantaAEditar.id), dataParaSubir);
@@ -346,25 +377,26 @@ export default function AgregarPlantaModal({
     "text-[11px] font-bold text-stone-500 mb-1.5 block uppercase tracking-wider";
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-stone-900/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-stone-100 border-t-4 border-t-milokira-lila">
-        <div className="px-6 py-5 border-b border-stone-100 flex justify-between items-center">
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center sm:p-6 bg-stone-900/40 backdrop-blur-sm">
+      <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border-t-4 border-t-milokira-lila sm:border sm:border-t-4 sm:border-t-milokira-lila border-stone-200 shadow-2xl flex flex-col max-h-dvh sm:max-h-[90vh] h-dvh sm:h-auto overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-stone-100 shrink-0">
           <div className="flex items-center gap-2 text-stone-800">
             <Leaf className="text-milokira-verde" size={20} strokeWidth={2.5} />
-            <h2 className="font-bold text-lg tracking-wide">
+            <h2 className="font-bold text-base sm:text-lg tracking-wide">
               {plantaAEditar ? "Editar Planta" : "Nueva Planta"}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="text-stone-400 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-full transition-colors"
+            className="shrink-0 p-2 rounded-xl bg-stone-100 hover:bg-rose-50 text-stone-500 hover:text-rose-500 border border-stone-200 transition-all"
           >
-            <X size={20} strokeWidth={2.5} />
+            <X size={18} />
           </button>
         </div>
 
         {!plantaAEditar && (
-          <div className="px-6 pt-4 pb-2">
+          <div className="px-5 sm:px-6 pt-3 pb-2 shrink-0">
             <div className="flex bg-stone-100 p-1 rounded-xl">
               <button
                 onClick={() => setPestaña("manual")}
@@ -392,8 +424,9 @@ export default function AgregarPlantaModal({
 
         {pestaña === "manual" ? (
           <form
+            id="form-planta"
             onSubmit={handleSubmitManual}
-            className="px-6 pb-6 pt-2 space-y-5"
+            className="flex-1 overflow-y-auto px-5 sm:px-6 pb-6 pt-3 space-y-4"
           >
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -508,12 +541,25 @@ export default function AgregarPlantaModal({
                   "IMPLEMENTOS",
                 ].map((cat) => {
                   const isSelected = formData.categorias.includes(cat);
+                  const esImpl = cat === "IMPLEMENTOS";
+                  const hayImpl = formData.categorias.includes("IMPLEMENTOS");
+                  // IMPLEMENTOS se selecciona solo; las demás no se pueden elegir si IMPLEMENTOS está activo
+                  const deshabilitado = !esImpl && hayImpl;
                   return (
                     <button
                       key={cat}
                       type="button"
+                      disabled={deshabilitado}
                       onClick={() => {
                         setFormData((prev) => {
+                          if (esImpl) {
+                            // Si ya estaba, quítalo y vuelve a INTERIOR
+                            if (isSelected)
+                              return { ...prev, categorias: ["INTERIOR"] };
+                            // Si no estaba, seleccionar solo IMPLEMENTOS
+                            return { ...prev, categorias: ["IMPLEMENTOS"] };
+                          }
+                          // Para las demás: toggle normal, sin tocar IMPLEMENTOS
                           const next = isSelected
                             ? prev.categorias.filter((c) => c !== cat)
                             : [...prev.categorias, cat];
@@ -523,9 +569,11 @@ export default function AgregarPlantaModal({
                           };
                         });
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
                         isSelected
-                          ? "bg-milokira-lila/20 border-milokira-lila text-milokira-lila"
+                          ? esImpl
+                            ? "bg-amber-100 border-amber-400 text-amber-700"
+                            : "bg-milokira-lila/20 border-milokira-lila text-milokira-lila"
                           : "bg-stone-50 border-stone-200 text-stone-400 hover:border-stone-300"
                       }`}
                     >
@@ -551,44 +599,116 @@ export default function AgregarPlantaModal({
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={labelEstilo}>Dificultad</label>
-                <select
-                  value={formData.dificultad}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      dificultad: e.target.value as typeof formData.dificultad,
-                    })
-                  }
-                  className={inputEstilo}
-                >
-                  <option value="facil">💧 Fácil</option>
-                  <option value="media">💧💧 Media</option>
-                  <option value="dificil">💧💧💧 Difícil</option>
-                </select>
+            {esImplemento ? (
+              <div className="space-y-2">
+                <label className={labelEstilo}>
+                  Opciones de litros y precio
+                </label>
+                {opcionesLitros.map((opc, idx) => (
+                  <div key={idx} className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={opc.litros}
+                      onChange={(e) =>
+                        setOpcionesLitros((prev) =>
+                          prev.map((o, i) =>
+                            i === idx ? { ...o, litros: e.target.value } : o,
+                          ),
+                        )
+                      }
+                      placeholder="0"
+                      style={{ width: "3rem" }}
+                      className="shrink-0 p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-sm text-stone-700 text-center focus:bg-white focus:outline-none focus:ring-2 focus:ring-milokira-lila/40 focus:border-milokira-lila transition-all shadow-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <span className="text-stone-400 text-xs font-bold shrink-0">L</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={opc.precio}
+                      onChange={(e) =>
+                        setOpcionesLitros((prev) =>
+                          prev.map((o, i) =>
+                            i === idx ? { ...o, precio: e.target.value.replace(/\D/g, "") } : o,
+                          ),
+                        )
+                      }
+                      placeholder="Precio $"
+                      className="flex-1 min-w-0 p-2.5 bg-stone-50 border border-stone-200 rounded-lg text-sm text-stone-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-milokira-lila/40 focus:border-milokira-lila transition-all shadow-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    {opcionesLitros.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOpcionesLitros((prev) =>
+                            prev.filter((_, i) => i !== idx),
+                          )
+                        }
+                        className="shrink-0 p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-500 border border-rose-200 transition-colors"
+                        aria-label="Quitar opción"
+                      >
+                        <X size={13} strokeWidth={2.5} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {opcionesLitros.length < 3 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpcionesLitros((prev) => [
+                        ...prev,
+                        { litros: "", precio: "" },
+                      ])
+                    }
+                    className="text-[11px] font-bold text-milokira-verde hover:text-milokira-verde/80 flex items-center gap-1 transition-colors"
+                  >
+                    <Plus size={12} strokeWidth={3} />
+                    Agregar opción
+                  </button>
+                )}
               </div>
-              <div>
-                <label className={labelEstilo}>Mascotas</label>
-                <select
-                  value={formData.aptaMascotas}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      aptaMascotas: e.target
-                        .value as typeof formData.aptaMascotas,
-                    })
-                  }
-                  className={inputEstilo}
-                >
-                  <option value="sin-info">Sin info</option>
-                  <option value="apta">🐾 Apta</option>
-                  <option value="moderada">🐾 Riesgo moderado</option>
-                  <option value="toxica">🐾 Tóxica</option>
-                </select>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelEstilo}>Dificultad</label>
+                  <select
+                    value={formData.dificultad}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        dificultad: e.target
+                          .value as typeof formData.dificultad,
+                      })
+                    }
+                    className={inputEstilo}
+                  >
+                    <option value="facil">💧 Fácil</option>
+                    <option value="media">💧💧 Media</option>
+                    <option value="dificil">💧💧💧 Difícil</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelEstilo}>Mascotas</label>
+                  <select
+                    value={formData.aptaMascotas}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        aptaMascotas: e.target
+                          .value as typeof formData.aptaMascotas,
+                      })
+                    }
+                    className={inputEstilo}
+                  >
+                    <option value="sin-info">Sin info</option>
+                    <option value="apta">🐾 Apta</option>
+                    <option value="moderada">🐾 Riesgo moderado</option>
+                    <option value="toxica">🐾 Tóxica</option>
+                  </select>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4 pb-2">
               <div>
@@ -617,8 +737,29 @@ export default function AgregarPlantaModal({
                 </select>
               </div>
             </div>
+          </form>
+        ) : (
+          <div className="flex-1 overflow-y-auto px-5 sm:px-6 pb-4 pt-3 space-y-4">
+            <p className="text-sm text-stone-500">
+              Pega el arreglo JSON con los datos de las plantas.
+            </p>
+            <textarea
+              value={scriptTexto}
+              onChange={(e) => setScriptTexto(e.target.value)}
+              className="w-full h-56 p-4 font-mono text-xs bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-milokira-lila/40 transition-all text-stone-700 shadow-inner resize-none"
+              placeholder='[ { "nombre": "...", "precio": ... } ]'
+            />
+          </div>
+        )}
 
+        {/* Footer fijo */}
+        <div
+          className="shrink-0 border-t border-stone-100 bg-white/90 backdrop-blur-xl px-5 sm:px-6 py-4"
+          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        >
+          {pestaña === "manual" ? (
             <button
+              form="form-planta"
               disabled={cargando || isUploadingImage}
               className="w-full bg-stone-800 text-white font-bold py-3.5 rounded-xl uppercase tracking-wider text-sm hover:bg-milokira-lila transition-all duration-300 shadow-md disabled:opacity-70 flex justify-center items-center gap-2"
             >
@@ -629,18 +770,7 @@ export default function AgregarPlantaModal({
                   ? "Actualizar Planta"
                   : "Guardar Planta"}
             </button>
-          </form>
-        ) : (
-          <div className="px-6 pb-6 pt-2 space-y-4">
-            <p className="text-sm text-stone-500">
-              Pega el arreglo JSON con los datos de las plantas.
-            </p>
-            <textarea
-              value={scriptTexto}
-              onChange={(e) => setScriptTexto(e.target.value)}
-              className="w-full h-56 p-4 font-mono text-xs bg-stone-50 border border-stone-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-milokira-lila/40 transition-all text-stone-700 shadow-inner resize-none"
-              placeholder='[ { "nombre": "...", "precio": ... } ]'
-            />
+          ) : (
             <button
               onClick={ejecutarScript}
               disabled={cargando || !scriptTexto}
@@ -649,8 +779,8 @@ export default function AgregarPlantaModal({
               <TerminalSquare size={18} />
               Ejecutar Script
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
