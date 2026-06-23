@@ -1412,32 +1412,30 @@ function DetalleCompraModal({
   return (
     <div className="fixed inset-0 bg-stone-900/40 z-50 flex items-end sm:items-center justify-center sm:p-6 backdrop-blur-sm">
       <div className="relative bg-white w-full sm:max-w-2xl rounded-t-3xl sm:rounded-3xl border-t sm:border border-stone-200 shadow-2xl flex flex-col max-h-dvh sm:max-h-[90vh] h-dvh sm:h-auto overflow-hidden">
-        <header className="flex items-center justify-between px-5 sm:px-7 py-4 sm:py-5 border-b border-stone-100">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-10 w-10 rounded-xl bg-linear-to-br from-milokira-verde to-milokira-verde/70 flex items-center justify-center shadow-md shadow-milokira-verde/30 shrink-0">
-              <PackageCheck size={18} className="text-white" strokeWidth={2.5} />
-            </div>
-            <div className="min-w-0">
-              <input
-                value={proveedorEdit}
-                onChange={(e) => {
-                  setProveedorEdit(e.target.value);
-                  setDirty(true);
-                }}
-                placeholder="Compra sin proveedor"
-                className="w-full bg-transparent text-base sm:text-lg font-black text-stone-800 tracking-tight truncate outline-none focus:bg-stone-50 focus:px-2 focus:rounded-lg transition-all placeholder:text-stone-400 placeholder:italic placeholder:font-bold"
-              />
-              <p className="text-[11px] sm:text-xs text-stone-500 font-medium">
-                {new Date(compra.fecha).toLocaleDateString("es-CL")} · {formatCLP(compra.totalConDespacho)}
-              </p>
-            </div>
+        <header className="flex items-center gap-3 px-4 sm:px-7 py-4 sm:py-5 border-b border-stone-100">
+          <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-linear-to-br from-milokira-verde to-milokira-verde/70 flex items-center justify-center shadow-md shadow-milokira-verde/30 shrink-0">
+            <PackageCheck size={16} className="text-white sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <input
+              value={proveedorEdit}
+              onChange={(e) => {
+                setProveedorEdit(e.target.value);
+                setDirty(true);
+              }}
+              placeholder="Compra sin proveedor"
+              className="w-full bg-transparent text-base sm:text-lg font-black text-stone-800 tracking-tight outline-none focus:bg-stone-50 focus:px-2 focus:rounded-lg transition-all placeholder:text-stone-400 placeholder:italic placeholder:font-bold"
+            />
+            <p className="text-[11px] sm:text-xs text-stone-500 font-medium truncate">
+              {new Date(compra.fecha).toLocaleDateString("es-CL")} · {formatCLP(compra.totalConDespacho)}
+            </p>
           </div>
           <button
             onClick={onClose}
-            className="text-stone-400 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-full transition-colors"
+            className="shrink-0 p-2 rounded-xl bg-stone-100 hover:bg-rose-50 text-stone-500 hover:text-rose-500 border border-stone-200 transition-all"
             aria-label="Cerrar"
           >
-            <X size={20} strokeWidth={2.5} />
+            <X size={18} />
           </button>
         </header>
 
@@ -1535,7 +1533,8 @@ function DetalleCompraModal({
 
 
           <div className="border border-stone-200 rounded-xl overflow-hidden bg-white">
-              <div className="overflow-x-auto">
+              {/* Tabla — solo en sm+ */}
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead className="bg-stone-50">
                     <tr className="text-[9px] font-black text-stone-500 uppercase tracking-wider">
@@ -1695,6 +1694,162 @@ function DetalleCompraModal({
                   </tfoot>
                 </table>
               </div>
+
+              {/* Cards — solo en mobile */}
+              <ul className="sm:hidden divide-y divide-stone-100">
+                {calc.map((it) => {
+                  const isChecked = seleccion[it.id] === true;
+                  const inputCls =
+                    "w-full px-2.5 py-2 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 outline-none focus:bg-white focus:border-milokira-verde text-sm disabled:opacity-60";
+                  return (
+                    <li
+                      key={it.id}
+                      className={`p-3 space-y-2.5 ${
+                        it.ingresada
+                          ? "bg-milokira-verde/5"
+                          : isChecked
+                          ? "bg-milokira-verde/10"
+                          : ""
+                      }`}
+                    >
+                      {/* Fila superior: checkbox + nombre */}
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={it.ingresada || isChecked}
+                          disabled={it.ingresada}
+                          onChange={(e) =>
+                            setSeleccion((prev) => ({
+                              ...prev,
+                              [it.id]: e.target.checked,
+                            }))
+                          }
+                          className="h-5 w-5 shrink-0 accent-milokira-verde"
+                        />
+                        <input
+                          value={it.nombre}
+                          disabled={it.ingresada}
+                          onChange={(e) =>
+                            updateItem(it.id, "nombre", e.target.value)
+                          }
+                          placeholder="Nombre"
+                          className={`${inputCls} font-bold flex-1`}
+                        />
+                        {it.ingresada && (
+                          <span className="shrink-0 text-[9px] font-black uppercase tracking-wide text-milokira-verde bg-milokira-verde/10 border border-milokira-verde/40 rounded-full px-2 py-0.5">
+                            ✓ Ingresada
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Inputs numéricos en grid */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="text-[9px] font-bold text-stone-500 uppercase tracking-wider block mb-1">
+                            Unid.
+                          </label>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            disabled={it.ingresada}
+                            value={it.unidades || ""}
+                            onChange={(e) =>
+                              updateItem(
+                                it.id,
+                                "unidades",
+                                Math.max(1, Number(e.target.value.replace(/\D/g, "")) || 0),
+                              )
+                            }
+                            className={`${inputCls} text-center font-bold`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-bold text-stone-500 uppercase tracking-wider block mb-1">
+                            Precio neto
+                          </label>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            disabled={it.ingresada}
+                            value={it.precioUnitNeto || ""}
+                            onChange={(e) =>
+                              updateItem(
+                                it.id,
+                                "precioUnitNeto",
+                                Number(e.target.value.replace(/\D/g, "")) || 0,
+                              )
+                            }
+                            placeholder="$"
+                            className={`${inputCls} font-mono`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-bold text-stone-500 uppercase tracking-wider block mb-1">
+                            P/Maceta
+                          </label>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            disabled={it.ingresada}
+                            value={it.plantasPorMaceta || ""}
+                            onChange={(e) =>
+                              updateItem(
+                                it.id,
+                                "plantasPorMaceta",
+                                Math.max(1, Number(e.target.value.replace(/\D/g, "")) || 0),
+                              )
+                            }
+                            className={`${inputCls} text-center font-bold`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Costo real + precio sugerido */}
+                      {it.precioUnitNeto > 0 && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-2">
+                            <p className="text-[9px] font-bold text-blue-600 uppercase tracking-wider mb-0.5">
+                              Costo real/planta
+                            </p>
+                            <p className="font-mono font-black text-blue-700 text-sm">
+                              {formatCLP(Math.round(it.costoRealPorPlanta))}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-bold text-milokira-verde uppercase tracking-wider block mb-1">
+                              Precio sugerido
+                            </label>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              disabled={it.ingresada}
+                              value={
+                                it.precioSugerido > 0
+                                  ? formatCLP(
+                                      it.precioSugeridoOverride && it.precioSugeridoOverride > 0
+                                        ? Math.round(it.precioSugerido)
+                                        : redondearComercial(it.precioSugerido),
+                                    )
+                                  : ""
+                              }
+                              onChange={(e) => {
+                                const limpio = e.target.value.replace(/\D/g, "");
+                                const n = Number(limpio);
+                                updateItem(
+                                  it.id,
+                                  "precioSugeridoOverride",
+                                  limpio === "" || n <= 0 ? undefined : n,
+                                );
+                              }}
+                              className={`${inputCls} font-mono font-black text-milokira-verde`}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
 
               {totales.itemsCount > 0 ? (
                 <div className="bg-linear-to-r from-milokira-verde/10 to-milokira-lila/20 border-t-2 border-milokira-verde/40 px-3 py-3 space-y-2">

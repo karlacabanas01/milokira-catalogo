@@ -15,14 +15,28 @@ import {
   Phone,
   StickyNote,
   CalendarDays,
+  Search,
+  Leaf,
 } from "lucide-react";
 import {
   collection,
   doc,
   setDoc,
   updateDoc,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
+
+type Planta = {
+  idFirebase: string;
+  nombre: string;
+  stock: number;
+  precio: {
+    valor: number;
+    tipo: string;
+    disponible: boolean;
+  };
+};
 
 type CartItem = {
   id: string;
@@ -88,10 +102,28 @@ export default function OrderModal({
   const [sectorOtro, setSectorOtro] = useState("");
   const [manualTotal, setManualTotal] = useState("");
 
-  // Form para nuevo item
+  // Inventario
+  const [plantas, setPlantas] = useState<Planta[]>([]);
+  const [busqueda, setBusqueda] = useState("");
+  const [modoInventario, setModoInventario] = useState(true);
+
+  // Form para nuevo item manual
   const [itemName, setItemName] = useState("");
   const [itemPrice, setItemPrice] = useState("");
   const [itemQty, setItemQty] = useState("1");
+
+  useEffect(() => {
+    if (!isOpen) return;
+    getDocs(collection(db, "Plantas")).then((snap) => {
+      const list: Planta[] = [];
+      snap.forEach((d) => {
+        const data = d.data();
+        list.push({ idFirebase: d.id, ...data } as Planta);
+      });
+      list.sort((a, b) => a.nombre.localeCompare(b.nombre));
+      setPlantas(list);
+    });
+  }, [isOpen]);
 
   useEffect(() => {
     if (editingOrder && isOpen) {
@@ -387,48 +419,146 @@ export default function OrderModal({
               </div>
             )}
 
-            {/* Form de nueva planta */}
-            <div className="bg-white border-2 border-dashed border-emerald-400 rounded-xl p-3 space-y-2">
-              <input
-                placeholder="Nombre de la planta"
-                className="w-full px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 outline-none focus:bg-white focus:border-amber-400 text-xs sm:text-sm placeholder:text-stone-400"
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addItem();
-                  }
-                }}
-              />
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="Precio $"
-                  className="flex-1 px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 outline-none focus:bg-white focus:border-amber-400 text-xs sm:text-sm placeholder:text-stone-400"
-                  value={itemPrice}
-                  onChange={(e) => setItemPrice(e.target.value)}
-                />
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="Cant"
-                  className="w-20 px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 text-center font-bold outline-none focus:bg-white focus:border-amber-400 text-xs sm:text-sm placeholder:text-stone-400"
-                  value={itemQty}
-                  onChange={(e) => setItemQty(e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={addItem}
-                  disabled={!itemName.trim()}
-                  className="shrink-0 px-3 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-emerald-300"
-                  aria-label="Agregar planta"
-                >
-                  <Plus size={14} strokeWidth={3} />
-                </button>
-              </div>
+            {/* Tabs: inventario / manual */}
+            <div className="flex gap-1 bg-stone-100 rounded-lg p-0.5 border border-stone-200 mb-2">
+              <button
+                type="button"
+                onClick={() => setModoInventario(true)}
+                className={`flex-1 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
+                  modoInventario ? "bg-white text-emerald-700 shadow-sm" : "text-stone-500 hover:text-stone-700"
+                }`}
+              >
+                <Leaf size={11} strokeWidth={2.5} />
+                Del inventario
+              </button>
+              <button
+                type="button"
+                onClick={() => setModoInventario(false)}
+                className={`flex-1 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
+                  !modoInventario ? "bg-white text-stone-700 shadow-sm" : "text-stone-500 hover:text-stone-700"
+                }`}
+              >
+                <Plus size={11} strokeWidth={2.5} />
+                Manual
+              </button>
             </div>
+
+            {modoInventario ? (
+              /* Selector de inventario */
+              <div className="bg-white border-2 border-dashed border-emerald-400 rounded-xl p-3 space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={13} />
+                  <input
+                    placeholder="Buscar planta..."
+                    className="w-full pl-9 pr-3 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 outline-none focus:bg-white focus:border-emerald-400 text-xs sm:text-sm placeholder:text-stone-400"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-1 pr-0.5">
+                  {plantas
+                    .filter((p) =>
+                      p.nombre.toLowerCase().includes(busqueda.toLowerCase()),
+                    )
+                    .map((planta) => {
+                      const enCarrito = cart.find((c) => c.id === planta.idFirebase);
+                      const sinStock = planta.stock <= 0;
+                      return (
+                        <button
+                          key={planta.idFirebase}
+                          type="button"
+                          disabled={sinStock}
+                          onClick={() => {
+                            if (enCarrito) {
+                              updateQuantity(planta.idFirebase, 1);
+                            } else {
+                              setCart((prev) => [
+                                ...prev,
+                                {
+                                  id: planta.idFirebase,
+                                  name: planta.nombre,
+                                  price: planta.precio?.valor ?? 0,
+                                  quantity: 1,
+                                },
+                              ]);
+                            }
+                          }}
+                          className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-left transition-all active:scale-[0.98] ${
+                            sinStock
+                              ? "bg-stone-50 border-stone-200 opacity-40 cursor-not-allowed"
+                              : enCarrito
+                              ? "bg-emerald-50 border-emerald-400 text-emerald-800"
+                              : "bg-white border-stone-200 hover:border-emerald-300 hover:bg-emerald-50/50 text-stone-700"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {enCarrito && (
+                              <span className="shrink-0 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+                                <Check size={9} strokeWidth={3} className="text-white" />
+                              </span>
+                            )}
+                            <span className="text-xs font-bold truncate">{planta.nombre}</span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[10px] text-stone-500">
+                              Stock: <span className={planta.stock <= 3 ? "text-amber-600 font-bold" : ""}>{planta.stock}</span>
+                            </span>
+                            <span className="text-xs font-mono font-bold text-emerald-700">
+                              {planta.precio?.valor ? `$${planta.precio.valor.toLocaleString("es-CL")}` : "—"}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  {plantas.filter((p) => p.nombre.toLowerCase().includes(busqueda.toLowerCase())).length === 0 && (
+                    <p className="text-center text-stone-400 text-xs py-4">Sin resultados</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Form manual */
+              <div className="bg-white border-2 border-dashed border-emerald-400 rounded-xl p-3 space-y-2">
+                <input
+                  placeholder="Nombre de la planta"
+                  className="w-full px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 outline-none focus:bg-white focus:border-amber-400 text-xs sm:text-sm placeholder:text-stone-400"
+                  value={itemName}
+                  onChange={(e) => setItemName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addItem();
+                    }
+                  }}
+                />
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Precio $"
+                    className="flex-1 px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 outline-none focus:bg-white focus:border-amber-400 text-xs sm:text-sm placeholder:text-stone-400"
+                    value={itemPrice}
+                    onChange={(e) => setItemPrice(e.target.value)}
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="Cant"
+                    className="w-20 px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 text-center font-bold outline-none focus:bg-white focus:border-amber-400 text-xs sm:text-sm placeholder:text-stone-400"
+                    value={itemQty}
+                    onChange={(e) => setItemQty(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={addItem}
+                    disabled={!itemName.trim()}
+                    className="shrink-0 px-3 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-emerald-300"
+                    aria-label="Agregar planta"
+                  >
+                    <Plus size={14} strokeWidth={3} />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Total manual */}
             <div className="mt-3 pt-3 border-t border-emerald-500/30">
