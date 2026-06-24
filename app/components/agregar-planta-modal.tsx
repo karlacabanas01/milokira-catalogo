@@ -17,6 +17,7 @@ interface Planta {
   dificultad?: "facil" | "media" | "dificil";
   aptaMascotas?: "apta" | "moderada" | "toxica" | "sin-info";
   opcionesLitros?: OpcionLitro[];
+  oferta?: { activa: boolean; precioOriginal: number; porcentaje: number };
   precio: {
     valor: number;
     tipo: string;
@@ -70,6 +71,11 @@ export default function AgregarPlantaModal({
     { litros: "", precio: "" },
   ]);
 
+  const [oferta, setOferta] = useState({
+    activa: false,
+    porcentaje: "20",
+  });
+
   const [imgNaturalSize, setImgNaturalSize] = useState<{
     w: number;
     h: number;
@@ -102,6 +108,10 @@ export default function AgregarPlantaModal({
             }))
           : [{ litros: "", precio: "" }],
       );
+      setOferta({
+        activa: plantaAEditar.oferta?.activa ?? false,
+        porcentaje: plantaAEditar.oferta?.porcentaje?.toString() ?? "20",
+      });
       setPestaña("manual");
     } else {
       setFormData({
@@ -117,6 +127,7 @@ export default function AgregarPlantaModal({
         aptaMascotas: "sin-info",
       });
       setOpcionesLitros([{ litros: "", precio: "" }]);
+      setOferta({ activa: false, porcentaje: "20" });
     }
   }, [plantaAEditar, isOpen]);
 
@@ -305,6 +316,23 @@ export default function AgregarPlantaModal({
       } else {
         dataParaSubir.dificultad = formData.dificultad;
         dataParaSubir.aptaMascotas = formData.aptaMascotas;
+      }
+
+      if (oferta.activa) {
+        const pct = Number(oferta.porcentaje);
+        const precioOriginal = Number(formData.precioValor);
+        dataParaSubir.oferta = {
+          activa: true,
+          precioOriginal,
+          porcentaje: pct,
+        };
+        dataParaSubir.precio = {
+          valor: Math.round(precioOriginal * (1 - pct / 100)),
+          tipo: formData.precioTipo,
+          disponible: formData.disponible === "true",
+        };
+      } else {
+        dataParaSubir.oferta = { activa: false, precioOriginal: 0, porcentaje: 0 };
       }
 
       if (plantaAEditar) {
@@ -737,6 +765,57 @@ export default function AgregarPlantaModal({
                 </select>
               </div>
             </div>
+
+            {!esImplemento && (
+              <div className="pb-2">
+                <label className="flex items-center gap-3 cursor-pointer select-none group">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={oferta.activa}
+                      onChange={(e) =>
+                        setOferta({ ...oferta, activa: e.target.checked })
+                      }
+                    />
+                    <div
+                      className={`w-11 h-6 rounded-full transition-colors duration-200 ${oferta.activa ? "bg-rose-500" : "bg-stone-200"}`}
+                    />
+                    <div
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${oferta.activa ? "translate-x-5" : ""}`}
+                    />
+                  </div>
+                  <span className="text-sm font-semibold text-stone-700">
+                    Poner en oferta
+                  </span>
+                  {oferta.activa && formData.precioValor && (
+                    <span className="text-xs text-rose-600 font-bold">
+                      ${Math.round(Number(formData.precioValor) * (1 - Number(oferta.porcentaje) / 100)).toLocaleString("es-CL")}
+                    </span>
+                  )}
+                </label>
+
+                {oferta.activa && (
+                  <div className="mt-3 flex items-center gap-3 pl-1">
+                    <label className={labelEstilo}>Descuento</label>
+                    <div className="flex items-center gap-2">
+                      {[10, 15, 20, 25, 30, 50].map((pct) => (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() =>
+                            setOferta({ ...oferta, porcentaje: pct.toString() })
+                          }
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${oferta.porcentaje === pct.toString() ? "bg-rose-500 text-white border-rose-500" : "bg-white text-stone-600 border-stone-200 hover:border-rose-300"}`}
+                        >
+                          -{pct}%
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </form>
         ) : (
           <div className="flex-1 overflow-y-auto px-5 sm:px-6 pb-4 pt-3 space-y-4">

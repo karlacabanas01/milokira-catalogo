@@ -24,6 +24,7 @@ interface Planta {
   stock?: number;
   dificultad?: "facil" | "media" | "dificil";
   aptaMascotas?: "apta" | "moderada" | "toxica" | "sin-info";
+  oferta?: { activa: boolean; precioOriginal: number; porcentaje: number };
   precio: {
     valor: number;
     tipo: string;
@@ -77,6 +78,7 @@ export default function Home() {
 
   const categorias = [
     "TODAS",
+    "OFERTAS",
     "CACTUS",
     "SUCULENTAS",
     "INTERIOR",
@@ -87,6 +89,7 @@ export default function Home() {
 
   const CATEGORIA_EMOJI: Record<string, string> = {
     TODAS: "✨",
+    OFERTAS: "🔥",
     CACTUS: "🌵",
     SUCULENTAS: "🌱",
     INTERIOR: "🪴",
@@ -101,9 +104,11 @@ export default function Home() {
         planta.precio?.disponible !== false && (planta.stock ?? 1) > 0;
       const coincideCategoria =
         categoriaActiva === "TODAS" ||
-        planta.categorias?.some(
-          (c) => c.toUpperCase() === categoriaActiva.toUpperCase(),
-        );
+        (categoriaActiva === "OFERTAS"
+          ? planta.oferta?.activa === true
+          : planta.categorias?.some(
+              (c) => c.toUpperCase() === categoriaActiva.toUpperCase(),
+            ));
       const coincideBusqueda =
         busqueda.trim() === "" ||
         planta.nombre.toLowerCase().includes(busqueda.toLowerCase());

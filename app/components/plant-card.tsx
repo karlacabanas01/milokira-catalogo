@@ -31,6 +31,7 @@ interface Planta {
   dificultad?: "facil" | "media" | "dificil";
   aptaMascotas?: "apta" | "moderada" | "toxica" | "sin-info";
   opcionesLitros?: { litros: number; precio: number }[];
+  oferta?: { activa: boolean; precioOriginal: number; porcentaje: number };
   precio: Precio;
 }
 
@@ -56,6 +57,7 @@ const formatearPrecio = (precio: Precio): string => {
 export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
   const { id, nombre, descripcion, imagenUrl, imagenPosition, precio, categorias, dificultad, aptaMascotas } = planta;
   const opcionesLitros = planta.opcionesLitros;
+  const oferta = planta.oferta?.activa ? planta.oferta : null;
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -172,6 +174,17 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
           ))}
         </div>
 
+        {/* Badge oferta */}
+        {oferta && (
+          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-20 flex gap-1 sm:gap-1.5">
+            {!isAdmin && (
+              <span className="bg-rose-500 text-white text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wide">
+                -{oferta.porcentaje}%
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Iconos de dificultad y mascotas */}
         <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 z-10 flex gap-1.5">
           {dificultad && <DifficultyBadge level={dificultad} />}
@@ -228,8 +241,15 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
                 ))}
               </div>
             ) : (
-              <div className={`font-black text-lg sm:text-2xl tracking-tight leading-none ${estaDisponible ? "text-milokira-verde" : "text-gray-400 italic"}`}>
-                {formatearPrecio(precio)}
+              <div className="flex flex-col gap-0.5">
+                {oferta && (
+                  <span className="text-xs text-stone-400 line-through leading-none">
+                    ${oferta.precioOriginal.toLocaleString("es-CL")}
+                  </span>
+                )}
+                <div className={`font-black text-lg sm:text-2xl tracking-tight leading-none ${estaDisponible ? (oferta ? "text-rose-500" : "text-milokira-verde") : "text-gray-400 italic"}`}>
+                  {formatearPrecio(precio)}
+                </div>
               </div>
             )}
           </div>
