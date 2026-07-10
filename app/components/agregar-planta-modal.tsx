@@ -73,7 +73,7 @@ export default function AgregarPlantaModal({
 
   const [oferta, setOferta] = useState({
     activa: false,
-    porcentaje: "20",
+    precioOferta: "",
   });
 
   const [imgNaturalSize, setImgNaturalSize] = useState<{
@@ -93,7 +93,9 @@ export default function AgregarPlantaModal({
           : ["INTERIOR"],
         imagenUrl: plantaAEditar.imagenUrl || "",
         imagenPosition: plantaAEditar.imagenPosition || "50% 50%",
-        precioValor: plantaAEditar.precio.valor.toString(),
+        precioValor: plantaAEditar.oferta?.activa
+          ? plantaAEditar.oferta.precioOriginal.toString()
+          : plantaAEditar.precio.valor.toString(),
         precioTipo: plantaAEditar.precio.tipo || "fijo",
         disponible:
           plantaAEditar.precio.disponible !== false ? "true" : "false",
@@ -110,7 +112,9 @@ export default function AgregarPlantaModal({
       );
       setOferta({
         activa: plantaAEditar.oferta?.activa ?? false,
-        porcentaje: plantaAEditar.oferta?.porcentaje?.toString() ?? "20",
+        precioOferta: plantaAEditar.oferta?.activa
+          ? plantaAEditar.precio.valor.toString()
+          : "",
       });
       setPestaña("manual");
     } else {
@@ -127,7 +131,7 @@ export default function AgregarPlantaModal({
         aptaMascotas: "sin-info",
       });
       setOpcionesLitros([{ litros: "", precio: "" }]);
-      setOferta({ activa: false, porcentaje: "20" });
+      setOferta({ activa: false, precioOferta: "" });
     }
   }, [plantaAEditar, isOpen]);
 
@@ -319,15 +323,19 @@ export default function AgregarPlantaModal({
       }
 
       if (oferta.activa) {
-        const pct = Number(oferta.porcentaje);
         const precioOriginal = Number(formData.precioValor);
+        const precioOferta = Number(oferta.precioOferta);
+        const pct =
+          precioOriginal > 0
+            ? Math.round((1 - precioOferta / precioOriginal) * 100)
+            : 0;
         dataParaSubir.oferta = {
           activa: true,
           precioOriginal,
           porcentaje: pct,
         };
         dataParaSubir.precio = {
-          valor: Math.round(precioOriginal * (1 - pct / 100)),
+          valor: precioOferta,
           tipo: formData.precioTipo,
           disponible: formData.disponible === "true",
         };
@@ -788,29 +796,41 @@ export default function AgregarPlantaModal({
                   <span className="text-sm font-semibold text-stone-700">
                     Poner en oferta
                   </span>
-                  {oferta.activa && formData.precioValor && (
-                    <span className="text-xs text-rose-600 font-bold">
-                      ${Math.round(Number(formData.precioValor) * (1 - Number(oferta.porcentaje) / 100)).toLocaleString("es-CL")}
-                    </span>
-                  )}
                 </label>
 
                 {oferta.activa && (
-                  <div className="mt-3 flex items-center gap-3 pl-1">
-                    <label className={labelEstilo}>Descuento</label>
+                  <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 pl-1">
+                    <label className={labelEstilo}>Precio oferta</label>
                     <div className="flex items-center gap-2">
-                      {[10, 15, 20, 25, 30, 50].map((pct) => (
-                        <button
-                          key={pct}
-                          type="button"
-                          onClick={() =>
-                            setOferta({ ...oferta, porcentaje: pct.toString() })
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm">
+                          $
+                        </span>
+                        <input
+                          type="number"
+                          value={oferta.precioOferta}
+                          onChange={(e) =>
+                            setOferta({ ...oferta, precioOferta: e.target.value })
                           }
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${oferta.porcentaje === pct.toString() ? "bg-rose-500 text-white border-rose-500" : "bg-white text-stone-600 border-stone-200 hover:border-rose-300"}`}
-                        >
-                          -{pct}%
-                        </button>
-                      ))}
+                          placeholder="0"
+                          className={`${inputEstilo} pl-7 w-28 sm:w-32`}
+                        />
+                      </div>
+                      {oferta.precioOferta &&
+                        Number(formData.precioValor) > 0 &&
+                        Number(oferta.precioOferta) <
+                          Number(formData.precioValor) && (
+                          <span className="text-xs text-rose-600 font-bold whitespace-nowrap">
+                            -
+                            {Math.round(
+                              (1 -
+                                Number(oferta.precioOferta) /
+                                  Number(formData.precioValor)) *
+                                100,
+                            )}
+                            %
+                          </span>
+                        )}
                     </div>
                   </div>
                 )}

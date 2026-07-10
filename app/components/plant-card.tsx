@@ -11,6 +11,7 @@ import {
   Plus,
   Check,
   Droplet,
+  Flame,
 } from "lucide-react";
 import { MdOutlinePets } from "react-icons/md";
 import { useCart } from "../context/CartContext";
@@ -174,22 +175,28 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
           ))}
         </div>
 
-        {/* Badge oferta */}
-        {oferta && (
-          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-20 flex gap-1 sm:gap-1.5">
-            {!isAdmin && (
-              <span className="bg-rose-500 text-white text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wide">
-                -{oferta.porcentaje}%
-              </span>
+        {/* Iconos de dificultad y mascotas + pill de oferta */}
+        <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 z-10 flex flex-col items-start gap-1.5">
+          <div className="flex gap-1.5">
+            {dificultad && <DifficultyBadge level={dificultad} />}
+            {aptaMascotas && aptaMascotas !== "sin-info" && (
+              <PetBadge level={aptaMascotas} />
             )}
           </div>
-        )}
-
-        {/* Iconos de dificultad y mascotas */}
-        <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 z-10 flex gap-1.5">
-          {dificultad && <DifficultyBadge level={dificultad} />}
-          {aptaMascotas && aptaMascotas !== "sin-info" && (
-            <PetBadge level={aptaMascotas} />
+          {oferta && !isAdmin && (
+            <span className="inline-flex items-center gap-0.5 sm:gap-1 bg-rose-500 text-white text-[9px] sm:text-xs font-black px-1.5 py-0.5 sm:px-2 rounded-full shadow-md uppercase tracking-wide leading-none">
+              <Flame
+                size={10}
+                strokeWidth={3}
+                className="fill-white shrink-0 sm:w-3 sm:h-3"
+              />
+              Oferta
+              {oferta.porcentaje > 0 && (
+                <span className="ml-0.5 bg-white/25 rounded-full px-1 sm:px-1.5 py-px">
+                  -{oferta.porcentaje}%
+                </span>
+              )}
+            </span>
           )}
         </div>
       </div>
