@@ -33,6 +33,7 @@ import {
   PackageCheck,
   PackagePlus,
   ClipboardPaste,
+  Search,
 } from "lucide-react";
 
 const IVA_DEFAULT = 19;
@@ -968,6 +969,7 @@ function DetalleCompraModal({
   const [seleccion, setSeleccion] = useState<Record<string, boolean>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [busqueda, setBusqueda] = useState("");
 
   const [itemsEdit, setItemsEdit] = useState<CompraItemEdit[]>(() =>
     compra.items.map((i) => ({ ...i })),
@@ -1032,6 +1034,14 @@ function DetalleCompraModal({
     const margenReal = inversion > 0 ? (ganancia / inversion) * 100 : 0;
     return { inversion, ingreso, ganancia, plantasTot, itemsCount, margenReal };
   }, [calc, seleccion]);
+
+  // Filtra por nombre conservando el índice/número original de cada planta
+  const calcFiltrado = useMemo(() => {
+    const conIdx = calc.map((it, idx) => ({ it, idx }));
+    const q = busqueda.trim().toLowerCase();
+    if (!q) return conIdx;
+    return conIdx.filter(({ it }) => it.nombre.toLowerCase().includes(q));
+  }, [calc, busqueda]);
 
   const persistirCambios = async () => {
     const itemsParaGuardar: CompraItem[] = itemsEdit.map((i) => {
@@ -1238,17 +1248,26 @@ function DetalleCompraModal({
     }
   };
 
+  // "Seleccionar todas" opera sobre las plantas visibles (respeta la búsqueda)
+  const visibles = calcFiltrado.map(({ it }) => it);
   const allSelected =
-    calc.some((i) => !i.ingresada) &&
-    calc.filter((i) => !i.ingresada).every((i) => seleccion[i.id]);
+    visibles.some((i) => !i.ingresada) &&
+    visibles.filter((i) => !i.ingresada).every((i) => seleccion[i.id]);
 
   const toggleAll = () => {
+    const seleccionables = visibles.filter((i) => !i.ingresada);
     if (allSelected) {
-      setSeleccion({});
+      setSeleccion((prev) => {
+        const next = { ...prev };
+        seleccionables.forEach((i) => delete next[i.id]);
+        return next;
+      });
     } else {
-      const next: Record<string, boolean> = {};
-      calc.filter((i) => !i.ingresada).forEach((i) => (next[i.id] = true));
-      setSeleccion(next);
+      setSeleccion((prev) => {
+        const next = { ...prev };
+        seleccionables.forEach((i) => (next[i.id] = true));
+        return next;
+      });
     }
   };
 
@@ -1537,6 +1556,30 @@ function DetalleCompraModal({
             </div>
           </div>
 
+          {/* Buscador de plantas */}
+          <div className="relative">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"
+            />
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar planta por nombre…"
+              className="w-full pl-9 pr-9 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-milokira-verde text-sm placeholder:text-stone-400 transition-colors"
+            />
+            {busqueda && (
+              <button
+                type="button"
+                onClick={() => setBusqueda("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-200 transition-colors"
+                aria-label="Limpiar búsqueda"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
 
           <div className="border border-stone-200 rounded-xl overflow-hidden bg-white">
               {/* Tabla — solo en sm+ */}
@@ -1562,7 +1605,7 @@ function DetalleCompraModal({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-200">
-                    {calc.map((it) => {
+                    {calcFiltrado.map(({ it }) => {
                       const isChecked = seleccion[it.id] === true;
                       const rowBg = it.ingresada
                         ? "bg-milokira-verde/5"
@@ -1703,7 +1746,7 @@ function DetalleCompraModal({
 
               {/* Cards — solo en mobile */}
               <ul className="sm:hidden space-y-3 p-3">
-                {calc.map((it, idx) => {
+                {calcFiltrado.map(({ it, idx }) => {
                   const isChecked = seleccion[it.id] === true;
                   const numInput =
                     "w-full bg-transparent text-stone-800 font-bold outline-none text-sm disabled:opacity-60";
@@ -1865,6 +1908,20 @@ function DetalleCompraModal({
                   );
                 })}
               </ul>
+
+              {calcFiltrado.length === 0 && busqueda && (
+                <div className="px-4 py-8 text-center text-stone-400 text-sm">
+                  <Search
+                    size={22}
+                    strokeWidth={1.5}
+                    className="mx-auto mb-2 text-stone-300"
+                  />
+                  Sin resultados para{" "}
+                  <span className="font-bold text-stone-500">
+                    “{busqueda}”
+                  </span>
+                </div>
+              )}
 
               {totales.itemsCount > 0 ? (
                 <div className="bg-linear-to-r from-milokira-verde/10 to-milokira-lila/20 border-t-2 border-milokira-verde/40 px-3 py-3 space-y-2">
