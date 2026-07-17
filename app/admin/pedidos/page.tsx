@@ -663,7 +663,9 @@ export default function PedidosPage() {
                         <th className="px-2 py-2 text-center hidden md:table-cell">
                           Hora
                         </th>
-                        <th className="px-2 py-2 text-center">Tipo</th>
+                        <th className="px-2 py-2 text-center hidden xs:table-cell">
+                          Tipo
+                        </th>
                         <th className="px-2 py-2 text-right">Total</th>
                         <th className="px-2 py-2 text-right">Acciones</th>
                         <th className="px-1 py-2 w-8" aria-label="Expandir" />
@@ -738,7 +740,7 @@ export default function PedidosPage() {
                                   )}
                                 </span>
                               </td>
-                              <td className="px-2 py-2 text-center">
+                              <td className="px-2 py-2 text-center hidden xs:table-cell">
                                 <span
                                   className={`inline-flex px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-black uppercase tracking-wide ${
                                     order.delivery_type === "delivery"

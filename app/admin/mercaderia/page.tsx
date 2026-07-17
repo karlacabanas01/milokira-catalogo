@@ -659,39 +659,44 @@ function NuevaCompraModal({
               </div>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-3 pt-1.5">
               {items.map((it, idx) => {
                 const calcItem = calc.itemsConCostoReal[idx];
                 return (
                   <div
                     key={it.id}
-                    className="bg-white border border-stone-200 rounded-xl p-3 shadow-sm space-y-2"
+                    className="bg-white border border-stone-200 rounded-xl shadow-sm overflow-hidden"
                   >
-                    <div className="flex items-center gap-2">
+                    {/* Fila 1: número + nombre + borrar */}
+                    <div className="flex items-center gap-2 px-2.5 py-2 bg-stone-50/80 border-b border-stone-100">
+                      <span className="grid place-items-center h-5 min-w-5 px-1 rounded-md bg-amber-500 text-white text-[10px] font-black shrink-0">
+                        {idx + 1}
+                      </span>
                       <input
                         value={it.nombre}
                         onChange={(e) =>
                           updateItem(it.id, "nombre", e.target.value)
                         }
                         placeholder="Nombre de la planta"
-                        className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 outline-none focus:bg-white focus:border-amber-400 text-sm placeholder:text-stone-400"
+                        className="flex-1 min-w-0 bg-transparent text-stone-800 font-bold outline-none text-sm placeholder:text-stone-400 placeholder:font-normal"
                       />
                       <button
                         type="button"
                         onClick={() => removeItem(it.id)}
                         disabled={items.length <= 1}
-                        className="shrink-0 p-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="shrink-0 p-1.5 rounded-md text-stone-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         aria-label="Quitar"
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
-                        <label className="text-[9px] font-bold text-stone-500 uppercase tracking-wider ml-1 block mb-1">
+                    {/* Fila 2: campos compactos en línea */}
+                    <div className="flex items-stretch divide-x divide-stone-100">
+                      <label className="flex-1 flex flex-col px-2 py-1.5">
+                        <span className="text-[8px] font-bold text-stone-400 uppercase tracking-wider mb-0.5">
                           Unid.
-                        </label>
+                        </span>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -706,13 +711,13 @@ function NuevaCompraModal({
                               ),
                             )
                           }
-                          className="w-full px-2 py-2 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 text-center font-bold outline-none focus:bg-white focus:border-amber-400 text-sm"
+                          className="w-full bg-transparent text-stone-800 font-bold outline-none text-sm"
                         />
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-bold text-stone-500 uppercase tracking-wider ml-1 block mb-1">
+                      </label>
+                      <label className="flex-[1.4] flex flex-col px-2 py-1.5">
+                        <span className="text-[8px] font-bold text-stone-400 uppercase tracking-wider mb-0.5">
                           Precio neto
-                        </label>
+                        </span>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -724,14 +729,14 @@ function NuevaCompraModal({
                               Number(e.target.value.replace(/\D/g, "")) || 0,
                             )
                           }
-                          placeholder="$"
-                          className="w-full px-2 py-2 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 outline-none focus:bg-white focus:border-amber-400 text-sm placeholder:text-stone-400"
+                          placeholder="$0"
+                          className="w-full bg-transparent text-stone-800 font-bold outline-none text-sm placeholder:text-stone-300 placeholder:font-normal"
                         />
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-bold text-stone-500 uppercase tracking-wider ml-1 block mb-1">
-                          Plantas/mac
-                        </label>
+                      </label>
+                      <label className="flex-1 flex flex-col px-2 py-1.5">
+                        <span className="text-[8px] font-bold text-stone-400 uppercase tracking-wider mb-0.5">
+                          Pl/mac
+                        </span>
                         <input
                           type="text"
                           inputMode="numeric"
@@ -746,29 +751,30 @@ function NuevaCompraModal({
                               ),
                             )
                           }
-                          className="w-full px-2 py-2 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 text-center font-bold outline-none focus:bg-white focus:border-amber-400 text-sm"
+                          className="w-full bg-transparent text-stone-800 font-bold outline-none text-sm"
                         />
-                      </div>
+                      </label>
                     </div>
 
+                    {/* Fila 3: resultados en una sola línea */}
                     {calcItem && it.precioUnitNeto > 0 && (
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-stone-100">
-                        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg px-2.5 py-1.5">
-                          <p className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">
-                            Costo real / planta
-                          </p>
-                          <p className="font-mono font-black text-blue-700 text-sm sm:text-base">
-                            {formatCLP(Math.round(calcItem.costoRealPorPlanta))}
-                          </p>
-                        </div>
-                        <div className="bg-milokira-verde/10 border-2 border-milokira-verde rounded-lg px-2.5 py-1.5">
-                          <p className="text-[9px] font-bold text-milokira-verde uppercase tracking-wider">
-                            Sugerido
-                          </p>
-                          <p className="font-mono font-black text-milokira-verde text-sm sm:text-base">
+                      <div className="flex items-center justify-between gap-2 px-2.5 py-2 bg-stone-50/60 border-t border-stone-100 text-[11px]">
+                        <span className="flex items-center gap-1 text-blue-700">
+                          <span className="font-bold text-blue-500/80">
+                            Costo:
+                          </span>
+                          <span className="font-mono font-black">
+                            {formatCLP(
+                              Math.round(calcItem.costoRealPorPlanta),
+                            )}
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-1 text-milokira-verde">
+                          <span className="font-bold opacity-80">Sug:</span>
+                          <span className="font-mono font-black">
                             {formatCLP(Math.round(calcItem.precioSugerido))}
-                          </p>
-                        </div>
+                          </span>
+                        </span>
                       </div>
                     )}
                   </div>
@@ -1696,24 +1702,30 @@ function DetalleCompraModal({
               </div>
 
               {/* Cards — solo en mobile */}
-              <ul className="sm:hidden divide-y divide-stone-100">
-                {calc.map((it) => {
+              <ul className="sm:hidden space-y-3 p-3">
+                {calc.map((it, idx) => {
                   const isChecked = seleccion[it.id] === true;
-                  const inputCls =
-                    "w-full px-2.5 py-2 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 outline-none focus:bg-white focus:border-milokira-verde text-sm disabled:opacity-60";
+                  const numInput =
+                    "w-full bg-transparent text-stone-800 font-bold outline-none text-sm disabled:opacity-60";
+                  const headerBg = it.ingresada
+                    ? "bg-milokira-verde/15"
+                    : isChecked
+                      ? "bg-milokira-verde/10"
+                      : "bg-stone-50/80";
+                  const borderCls = isChecked
+                    ? "border-milokira-verde/60 ring-1 ring-milokira-verde/30"
+                    : "border-stone-200";
                   return (
                     <li
                       key={it.id}
-                      className={`p-3 space-y-2.5 ${
-                        it.ingresada
-                          ? "bg-milokira-verde/5"
-                          : isChecked
-                          ? "bg-milokira-verde/10"
-                          : ""
+                      className={`bg-white border rounded-xl shadow-sm overflow-hidden transition-colors ${borderCls} ${
+                        it.ingresada ? "opacity-95" : ""
                       }`}
                     >
-                      {/* Fila superior: checkbox + nombre */}
-                      <div className="flex items-center gap-2">
+                      {/* Fila 1: check + número + nombre + estado */}
+                      <div
+                        className={`flex items-center gap-2 px-2.5 py-2 border-b border-stone-100 ${headerBg}`}
+                      >
                         <input
                           type="checkbox"
                           checked={it.ingresada || isChecked}
@@ -1726,6 +1738,9 @@ function DetalleCompraModal({
                           }
                           className="h-5 w-5 shrink-0 accent-milokira-verde"
                         />
+                        <span className="grid place-items-center h-5 min-w-5 px-1 rounded-md bg-stone-300 text-white text-[10px] font-black shrink-0">
+                          {idx + 1}
+                        </span>
                         <input
                           value={it.nombre}
                           disabled={it.ingresada}
@@ -1733,21 +1748,21 @@ function DetalleCompraModal({
                             updateItem(it.id, "nombre", e.target.value)
                           }
                           placeholder="Nombre"
-                          className={`${inputCls} font-bold flex-1`}
+                          className="flex-1 min-w-0 bg-transparent text-stone-800 font-bold outline-none text-sm placeholder:text-stone-400 placeholder:font-normal disabled:opacity-60"
                         />
                         {it.ingresada && (
-                          <span className="shrink-0 text-[9px] font-black uppercase tracking-wide text-milokira-verde bg-milokira-verde/10 border border-milokira-verde/40 rounded-full px-2 py-0.5">
+                          <span className="shrink-0 text-[9px] font-black uppercase tracking-wide text-milokira-verde bg-white/70 border border-milokira-verde/40 rounded-full px-2 py-0.5">
                             ✓ Ingresada
                           </span>
                         )}
                       </div>
 
-                      {/* Inputs numéricos en grid */}
-                      <div className="grid grid-cols-3 gap-2">
-                        <div>
-                          <label className="text-[9px] font-bold text-stone-500 uppercase tracking-wider block mb-1">
+                      {/* Fila 2: campos compactos en línea */}
+                      <div className="flex items-stretch divide-x divide-stone-100">
+                        <label className="flex-1 flex flex-col px-2 py-1.5">
+                          <span className="text-[8px] font-bold text-stone-400 uppercase tracking-wider mb-0.5">
                             Unid.
-                          </label>
+                          </span>
                           <input
                             type="text"
                             inputMode="numeric"
@@ -1760,13 +1775,13 @@ function DetalleCompraModal({
                                 Math.max(1, Number(e.target.value.replace(/\D/g, "")) || 0),
                               )
                             }
-                            className={`${inputCls} text-center font-bold`}
+                            className={numInput}
                           />
-                        </div>
-                        <div>
-                          <label className="text-[9px] font-bold text-stone-500 uppercase tracking-wider block mb-1">
+                        </label>
+                        <label className="flex-[1.4] flex flex-col px-2 py-1.5">
+                          <span className="text-[8px] font-bold text-stone-400 uppercase tracking-wider mb-0.5">
                             Precio neto
-                          </label>
+                          </span>
                           <input
                             type="text"
                             inputMode="numeric"
@@ -1779,14 +1794,14 @@ function DetalleCompraModal({
                                 Number(e.target.value.replace(/\D/g, "")) || 0,
                               )
                             }
-                            placeholder="$"
-                            className={`${inputCls} font-mono`}
+                            placeholder="$0"
+                            className={`${numInput} font-mono placeholder:text-stone-300 placeholder:font-normal`}
                           />
-                        </div>
-                        <div>
-                          <label className="text-[9px] font-bold text-stone-500 uppercase tracking-wider block mb-1">
-                            P/Maceta
-                          </label>
+                        </label>
+                        <label className="flex-1 flex flex-col px-2 py-1.5">
+                          <span className="text-[8px] font-bold text-stone-400 uppercase tracking-wider mb-0.5">
+                            Pl/mac
+                          </span>
                           <input
                             type="text"
                             inputMode="numeric"
@@ -1799,26 +1814,26 @@ function DetalleCompraModal({
                                 Math.max(1, Number(e.target.value.replace(/\D/g, "")) || 0),
                               )
                             }
-                            className={`${inputCls} text-center font-bold`}
+                            className={numInput}
                           />
-                        </div>
+                        </label>
                       </div>
 
-                      {/* Costo real + precio sugerido */}
+                      {/* Fila 3: costo real + precio sugerido editable */}
                       {it.precioUnitNeto > 0 && (
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-2">
-                            <p className="text-[9px] font-bold text-blue-600 uppercase tracking-wider mb-0.5">
-                              Costo real/planta
-                            </p>
-                            <p className="font-mono font-black text-blue-700 text-sm">
+                        <div className="flex items-stretch divide-x divide-stone-100 border-t border-stone-100 bg-stone-50/60">
+                          <div className="flex-1 flex flex-col px-2.5 py-1.5">
+                            <span className="text-[8px] font-bold text-blue-500/80 uppercase tracking-wider mb-0.5">
+                              Costo real
+                            </span>
+                            <span className="font-mono font-black text-blue-700 text-sm">
                               {formatCLP(Math.round(it.costoRealPorPlanta))}
-                            </p>
+                            </span>
                           </div>
-                          <div>
-                            <label className="text-[9px] font-bold text-milokira-verde uppercase tracking-wider block mb-1">
-                              Precio sugerido
-                            </label>
+                          <label className="flex-1 flex flex-col px-2.5 py-1.5">
+                            <span className="text-[8px] font-bold text-milokira-verde uppercase tracking-wider mb-0.5">
+                              Sugerido
+                            </span>
                             <input
                               type="text"
                               inputMode="numeric"
@@ -1841,9 +1856,9 @@ function DetalleCompraModal({
                                   limpio === "" || n <= 0 ? undefined : n,
                                 );
                               }}
-                              className={`${inputCls} font-mono font-black text-milokira-verde`}
+                              className="w-full bg-transparent font-mono font-black text-milokira-verde text-sm outline-none disabled:opacity-60"
                             />
-                          </div>
+                          </label>
                         </div>
                       )}
                     </li>

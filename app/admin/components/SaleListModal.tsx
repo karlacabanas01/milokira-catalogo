@@ -14,7 +14,16 @@ import {
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig"; // Ajusta tu ruta
 
-import { X, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import {
+  X,
+  ChevronDown,
+  ChevronUp,
+  Trash2,
+  TrendingUp,
+  Receipt,
+  ShoppingBag,
+  Package,
+} from "lucide-react";
 
 // 2. TIPO UNIFICADO PARA FIREBASE
 type SaleItem = {
@@ -40,16 +49,34 @@ type DayGroup = {
   items: UnifiedSale[];
 };
 
+type Filtro = "todas" | "pedido" | "venta_directa";
+
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   onChange: () => void;
 };
 
+const currency = (n: number) => `$${n.toLocaleString("es-CL")}`;
+
 export default function SaleListModal({ isOpen, onClose, onChange }: Props) {
   const [sales, setSales] = useState<UnifiedSale[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  const [filtro, setFiltro] = useState<Filtro>("todas");
+
+  const salesFiltradas = useMemo(
+    () => (filtro === "todas" ? sales : sales.filter((s) => s.tipo === filtro)),
+    [sales, filtro],
+  );
+
+  // Resumen global de las ventas filtradas
+  const resumen = useMemo(() => {
+    const total = salesFiltradas.reduce((acc, s) => acc + s.amount, 0);
+    const cantidad = salesFiltradas.length;
+    const promedio = cantidad > 0 ? Math.round(total / cantidad) : 0;
+    return { total, cantidad, promedio };
+  }, [salesFiltradas]);
 
   const salesByDay: DayGroup[] = useMemo(() => {
     const dayGroups: Record<
@@ -57,7 +84,7 @@ export default function SaleListModal({ isOpen, onClose, onChange }: Props) {
       { dateLabel: string; total: number; items: UnifiedSale[] }
     > = {};
 
-    sales.forEach((item) => {
+    salesFiltradas.forEach((item) => {
       const date = new Date(item.date);
       const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
@@ -88,7 +115,7 @@ export default function SaleListModal({ isOpen, onClose, onChange }: Props) {
         ),
       }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [sales]);
+  }, [salesFiltradas]);
 
   const toggleDay = (date: string) => {
     setExpandedDays((prev) => {
@@ -142,6 +169,16 @@ export default function SaleListModal({ isOpen, onClose, onChange }: Props) {
     }
   }, [isOpen]);
 
+  // Cerrar con tecla Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose]);
+
   const handleDelete = async (item: UnifiedSale) => {
     if (
       !confirm(
@@ -181,105 +218,213 @@ export default function SaleListModal({ isOpen, onClose, onChange }: Props) {
 
   if (!isOpen) return null;
 
+  const filtros: { key: Filtro; label: string }[] = [
+    { key: "todas", label: "Todas" },
+    { key: "pedido", label: "Pedidos" },
+    { key: "venta_directa", label: "Directas" },
+  ];
+
   return (
-    <div className="fixed inset-0 bg-stone-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-md rounded-2xl p-6 border border-stone-200 shadow-2xl h-[80vh] flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold text-emerald-400">
-            Historial de Ventas
-          </h2>
+    <div
+      onClick={onClose}
+      className="fixed inset-0 bg-stone-900/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl border border-stone-200 shadow-2xl h-[85vh] max-h-[85dvh] flex flex-col overflow-hidden"
+      >
+        {/* Header con gradiente */}
+        <div className="relative bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 pt-3 pb-6 text-white shrink-0">
+          {/* Grabber (arrastrar para cerrar, solo mobile) */}
           <button
             onClick={onClose}
-            className="p-2 bg-stone-100 rounded-full text-stone-500 hover:text-stone-800 hover:bg-stone-200 transition-colors"
-          >
-            <X size={20} />
-          </button>
+            aria-label="Cerrar"
+            className="sm:hidden mx-auto mb-3 block h-1.5 w-10 rounded-full bg-white/40"
+          />
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="grid place-items-center w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm">
+                <Receipt size={18} strokeWidth={2.5} />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/70 font-semibold">
+                  Historial
+                </p>
+                <h2 className="text-lg font-black leading-tight">Ventas</h2>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-full text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+              aria-label="Cerrar"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* KPIs de resumen */}
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            <div className="rounded-2xl bg-white/15 backdrop-blur-sm px-3 py-2.5">
+              <div className="flex items-center gap-1 text-white/70">
+                <TrendingUp size={12} strokeWidth={2.5} />
+                <span className="text-[9px] uppercase tracking-wider font-bold">
+                  Total
+                </span>
+              </div>
+              <p className="mt-1 text-sm sm:text-base font-black leading-none break-words">
+                {currency(resumen.total)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white/15 backdrop-blur-sm px-3 py-2.5">
+              <div className="flex items-center gap-1 text-white/70">
+                <ShoppingBag size={12} strokeWidth={2.5} />
+                <span className="text-[9px] uppercase tracking-wider font-bold">
+                  Ventas
+                </span>
+              </div>
+              <p className="mt-1 text-sm sm:text-base font-black leading-none">
+                {resumen.cantidad}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white/15 backdrop-blur-sm px-3 py-2.5">
+              <div className="flex items-center gap-1 text-white/70">
+                <Package size={12} strokeWidth={2.5} />
+                <span className="text-[9px] uppercase tracking-wider font-bold">
+                  Prom.
+                </span>
+              </div>
+              <p className="mt-1 text-sm sm:text-base font-black leading-none break-words">
+                {currency(resumen.promedio)}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-hide">
+        {/* Filtros por tipo */}
+        <div className="flex gap-1.5 px-4 sm:px-5 py-3 border-b border-stone-100 shrink-0">
+          {filtros.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFiltro(f.key)}
+              className={`flex-1 rounded-full px-3 py-1.5 text-xs sm:text-sm font-bold transition-colors ${
+                filtro === f.key
+                  ? "bg-emerald-500 text-white shadow-sm"
+                  : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Lista */}
+        <div className="flex-1 overflow-y-auto space-y-3 px-4 sm:px-5 py-4 scrollbar-hide">
           {loading ? (
-            <div className="text-center text-stone-500 py-10">Cargando...</div>
+            <div className="text-center text-stone-400 py-16">Cargando…</div>
           ) : salesByDay.length === 0 ? (
-            <div className="text-center text-stone-500 py-10 border border-dashed border-stone-200 rounded-xl">
+            <div className="text-center text-stone-400 py-16 border border-dashed border-stone-200 rounded-2xl">
+              <Receipt
+                size={28}
+                className="mx-auto mb-2 text-stone-300"
+                strokeWidth={1.5}
+              />
               Sin ventas registradas.
             </div>
           ) : (
-            salesByDay.map((dayGroup) => (
-              <div
-                key={dayGroup.date}
-                className="bg-milokira-crema rounded-xl border border-stone-200 overflow-hidden"
-              >
-                {/* Header del día */}
-                <button
-                  onClick={() => toggleDay(dayGroup.date)}
-                  className="w-full p-4 flex justify-between items-center hover:bg-stone-100 transition-colors"
+            salesByDay.map((dayGroup) => {
+              const abierto = expandedDays.has(dayGroup.date);
+              return (
+                <div
+                  key={dayGroup.date}
+                  className="rounded-2xl border border-stone-200 overflow-hidden bg-white shadow-sm"
                 >
-                  <div className="text-left">
-                    <p className="text-stone-800 font-medium capitalize">
-                      {dayGroup.dateLabel}
-                    </p>
-                    <p className="text-xs text-stone-500 mt-0.5">
-                      {dayGroup.items.length} registro
-                      {dayGroup.items.length !== 1 ? "s" : ""}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-emerald-400 font-bold text-lg">
-                      ${dayGroup.total.toLocaleString("es-CL")}
-                    </span>
-                    {expandedDays.has(dayGroup.date) ? (
-                      <ChevronUp size={20} className="text-stone-500" />
-                    ) : (
-                      <ChevronDown size={20} className="text-stone-500" />
-                    )}
-                  </div>
-                </button>
+                  {/* Header del día */}
+                  <button
+                    onClick={() => toggleDay(dayGroup.date)}
+                    className={`w-full px-4 py-3 flex justify-between items-center gap-3 transition-colors ${
+                      abierto ? "bg-emerald-50/60" : "hover:bg-stone-50"
+                    }`}
+                  >
+                    <div className="text-left min-w-0">
+                      <p className="text-stone-800 font-bold capitalize text-sm truncate">
+                        {dayGroup.dateLabel}
+                      </p>
+                      <p className="text-[11px] text-stone-400 mt-0.5">
+                        {dayGroup.items.length} registro
+                        {dayGroup.items.length !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-emerald-600 font-black text-base sm:text-lg">
+                        {currency(dayGroup.total)}
+                      </span>
+                      <span className="grid place-items-center w-6 h-6 rounded-full bg-stone-100 text-stone-500">
+                        {abierto ? (
+                          <ChevronUp size={16} />
+                        ) : (
+                          <ChevronDown size={16} />
+                        )}
+                      </span>
+                    </div>
+                  </button>
 
-                {/* Desglose de ventas del día */}
-                {expandedDays.has(dayGroup.date) && (
-                  <div className="border-t border-stone-200 divide-y divide-stone-200">
-                    {dayGroup.items.map((item) => (
-                      <div
-                        key={item.idFirebase}
-                        className="px-4 py-3 flex justify-between items-center bg-milokira-crema/30 group"
-                      >
-                        <div className="flex-1 pr-4">
-                          <p className="text-stone-700 text-sm leading-snug">
-                            {item.description}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            {/* Etiqueta visual para distinguir Pedidos Completados de Ventas Rápidas */}
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-stone-100 text-stone-500 uppercase tracking-wider">
-                              {item.tipo === "pedido"
-                                ? "Pedido"
-                                : "Venta Directa"}
-                            </span>
-                            <span className="text-xs text-stone-400">
-                              {new Date(item.date).toLocaleTimeString("es-CL", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="text-right flex flex-col items-end">
-                          <span className="text-emerald-400 font-medium text-sm">
-                            +${item.amount.toLocaleString("es-CL")}
-                          </span>
-                          <button
-                            onClick={() => handleDelete(item)}
-                            className="mt-1 flex items-center gap-1 text-[11px] text-stone-400 hover:text-rose-400 transition-colors"
+                  {/* Desglose de ventas del día */}
+                  {abierto && (
+                    <div className="border-t border-stone-100 divide-y divide-stone-100">
+                      {dayGroup.items.map((item) => {
+                        const esPedido = item.tipo === "pedido";
+                        return (
+                          <div
+                            key={item.idFirebase}
+                            className="px-4 py-3 flex justify-between items-start gap-3"
                           >
-                            <Trash2 size={12} />
-                            Anular
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))
+                            <div className="flex-1 min-w-0">
+                              <p className="text-stone-700 text-sm leading-snug break-words">
+                                {item.description}
+                              </p>
+                              <div className="flex items-center flex-wrap gap-1.5 mt-1.5">
+                                <span
+                                  className={`inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wide ${
+                                    esPedido
+                                      ? "bg-indigo-50 text-indigo-600 border border-indigo-200"
+                                      : "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                                  }`}
+                                >
+                                  {esPedido ? (
+                                    <Package size={9} strokeWidth={3} />
+                                  ) : (
+                                    <ShoppingBag size={9} strokeWidth={3} />
+                                  )}
+                                  {esPedido ? "Pedido" : "Directa"}
+                                </span>
+                                <span className="text-[11px] text-stone-400 font-medium">
+                                  {new Date(item.date).toLocaleTimeString(
+                                    "es-CL",
+                                    { hour: "2-digit", minute: "2-digit" },
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right flex flex-col items-end shrink-0">
+                              <span className="text-emerald-600 font-black text-sm">
+                                +{currency(item.amount)}
+                              </span>
+                              <button
+                                onClick={() => handleDelete(item)}
+                                className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-stone-400 hover:text-rose-500 transition-colors"
+                              >
+                                <Trash2 size={12} />
+                                Anular
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       </div>

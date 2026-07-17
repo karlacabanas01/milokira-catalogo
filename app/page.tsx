@@ -382,7 +382,7 @@ export default function Home() {
             <div className="sm:absolute sm:inset-0 flex items-center justify-center py-6 sm:py-0">
               <div className="text-center px-6 relative z-10">
                 <h1
-                  className="text-5xl sm:text-5xl md:text-6xl font-black tracking-tight text-stone-800 leading-[1.05] drop-shadow-sm"
+                  className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-stone-800 leading-[1.05] drop-shadow-sm"
                   style={{ fontFamily: "var(--font-fredoka), system-ui, sans-serif" }}
                 >
                   <span className="block">Elige tu próxima</span>

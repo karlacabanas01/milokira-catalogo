@@ -73,13 +73,15 @@ export default function StatsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-6xl rounded-3xl border border-stone-200 bg-white shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-stone-500 font-semibold">
+      <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-3xl border border-stone-200 bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-stone-200 px-4 sm:px-5 py-3 sm:py-4">
+          <div className="min-w-0">
+            <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-stone-500 font-semibold">
               Resumen financiero
             </p>
-            <h3 className="text-lg font-black text-stone-900">Estadísticas</h3>
+            <h3 className="text-base sm:text-lg font-black text-stone-900">
+              Estadísticas
+            </h3>
           </div>
           <button
             onClick={onClose}
@@ -89,13 +91,13 @@ export default function StatsModal({
           </button>
         </div>
 
-        <div className="px-5 pt-4">
-          <div className="flex flex-wrap gap-2">
+        <div className="px-4 sm:px-5 pt-4">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {rangeOptions.map((option) => (
               <button
                 key={option.key}
                 onClick={() => setActiveRange(option.key)}
-                className={`rounded-full px-3 py-2 text-sm font-semibold transition ${
+                className={`rounded-full px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition ${
                   activeRange === option.key
                     ? "bg-milokira-verde text-white"
                     : "bg-stone-100 text-stone-600 hover:bg-stone-200"
@@ -107,37 +109,43 @@ export default function StatsModal({
           </div>
         </div>
 
-        <div className="grid gap-3 px-5 py-4 sm:grid-cols-3">
-          <div className="rounded-2xl bg-emerald-50 p-4">
-            <div className="flex items-center gap-2 text-emerald-700">
-              <TrendingUp size={16} />
-              <span className="text-xs font-bold uppercase">Ventas</span>
+        <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 px-4 sm:px-5 py-4">
+          <div className="rounded-2xl bg-emerald-50 p-3 sm:p-4">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-emerald-700">
+              <TrendingUp size={16} className="shrink-0" />
+              <span className="text-[11px] sm:text-xs font-bold uppercase">
+                Ventas
+              </span>
             </div>
-            <p className="mt-2 text-2xl font-black text-emerald-900">
+            <p className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-black text-emerald-900 break-words">
               {currency.format(totals.ventas)}
             </p>
           </div>
-          <div className="rounded-2xl bg-rose-50 p-4">
-            <div className="flex items-center gap-2 text-rose-700">
-              <TrendingDown size={16} />
-              <span className="text-xs font-bold uppercase">Gastos</span>
+          <div className="rounded-2xl bg-rose-50 p-3 sm:p-4">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-rose-700">
+              <TrendingDown size={16} className="shrink-0" />
+              <span className="text-[11px] sm:text-xs font-bold uppercase">
+                Gastos
+              </span>
             </div>
-            <p className="mt-2 text-2xl font-black text-rose-900">
+            <p className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-black text-rose-900 break-words">
               {currency.format(totals.gastos)}
             </p>
           </div>
-          <div className="rounded-2xl bg-indigo-50 p-4">
-            <div className="flex items-center gap-2 text-indigo-700">
-              <Wallet size={16} />
-              <span className="text-xs font-bold uppercase">Ganancia</span>
+          <div className="rounded-2xl bg-indigo-50 p-3 sm:p-4">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-indigo-700">
+              <Wallet size={16} className="shrink-0" />
+              <span className="text-[11px] sm:text-xs font-bold uppercase">
+                Ganancia
+              </span>
             </div>
-            <p className="mt-2 text-2xl font-black text-indigo-900">
+            <p className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-black text-indigo-900 break-words">
               {currency.format(totals.ganancia)}
             </p>
           </div>
         </div>
 
-        <div className="h-[420px] px-5 pb-6">
+        <div className="h-64 sm:h-[420px] px-3 sm:px-5 pb-6">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data}>
               <defs>

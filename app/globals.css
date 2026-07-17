@@ -9,6 +9,7 @@ body {
 }
 
 @theme {
+  --breakpoint-xs: 25rem;
   --color-milokira-crema: #f7f4eb;
   --color-milokira-lila: #ecd4ff;
   --color-milokira-verde: #8da781;
