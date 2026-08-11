@@ -27,7 +27,6 @@ import {
   Edit3,
   Plus,
   ArrowLeft,
-  BookOpen,
   Truck,
 } from "lucide-react";
 
@@ -39,7 +38,6 @@ import SaleListModal from "./components/SaleListModal";
 import ExpenseListModal from "./components/ExpenseListModal";
 import OrderModal from "./components/OrderModal";
 import ProductListModal from "./components/ProductListModal";
-import KnowledgeListModal from "./components/KnowledgeListModal";
 
 export type OrderType = {
   idFirebase: string;
@@ -97,7 +95,6 @@ export default function AdminPage() {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isProductListOpen, setIsProductListOpen] = useState(false);
-  const [isKnowledgeOpen, setIsKnowledgeOpen] = useState(false);
 
   const [isSaleListOpen, setIsSaleListOpen] = useState(false);
   const [isExpenseListOpen, setIsExpenseListOpen] = useState(false);
@@ -535,16 +532,6 @@ export default function AdminPage() {
               </div>
               <span className="relative text-xs sm:text-sm tracking-wide text-center">Mercadería</span>
             </Link>
-            <button
-              onClick={() => setIsKnowledgeOpen(true)}
-              className="group relative overflow-hidden py-5 sm:py-6 bg-white border border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-stone-800 font-bold hover:border-teal-500/40 hover:shadow-xl hover:shadow-teal-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
-            >
-              <div className="absolute inset-0 bg-linear-to-br from-teal-500/0 to-teal-500/0 group-hover:from-teal-500/10 group-hover:to-transparent transition-all" />
-              <div className="relative p-2.5 sm:p-3 bg-teal-500/10 rounded-xl text-teal-600 border border-teal-500/30 group-hover:scale-110 group-hover:bg-teal-500/20 transition-all">
-                <BookOpen size={22} strokeWidth={2.5} />
-              </div>
-              <span className="relative text-xs sm:text-sm tracking-wide">Cerebro Kira</span>
-            </button>
           </div>
         </div>
 
@@ -812,12 +799,6 @@ export default function AdminPage() {
         <ProductListModal
           isOpen={isProductListOpen}
           onClose={() => setIsProductListOpen(false)}
-        />
-      )}
-      {isKnowledgeOpen && (
-        <KnowledgeListModal
-          isOpen={isKnowledgeOpen}
-          onClose={() => setIsKnowledgeOpen(false)}
         />
       )}
     </main>

@@ -1,69 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../firebaseConfig";
 
 export const runtime = "nodejs";
-
-interface KnowledgeDoc {
-  titulo: string;
-  categoria: string;
-  keywords: string[];
-  contenido: string;
-}
-
-async function retrieveContext(userText: string): Promise<string> {
-  if (!userText.trim()) return "";
-
-  try {
-    const snap = await getDocs(collection(db, "ConocimientoKira"));
-    if (snap.empty) return "";
-
-    const normalizedQuery = userText
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^\w\s]/g, " ");
-    const queryTokens = normalizedQuery.split(/\s+/).filter((t) => t.length > 2);
-
-    if (queryTokens.length === 0) return "";
-
-    const scored = snap.docs.map((d) => {
-      const data = d.data() as KnowledgeDoc;
-      const kws = (data.keywords ?? []).map((k) =>
-        k
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, ""),
-      );
-      let score = 0;
-      for (const token of queryTokens) {
-        for (const kw of kws) {
-          if (kw === token) score += 3;
-          else if (kw.includes(token) || token.includes(kw)) score += 1;
-        }
-      }
-      return { data, score };
-    });
-
-    const top = scored
-      .filter((s) => s.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 3);
-
-    if (top.length === 0) return "";
-
-    return top
-      .map(
-        (t, i) =>
-          `[Ficha ${i + 1}: ${t.data.titulo} (${t.data.categoria})]\n${t.data.contenido}`,
-      )
-      .join("\n\n");
-  } catch (err) {
-    console.error("Error en retrieval:", err);
-    return "";
-  }
-}
 
 const SYSTEM_PROMPT = `Eres Kira 🐶🌿 la perrita asistente de Milokira, un vivero de Talca, Chile.
 Ayudas a los humanos con sus plantas — aunque a veces, cuando tus papis salen, no resistes las
@@ -190,10 +128,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const lastUserMsg = [...history].reverse().find((m) => m.role === "user");
-    const context = lastUserMsg ? await retrieveContext(lastUserMsg.text) : "";
-
-    const contents = history.map((m, idx) => {
+    const contents = history.map((m) => {
       const parts: Array<{ text: string } | { inlineData: { data: string; mimeType: string } }> = [];
       if (m.imageBase64 && m.imageMime) {
         parts.push({
@@ -201,13 +136,7 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      const isLast = idx === history.length - 1;
-      const textoFinal =
-        isLast && context && m.role === "user"
-          ? `📚 Info de referencia de Milokira (úsala si aplica, pero NO cites las fichas textualmente, responde con tus palabras):\n\n${context}\n\n---\n\nPregunta del usuario: ${m.text}`
-          : m.text;
-
-      if (textoFinal) parts.push({ text: textoFinal });
+      if (m.text) parts.push({ text: m.text });
       return { role: m.role, parts };
     });
 
