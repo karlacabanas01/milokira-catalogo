@@ -67,33 +67,33 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
 
       querySnapshot.forEach((documento) => {
         const data = documento.data();
+        // El inventario muestra TODAS las plantas del catálogo (incluidas las
+        // no disponibles y las agotadas); `active` solo marca su estado.
         const isActive = data.precio?.disponible !== false;
 
-        if (isActive) {
-          listaPlantas.push({
-            idFirebase: documento.id,
-            name: data.nombre || "Sin nombre",
-            price: Number(data.precio?.valor) || 0,
-            stock: Number(data.stock) || 0,
-            active: isActive,
-            cost: Number(data.costo) || 0,
-            margin: Number(data.margen) || 0,
-            costoOriginalTotal: Number(data.costoOriginalTotal) || 0,
-            unidadesCompradas: Number(data.unidadesCompradas) || 1,
-            precioCompraUnitaria: Number(data.precioCompraUnitaria) || 0,
-            plantasPorMaceta: Number(data.plantasPorMaceta) || 1,
-            descripcion: data.descripcion || "",
-            categorias: Array.isArray(data.categorias) && data.categorias.length > 0
-              ? data.categorias
-              : ["INTERIOR"],
-            imagenUrl: data.imagenUrl || "",
-            imagenPosition: data.imagenPosition || "50% 50%",
-            precioTipo: data.precio?.tipo || "fijo",
-            dificultad: (data.dificultad as Product["dificultad"]) || "media",
-            aptaMascotas:
-              (data.aptaMascotas as Product["aptaMascotas"]) || "sin-info",
-          });
-        }
+        listaPlantas.push({
+          idFirebase: documento.id,
+          name: data.nombre || "Sin nombre",
+          price: Number(data.precio?.valor) || 0,
+          stock: Number(data.stock) || 0,
+          active: isActive,
+          cost: Number(data.costo) || 0,
+          margin: Number(data.margen) || 0,
+          costoOriginalTotal: Number(data.costoOriginalTotal) || 0,
+          unidadesCompradas: Number(data.unidadesCompradas) || 1,
+          precioCompraUnitaria: Number(data.precioCompraUnitaria) || 0,
+          plantasPorMaceta: Number(data.plantasPorMaceta) || 1,
+          descripcion: data.descripcion || "",
+          categorias: Array.isArray(data.categorias) && data.categorias.length > 0
+            ? data.categorias
+            : ["INTERIOR"],
+          imagenUrl: data.imagenUrl || "",
+          imagenPosition: data.imagenPosition || "50% 50%",
+          precioTipo: data.precio?.tipo || "fijo",
+          dificultad: (data.dificultad as Product["dificultad"]) || "media",
+          aptaMascotas:
+            (data.aptaMascotas as Product["aptaMascotas"]) || "sin-info",
+        });
       });
 
       listaPlantas.sort((a, b) => a.name.localeCompare(b.name));
@@ -324,7 +324,14 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
                         className={`${product.stock === 0 ? "bg-rose-50" : "hover:bg-milokira-crema/40"} transition-colors`}
                       >
                         <td className="px-3 py-2 font-bold text-stone-800 truncate max-w-0">
-                          {product.name}
+                          <span className={product.active ? "" : "text-stone-400"}>
+                            {product.name}
+                          </span>
+                          {!product.active && (
+                            <span className="ml-1.5 text-[9px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                              Oculta
+                            </span>
+                          )}
                         </td>
                         <td className="px-2 py-2 text-right font-mono font-bold text-emerald-700">
                           ${product.price.toLocaleString("es-CL")}
@@ -393,9 +400,16 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
               >
                 {/* Info de la planta */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-stone-800 font-medium text-sm sm:text-base leading-tight truncate">
+                  <h3
+                    className={`font-medium text-sm sm:text-base leading-tight truncate ${product.active ? "text-stone-800" : "text-stone-400"}`}
+                  >
                     {product.name}
                   </h3>
+                  {!product.active && (
+                    <span className="inline-block mt-0.5 text-[9px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                      Oculta en catálogo
+                    </span>
+                  )}
                   <p className="text-emerald-700 text-xs sm:text-sm mt-0.5 sm:mt-1 font-semibold">
                     ${product.price.toLocaleString("es-CL")}
                   </p>
