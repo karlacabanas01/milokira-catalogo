@@ -5,6 +5,8 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../../firebaseConfig";
 import { X, ImagePlus } from "lucide-react";
 import type { Product } from "./ProductListModal";
+import { Modal, Button } from "../../components/ui";
+import { calcularCostoPlanta } from "../mercaderia/helpers";
 
 const CATEGORIAS_DISPONIBLES = [
   "INTERIOR",
@@ -27,11 +29,13 @@ type SavePayload = {
   costoOriginalTotal: number;
   unidadesCompradas: number;
   precioCompraUnitaria: number;
+  ivaCompra: number;
   plantasPorMaceta: number;
   descripcion: string;
   categorias: string[];
   imagenUrl: string;
   imagenPosition: string;
+  imagenZoom: number;
   precioTipo: string;
   dificultad: Dificultad;
   aptaMascotas: AptaMascotas;
@@ -46,6 +50,7 @@ type Props = {
 };
 
 export default function ProductModal({
+  isOpen,
   onClose,
   onSave,
   isSaving,
@@ -59,6 +64,11 @@ export default function ProductModal({
     unitCost: editingProduct?.precioCompraUnitaria
       ? String(editingProduct.precioCompraUnitaria)
       : "",
+    // Default 19% (IVA legal en Chile). Se pone en 0 si el proveedor no lo cobra.
+    ivaCompra:
+      editingProduct?.ivaCompra === undefined
+        ? "19"
+        : String(editingProduct.ivaCompra),
     plantsPerPot: editingProduct?.plantasPorMaceta
       ? String(editingProduct.plantasPorMaceta)
       : "1",
@@ -71,6 +81,7 @@ export default function ProductModal({
         : (["INTERIOR"] as string[]),
     imagenUrl: editingProduct?.imagenUrl || "",
     imagenPosition: editingProduct?.imagenPosition || "50% 50%",
+    imagenZoom: editingProduct?.imagenZoom ?? 1,
     precioTipo: editingProduct?.precioTipo || "fijo",
     dificultad: (editingProduct?.dificultad || "media") as Dificultad,
     aptaMascotas: (editingProduct?.aptaMascotas || "sin-info") as AptaMascotas,
@@ -82,12 +93,22 @@ export default function ProductModal({
   const isDraggingRef = useRef(false);
 
   const unidades = Number(form.unidadesCompradas) || 1;
+  // El precio de compra se ingresa NETO (como viene en la factura del
+  // proveedor); el IVA se suma en calcularCostoPlanta, el mismo helper que
+  // usa mercadería, para que el costo no difiera según dónde se editó.
   const precioUnitarioCompra = Number(form.unitCost) || 0;
-  const costoCompraTotal = unidades * precioUnitarioCompra;
+  const ivaPorcentaje = Number(form.ivaCompra) || 0;
   const divisorPlantas = Number(form.plantsPerPot) || 1;
-  const totalPlantasExtraidas = unidades * divisorPlantas;
-  const costoTotalUnitario =
-    totalPlantasExtraidas > 0 ? costoCompraTotal / totalPlantasExtraidas : 0;
+  const {
+    precioUnitConIva: precioUnitarioConIva,
+    costoCompraTotal,
+    costoPorPlanta: costoTotalUnitario,
+  } = calcularCostoPlanta({
+    precioUnitNeto: precioUnitarioCompra,
+    unidades,
+    plantasPorMaceta: divisorPlantas,
+    ivaPorcentaje,
+  });
 
   const precioVenta = Number(form.price) || 0;
   const gananciaNeta = precioVenta - costoTotalUnitario;
@@ -155,7 +176,15 @@ export default function ProductModal({
       const storageRef = ref(storage, `plantas/${fileName}`);
       await uploadBytes(storageRef, webpBlob, { contentType: "image/webp" });
       const downloadUrl = await getDownloadURL(storageRef);
-      setForm((prev) => ({ ...prev, imagenUrl: downloadUrl, imagenPosition: "50% 50%" }));
+      // Imagen nueva: se resetea el encuadre y también el zoom, que se
+      // configura desde el modal del catálogo y quedaría apuntando a la foto
+      // anterior.
+      setForm((prev) => ({
+        ...prev,
+        imagenUrl: downloadUrl,
+        imagenPosition: "50% 50%",
+        imagenZoom: 1,
+      }));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error desconocido";
       alert(`Error al subir: ${msg}`);
@@ -227,11 +256,13 @@ export default function ProductModal({
         costoOriginalTotal: costoCompraTotal,
         unidadesCompradas: unidades,
         precioCompraUnitaria: precioUnitarioCompra,
+        ivaCompra: ivaPorcentaje,
         plantasPorMaceta: divisorPlantas,
         descripcion: form.descripcion,
         categorias: form.categorias,
         imagenUrl: form.imagenUrl,
         imagenPosition: form.imagenPosition,
+        imagenZoom: form.imagenZoom,
         precioTipo: form.precioTipo,
         dificultad: form.dificultad,
         aptaMascotas: form.aptaMascotas,
@@ -241,23 +272,13 @@ export default function ProductModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-md rounded-3xl border border-stone-200 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="px-6 pt-6 pb-3 border-b border-stone-200 flex items-center justify-between shrink-0">
-          <h2 className="text-xl font-bold text-stone-800">
-            {editingProduct ? "Editar Producto ✏️" : "Nuevo Producto ✨"}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-stone-500 hover:text-rose-500 hover:bg-rose-500/10 p-1.5 rounded-full transition-colors"
-            aria-label="Cerrar"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      nested
+      title={editingProduct ? "Editar Producto ✏️" : "Nuevo Producto ✨"}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           {/* Nombre */}
           <div>
             <label className="block text-xs font-bold text-stone-500 mb-1 uppercase tracking-wider px-1">
@@ -298,7 +319,7 @@ export default function ProductModal({
               </div>
               <div className="flex-1">
                 <label className="block text-[10px] font-bold text-indigo-300/80 mb-1 uppercase tracking-wider px-1">
-                  Precio Compra Unit.
+                  Precio Compra Unit. (Neto)
                 </label>
                 <input
                   required
@@ -311,11 +332,39 @@ export default function ProductModal({
               </div>
             </div>
 
+            {/* Fila: IVA + precio unitario ya con IVA (calculado) */}
+            <div className="flex gap-3">
+              <div className="w-28 shrink-0">
+                <label className="block text-[10px] font-bold text-indigo-300/80 mb-1 uppercase tracking-wider px-1">
+                  IVA %
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  className="w-full p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-stone-800 placeholder:text-stone-400 outline-none focus:border-indigo-500 transition-colors text-center font-bold"
+                  value={form.ivaCompra}
+                  onChange={(e) => setForm({ ...form, ivaCompra: e.target.value })}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-[10px] font-bold text-indigo-300/80 mb-1 uppercase tracking-wider px-1 truncate">
+                  Precio Unit. c/IVA (Auto)
+                </label>
+                <input
+                  disabled
+                  type="text"
+                  className="w-full p-3 bg-stone-100 border border-stone-200 rounded-xl text-stone-500 outline-none font-medium cursor-not-allowed"
+                  value={`$${Math.round(precioUnitarioConIva).toLocaleString("es-CL")}`}
+                />
+              </div>
+            </div>
+
             {/* Fila: Total Compra (Auto) + Plantas por maceta */}
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="block text-[10px] font-bold text-indigo-300/80 mb-1 uppercase tracking-wider px-1">
-                  Total Compra (Auto)
+                <label className="block text-[10px] font-bold text-indigo-300/80 mb-1 uppercase tracking-wider px-1 truncate">
+                  Total Compra c/IVA (Auto)
                 </label>
                 <input
                   disabled
@@ -567,23 +616,22 @@ export default function ProductModal({
 
           {/* Botones */}
           <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-3.5 bg-stone-100 text-stone-700 font-bold rounded-xl hover:bg-stone-200 transition-colors"
-            >
+            <Button variant="neutra" size="lg" fullWidth onClick={onClose}>
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="exito"
+              size="lg"
+              fullWidth
               disabled={isSaving || isUploading}
-              className="flex-1 py-3.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-500 shadow-lg shadow-emerald-900/20 transition-all active:scale-95 disabled:opacity-50"
+              loading={isSaving}
+              loadingText="Guardando..."
             >
-              {isSaving ? "Guardando..." : editingProduct ? "Actualizar" : "Crear Planta"}
-            </button>
+              {editingProduct ? "Actualizar" : "Crear Planta"}
+            </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }

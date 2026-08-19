@@ -4,6 +4,7 @@ import {
   redondearComercial,
   parsePastedList,
   calcularCostoYsugerido,
+  calcularCostoPlanta,
 } from "./helpers";
 
 describe("slugify", () => {
@@ -259,5 +260,78 @@ describe("calcularCostoYsugerido", () => {
     );
     expect(r.costoRealPorPlanta).toBe(1000);
     expect(r.plantasTotales).toBe(1);
+  });
+});
+
+describe("calcularCostoPlanta", () => {
+  it("suma el IVA al precio neto de compra", () => {
+    const r = calcularCostoPlanta({
+      precioUnitNeto: 1000,
+      unidades: 1,
+      plantasPorMaceta: 1,
+      ivaPorcentaje: 19,
+    });
+    expect(r.precioUnitConIva).toBeCloseTo(1190, 2);
+    expect(r.costoPorPlanta).toBeCloseTo(1190, 2);
+  });
+
+  it("con IVA 0 el costo es el neto (proveedor que no cobra IVA)", () => {
+    const r = calcularCostoPlanta({
+      precioUnitNeto: 1000,
+      unidades: 1,
+      plantasPorMaceta: 1,
+      ivaPorcentaje: 0,
+    });
+    expect(r.costoPorPlanta).toBe(1000);
+  });
+
+  it("reparte el costo entre las plantas extraídas por maceta", () => {
+    // 2 macetas a $1.000 neto, 19% IVA, 3 plantas por maceta
+    // total = 2 * 1190 = 2380 ; plantas = 6 ; costo = 396.67
+    const r = calcularCostoPlanta({
+      precioUnitNeto: 1000,
+      unidades: 2,
+      plantasPorMaceta: 3,
+      ivaPorcentaje: 19,
+    });
+    expect(r.costoCompraTotal).toBeCloseTo(2380, 2);
+    expect(r.costoPorPlanta).toBeCloseTo(396.67, 1);
+  });
+
+  it("clampa unidades y plantasPorMaceta a 1 cuando vienen en 0", () => {
+    const r = calcularCostoPlanta({
+      precioUnitNeto: 500,
+      unidades: 0,
+      plantasPorMaceta: 0,
+      ivaPorcentaje: 0,
+    });
+    expect(r.costoPorPlanta).toBe(500);
+  });
+
+  // Este es el bug que motivó el helper: el modal de editar producto calculaba
+  // el costo sin IVA mientras mercadería sí lo aplicaba, así que la misma
+  // planta mostraba dos márgenes distintos según dónde se mirara.
+  it("coincide con calcularCostoYsugerido cuando no hay despacho", () => {
+    const entrada = {
+      precioUnitNeto: 1650,
+      plantasPorMaceta: 3,
+      unidades: 33,
+    };
+    const desdeMercaderia = calcularCostoYsugerido(entrada, {
+      ivaPorcentaje: 19,
+      despachoTotal: 0,
+      unidadesTotales: 99,
+      margenSugerido: 100,
+    });
+    const desdeInventario = calcularCostoPlanta({
+      precioUnitNeto: entrada.precioUnitNeto,
+      unidades: entrada.unidades,
+      plantasPorMaceta: entrada.plantasPorMaceta,
+      ivaPorcentaje: 19,
+    });
+    expect(desdeInventario.costoPorPlanta).toBeCloseTo(
+      desdeMercaderia.costoRealPorPlanta,
+      2,
+    );
   });
 });

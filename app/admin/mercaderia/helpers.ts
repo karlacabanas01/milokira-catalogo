@@ -168,3 +168,25 @@ export const calcularCostoYsugerido = (
   const plantasTotales = item.unidades * plantasExtraidas;
   return { costoRealPorPlanta, precioSugerido, plantasTotales };
 };
+
+// Costo por planta a partir de los datos que guarda una planta del inventario.
+// Es el mismo cálculo que calcularCostoYsugerido pero sin despacho (una planta
+// ya ingresada no arrastra el flete de la compra original). Lo usa el modal de
+// editar producto; vive acá para que ambas pantallas compartan la fórmula y no
+// vuelvan a divergir.
+export const calcularCostoPlanta = (input: {
+  precioUnitNeto: number;
+  unidades: number;
+  plantasPorMaceta: number;
+  ivaPorcentaje: number;
+}) => {
+  const ivaFactor = 1 + input.ivaPorcentaje / 100;
+  const precioUnitConIva = input.precioUnitNeto * ivaFactor;
+  const unidades = Math.max(1, input.unidades);
+  const plantasExtraidas = Math.max(1, input.plantasPorMaceta);
+  const costoCompraTotal = unidades * precioUnitConIva;
+  const totalPlantasExtraidas = unidades * plantasExtraidas;
+  const costoPorPlanta =
+    totalPlantasExtraidas > 0 ? costoCompraTotal / totalPlantasExtraidas : 0;
+  return { precioUnitConIva, costoCompraTotal, costoPorPlanta };
+};

@@ -35,6 +35,7 @@ import {
   ClipboardPaste,
   Search,
 } from "lucide-react";
+import { Modal } from "../../components/ui";
 
 const IVA_DEFAULT = 19;
 const MARGEN_DEFAULT = 100;
@@ -534,8 +535,8 @@ function NuevaCompraModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-stone-900/40 z-50 flex items-end sm:items-center justify-center sm:p-6 backdrop-blur-sm">
-      <div className="relative bg-white w-full sm:max-w-2xl rounded-t-3xl sm:rounded-3xl border-t sm:border border-stone-200 shadow-2xl flex flex-col max-h-dvh sm:max-h-[90vh] h-dvh sm:h-auto overflow-hidden">
+    <Modal isOpen onClose={onClose} size="lg" hideCloseButton className="p-0">
+      <div className="relative flex flex-col h-full -m-4 sm:-m-5">
         <header className="flex items-center justify-between px-5 sm:px-7 py-4 sm:py-5 border-b border-stone-100">
           <div className="flex items-center gap-3 min-w-0">
             <div className="h-10 w-10 rounded-xl bg-linear-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-md shadow-amber-300/40 shrink-0">
@@ -836,8 +837,15 @@ function NuevaCompraModal({
       </div>
 
       {isPasteOpen && (
-        <div className="fixed inset-0 bg-stone-900/50 z-60 flex items-end sm:items-center justify-center sm:p-6 backdrop-blur-sm">
-          <div className="relative bg-white w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl border-t sm:border border-stone-200 shadow-2xl flex flex-col max-h-dvh sm:max-h-[90vh] h-dvh sm:h-auto overflow-hidden">
+        <Modal
+          isOpen
+          onClose={() => setIsPasteOpen(false)}
+          nested
+          size="md"
+          hideCloseButton
+          className="p-0"
+        >
+          <div className="relative flex flex-col h-full -m-4 sm:-m-5">
             <header className="flex items-center justify-between px-5 sm:px-7 py-4 border-b border-stone-100">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="h-10 w-10 rounded-xl bg-linear-to-br from-milokira-lila to-purple-300 flex items-center justify-center shadow-md shrink-0">
@@ -946,9 +954,9 @@ function NuevaCompraModal({
               )}
             </div>
           </div>
-        </div>
+        </Modal>
       )}
-    </div>
+    </Modal>
   );
 }
 
@@ -1188,6 +1196,9 @@ function DetalleCompraModal({
             costoOriginalTotal: costoCompraTotal,
             unidadesCompradas: item.unidades,
             precioCompraUnitaria: item.precioUnitNeto,
+            // IVA con el que se calculó esta compra: el modal de edición lo
+            // necesita para reconstruir el costo real desde el precio neto.
+            ivaCompra: ivaEdit,
             plantasPorMaceta: item.plantasPorMaceta,
             "precio.valor": precioVenta,
             "precio.tipo": "fijo",
@@ -1202,6 +1213,7 @@ function DetalleCompraModal({
             costoOriginalTotal: costoCompraTotal,
             unidadesCompradas: item.unidades,
             precioCompraUnitaria: item.precioUnitNeto,
+            ivaCompra: ivaEdit,
             plantasPorMaceta: item.plantasPorMaceta,
             descripcion: "",
             categorias: ["INTERIOR"],
@@ -1351,6 +1363,7 @@ function DetalleCompraModal({
           costoOriginalTotal: costoCompraTotal,
           unidadesCompradas: item.unidades,
           precioCompraUnitaria: item.precioUnitNeto,
+          ivaCompra: ivaEdit,
           plantasPorMaceta: item.plantasPorMaceta,
           "precio.valor": precioVenta,
         });
@@ -1435,8 +1448,8 @@ function DetalleCompraModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-stone-900/40 z-50 flex items-end sm:items-center justify-center sm:p-6 backdrop-blur-sm">
-      <div className="relative bg-white w-full sm:max-w-2xl rounded-t-3xl sm:rounded-3xl border-t sm:border border-stone-200 shadow-2xl flex flex-col max-h-dvh sm:max-h-[90vh] h-dvh sm:h-auto overflow-hidden">
+    <Modal isOpen onClose={onClose} size="lg" hideCloseButton className="p-0">
+      <div className="relative flex flex-col h-full -m-4 sm:-m-5">
         <header className="flex items-center gap-3 px-4 sm:px-7 py-4 sm:py-5 border-b border-stone-100">
           <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-linear-to-br from-milokira-verde to-milokira-verde/70 flex items-center justify-center shadow-md shadow-milokira-verde/30 shrink-0">
             <PackageCheck size={16} className="text-white sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
@@ -2026,6 +2039,6 @@ function DetalleCompraModal({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

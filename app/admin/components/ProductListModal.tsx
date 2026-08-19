@@ -12,16 +12,15 @@ import {
 import { db } from "../../firebaseConfig";
 
 import {
-  X,
   Plus,
   Minus,
   Edit3,
-  PackagePlus,
   Trash2,
   LayoutGrid,
   Table as TableIcon,
 } from "lucide-react";
 import ProductModal from "./ProductModal";
+import { Modal, Button, Badge } from "../../components/ui";
 
 export type Product = {
   idFirebase: string;
@@ -34,11 +33,14 @@ export type Product = {
   costoOriginalTotal: number;
   unidadesCompradas: number;
   precioCompraUnitaria: number;
+  /** IVA (%) con el que se calculó la compra. Las plantas antiguas no lo tienen. */
+  ivaCompra: number;
   plantasPorMaceta: number;
   descripcion: string;
   categorias: string[];
   imagenUrl: string;
   imagenPosition: string;
+  imagenZoom: number;
   precioTipo: string;
   dificultad: "facil" | "media" | "dificil";
   aptaMascotas: "apta" | "moderada" | "toxica" | "sin-info";
@@ -82,6 +84,9 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
           costoOriginalTotal: Number(data.costoOriginalTotal) || 0,
           unidadesCompradas: Number(data.unidadesCompradas) || 1,
           precioCompraUnitaria: Number(data.precioCompraUnitaria) || 0,
+          // Las plantas cargadas antes de guardar el IVA asumen el 19% legal.
+          ivaCompra:
+            data.ivaCompra === undefined ? 19 : Number(data.ivaCompra),
           plantasPorMaceta: Number(data.plantasPorMaceta) || 1,
           descripcion: data.descripcion || "",
           categorias: Array.isArray(data.categorias) && data.categorias.length > 0
@@ -89,6 +94,7 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
             : ["INTERIOR"],
           imagenUrl: data.imagenUrl || "",
           imagenPosition: data.imagenPosition || "50% 50%",
+          imagenZoom: Number(data.imagenZoom) || 1,
           precioTipo: data.precio?.tipo || "fijo",
           dificultad: (data.dificultad as Product["dificultad"]) || "media",
           aptaMascotas:
@@ -160,6 +166,7 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
       categorias: string[];
       imagenUrl: string;
       imagenPosition: string;
+      imagenZoom: number;
       precioTipo: string;
       dificultad: "facil" | "media" | "dificil";
       aptaMascotas: "apta" | "moderada" | "toxica" | "sin-info";
@@ -183,6 +190,7 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
         categorias: data.categorias,
         imagenUrl: data.imagenUrl,
         imagenPosition: data.imagenPosition,
+        imagenZoom: data.imagenZoom,
         dificultad: data.dificultad,
         aptaMascotas: data.aptaMascotas,
       };
@@ -209,6 +217,7 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
           categorias: data.categorias,
           imagenUrl: data.imagenUrl,
           imagenPosition: data.imagenPosition,
+          imagenZoom: data.imagenZoom,
           dificultad: data.dificultad,
           aptaMascotas: data.aptaMascotas,
           precio: { valor: data.price, tipo: data.precioTipo, disponible: true },
@@ -230,34 +239,21 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
     p.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-stone-900/40 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-3xl rounded-2xl border border-stone-200 shadow-2xl h-[95vh] sm:h-[85vh] flex flex-col overflow-hidden">
-        <div className="flex justify-between items-center p-4 sm:p-5 border-b border-stone-200 bg-milokira-crema shrink-0">
-          <h2 className="text-lg sm:text-xl font-bold text-indigo-700 flex items-center gap-2">
-            <PackagePlus size={20} className="sm:w-[22px] sm:h-[22px]" />{" "}
-            Inventario
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 bg-stone-100 rounded-full text-stone-500 hover:text-stone-800 transition-colors"
-          >
-            <X size={18} className="sm:w-5 sm:h-5" />
-          </button>
-        </div>
-
-        <div className="p-3 sm:p-4 space-y-3 sm:space-y-4 shrink-0">
-          <button
+    <Modal isOpen={isOpen} onClose={onClose} title="Inventario" size="lg" tall>
+      <div className="flex flex-col h-full">
+        <div className="space-y-3 sm:space-y-4 shrink-0">
+          <Button
+            variant="primaria"
+            size="lg"
+            fullWidth
             onClick={() => {
               setEditingProduct(null);
               setIsProductModalOpen(true);
             }}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 sm:py-3.5 rounded-xl shadow-lg shadow-indigo-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <Plus size={18} className="sm:w-5 sm:h-5" /> Agregar Nuevo Producto
-          </button>
+          </Button>
 
           <div className="flex items-center gap-2">
             <input
@@ -265,7 +261,7 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
               placeholder="Buscar en el inventario..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 bg-milokira-crema border border-stone-200 rounded-xl px-4 py-2.5 sm:py-3 text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm"
+              className="flex-1 bg-campo border border-borde rounded-xl px-4 py-2.5 sm:py-3 text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-sm"
             />
             <div className="inline-flex bg-stone-100 rounded-lg p-0.5 border border-stone-200 shrink-0">
               <button
@@ -296,13 +292,13 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
           </div>
         </div>
 
-        <div className={`flex-1 overflow-y-auto p-3 sm:p-4 pt-0 scrollbar-hide ${vista === "cards" ? "grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3" : ""}`}>
+        <div className={`flex-1 overflow-y-auto pt-3 sm:pt-4 scrollbar-hide ${vista === "cards" ? "grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 content-start" : ""}`}>
           {loading ? (
             <div className={`text-center text-stone-500 py-10 text-sm ${vista === "cards" ? "col-span-full" : ""}`}>
               Cargando inventario...
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className={`text-center text-stone-500 py-10 border border-dashed border-stone-200 rounded-xl text-sm ${vista === "cards" ? "col-span-full" : ""}`}>
+            <div className={`text-center text-stone-500 py-10 border border-dashed border-borde rounded-xl text-sm ${vista === "cards" ? "col-span-full" : ""}`}>
               No hay productos registrados.
             </div>
           ) : vista === "tabla" ? (
@@ -328,9 +324,9 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
                             {product.name}
                           </span>
                           {!product.active && (
-                            <span className="ml-1.5 text-[9px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                            <Badge tone="alerta" className="ml-1.5">
                               Oculta
-                            </span>
+                            </Badge>
                           )}
                         </td>
                         <td className="px-2 py-2 text-right font-mono font-bold text-emerald-700">
@@ -406,9 +402,9 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
                     {product.name}
                   </h3>
                   {!product.active && (
-                    <span className="inline-block mt-0.5 text-[9px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                    <Badge tone="alerta" className="mt-0.5">
                       Oculta en catálogo
-                    </span>
+                    </Badge>
                   )}
                   <p className="text-emerald-700 text-xs sm:text-sm mt-0.5 sm:mt-1 font-semibold">
                     ${product.price.toLocaleString("es-CL")}
@@ -486,6 +482,6 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
           editingProduct={editingProduct}
         />
       )}
-    </div>
+    </Modal>
   );
 }
