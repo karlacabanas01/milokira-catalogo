@@ -56,13 +56,13 @@ export default function CartDrawer() {
           type="button"
           aria-label="Cerrar carrito"
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 z-40 bg-stone-900/40 backdrop-blur-sm"
+          className="fixed inset-0 z-superposicion bg-stone-900/40 backdrop-blur-sm"
         />
       )}
 
       {/* Drawer */}
       <aside
-        className={`fixed top-0 right-0 bottom-0 z-50 w-full sm:max-w-md bg-white shadow-2xl transform transition-transform duration-300 flex flex-col ${
+        className={`fixed top-0 right-0 bottom-0 z-modal w-full sm:max-w-md bg-white shadow-2xl transform transition-transform duration-300 flex flex-col ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -108,7 +108,13 @@ export default function CartDrawer() {
                       <img
                         src={item.imagenUrl}
                         alt={item.nombre}
-                        style={{ objectPosition: item.imagenPosition || "50% 50%" }}
+                        style={{
+                          objectPosition: item.imagenPosition || "50% 50%",
+                          transformOrigin: item.imagenPosition || "50% 50%",
+                          transform: item.imagenZoom && item.imagenZoom > 1
+                            ? `scale(${item.imagenZoom})`
+                            : undefined,
+                        }}
                         className="w-full h-full object-cover"
                       />
                     ) : (

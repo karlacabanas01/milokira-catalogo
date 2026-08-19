@@ -4,6 +4,8 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../firebaseConfig";
 
 import { X, Leaf, Save, TerminalSquare, Plus } from "lucide-react";
+import { Modal } from "./ui";
+import { calcularCostoPlanta } from "../admin/mercaderia/helpers";
 
 type OpcionLitro = { litros: string; precio: string };
 
@@ -13,11 +15,19 @@ interface Planta {
   descripcion: string;
   imagenUrl: string;
   imagenPosition?: string;
+  imagenZoom?: number;
   categorias: string[];
   dificultad?: "facil" | "media" | "dificil";
   aptaMascotas?: "apta" | "moderada" | "toxica" | "sin-info";
   opcionesLitros?: OpcionLitro[];
   oferta?: { activa: boolean; precioOriginal: number; porcentaje: number };
+  // Datos de compra (solo lectura acá). Vienen de mercadería; las plantas
+  // cargadas a mano desde este modal no los tienen.
+  precioCompraUnitaria?: number;
+  unidadesCompradas?: number;
+  plantasPorMaceta?: number;
+  ivaCompra?: number;
+  costo?: number;
   precio: {
     valor: number;
     tipo: string;
@@ -60,6 +70,8 @@ export default function AgregarPlantaModal({
     categorias: ["INTERIOR"] as string[],
     imagenUrl: "",
     imagenPosition: "50% 50%",
+    // 1 = sin zoom. Se aplica con transform: scale sobre la imagen recortada.
+    imagenZoom: 1,
     precioValor: "",
     precioTipo: "fijo",
     disponible: "true",
@@ -93,6 +105,7 @@ export default function AgregarPlantaModal({
           : ["INTERIOR"],
         imagenUrl: plantaAEditar.imagenUrl || "",
         imagenPosition: plantaAEditar.imagenPosition || "50% 50%",
+        imagenZoom: plantaAEditar.imagenZoom ?? 1,
         precioValor: plantaAEditar.oferta?.activa
           ? plantaAEditar.oferta.precioOriginal.toString()
           : plantaAEditar.precio.valor.toString(),
@@ -124,6 +137,7 @@ export default function AgregarPlantaModal({
         categorias: ["INTERIOR"],
         imagenUrl: "",
         imagenPosition: "50% 50%",
+        imagenZoom: 1,
         precioValor: "",
         precioTipo: "fijo",
         disponible: "true",
@@ -134,8 +148,6 @@ export default function AgregarPlantaModal({
       setOferta({ activa: false, precioOferta: "" });
     }
   }, [plantaAEditar, isOpen]);
-
-  if (!isOpen) return null;
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -166,28 +178,59 @@ export default function AgregarPlantaModal({
     const frame = frameRef.current.getBoundingClientRect();
     const frameRatio = frame.width / frame.height;
     const imgRatio = imgNaturalSize.w / imgNaturalSize.h;
+    const zoom = formData.imagenZoom;
+
+    // Tamaño real de la imagen ya recortada por object-cover y escalada por el
+    // zoom. Con zoom > 1 desborda en AMBOS ejes, así que los dos son
+    // arrastrables (sin zoom solo desborda el eje que impone la proporción).
+    let coverW: number;
+    let coverH: number;
+    if (imgRatio > frameRatio) {
+      coverH = frame.height;
+      coverW = frame.height * imgRatio;
+    } else {
+      coverW = frame.width;
+      coverH = frame.width / imgRatio;
+    }
+    const scaledW = coverW * zoom;
+    const scaledH = coverH * zoom;
 
     const { x, y } = parsePosition(formData.imagenPosition);
     let newX = x;
     let newY = y;
 
-    if (imgRatio > frameRatio) {
-      const scaledW = frame.height * imgRatio;
-      const overflowPx = scaledW - frame.width;
-      if (overflowPx > 0) {
-        const deltaPct = (e.movementX / overflowPx) * 100;
-        newX = Math.max(0, Math.min(100, x - deltaPct));
-      }
-    } else if (imgRatio < frameRatio) {
-      const scaledH = frame.width / imgRatio;
-      const overflowPx = scaledH - frame.height;
-      if (overflowPx > 0) {
-        const deltaPct = (e.movementY / overflowPx) * 100;
-        newY = Math.max(0, Math.min(100, y - deltaPct));
-      }
+    const overflowX = scaledW - frame.width;
+    if (overflowX > 0) {
+      const deltaPct = (e.movementX / overflowX) * 100;
+      newX = Math.max(0, Math.min(100, x - deltaPct));
+    }
+
+    const overflowY = scaledH - frame.height;
+    if (overflowY > 0) {
+      const deltaPct = (e.movementY / overflowY) * 100;
+      newY = Math.max(0, Math.min(100, y - deltaPct));
     }
 
     setFormData((prev) => ({ ...prev, imagenPosition: `${newX}% ${newY}%` }));
+  };
+
+  const ZOOM_MIN = 1;
+  const ZOOM_MAX = 3;
+
+  const aplicarZoom = (valor: number) => {
+    const z = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, valor));
+    setFormData((prev) => ({
+      ...prev,
+      imagenZoom: z,
+      // Al volver a 1 la imagen ya no desborda por zoom: recentramos para no
+      // dejarla pegada a un borde con un encuadre que ya no se puede corregir.
+      imagenPosition: z === 1 ? "50% 50%" : prev.imagenPosition,
+    }));
+  };
+
+  const handleWheelZoom = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (!formData.imagenUrl) return;
+    aplicarZoom(formData.imagenZoom + (e.deltaY < 0 ? 0.1 : -0.1));
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -272,6 +315,7 @@ export default function AgregarPlantaModal({
         ...prev,
         imagenUrl: downloadUrl,
         imagenPosition: "50% 50%",
+        imagenZoom: 1,
       }));
     } catch (error: unknown) {
       const firebaseError = error as { code?: string; message?: string };
@@ -289,6 +333,36 @@ export default function AgregarPlantaModal({
 
   const esImplemento = formData.categorias.includes("IMPLEMENTOS");
 
+  // Costo de compra (solo lectura). Se recalcula con el mismo helper que usan
+  // mercadería y el inventario, así el número es idéntico en las tres pantallas.
+  // Solo existe si la planta pasó por mercadería.
+  const tieneDatosCompra = Number(plantaAEditar?.precioCompraUnitaria) > 0;
+  const ivaCompra = plantaAEditar?.ivaCompra ?? 19;
+  const costoCompra = tieneDatosCompra
+    ? calcularCostoPlanta({
+        precioUnitNeto: Number(plantaAEditar?.precioCompraUnitaria) || 0,
+        unidades: Number(plantaAEditar?.unidadesCompradas) || 1,
+        plantasPorMaceta: Number(plantaAEditar?.plantasPorMaceta) || 1,
+        ivaPorcentaje: ivaCompra,
+      })
+    : null;
+
+  // Margen contra lo que realmente se le cobra al cliente: si la oferta está
+  // activa manda el precio de oferta, no el original (con oferta activa
+  // `precioValor` guarda el precio tachado, no el que se paga).
+  const precioOfertaNum = Number(oferta.precioOferta) || 0;
+  const hayOfertaValida = oferta.activa && precioOfertaNum > 0;
+  const precioVentaActual = hayOfertaValida
+    ? precioOfertaNum
+    : Number(formData.precioValor) || 0;
+  const gananciaUnitaria = costoCompra
+    ? precioVentaActual - costoCompra.costoPorPlanta
+    : 0;
+  const margenPorcentaje =
+    costoCompra && costoCompra.costoPorPlanta > 0
+      ? (gananciaUnitaria / costoCompra.costoPorPlanta) * 100
+      : 0;
+
   const handleSubmitManual = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setCargando(true);
@@ -300,6 +374,7 @@ export default function AgregarPlantaModal({
         categorias: formData.categorias,
         imagenUrl: formData.imagenUrl,
         imagenPosition: formData.imagenPosition,
+        imagenZoom: formData.imagenZoom,
         precio: {
           valor: Number(formData.precioValor),
           tipo: formData.precioTipo,
@@ -413,8 +488,15 @@ export default function AgregarPlantaModal({
     "text-[11px] font-bold text-stone-500 mb-1.5 block uppercase tracking-wider";
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center sm:p-6 bg-stone-900/40 backdrop-blur-sm">
-      <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border-t-4 border-t-milokira-lila sm:border sm:border-t-4 sm:border-t-milokira-lila border-stone-200 shadow-2xl flex flex-col max-h-dvh sm:max-h-[90vh] h-dvh sm:h-auto overflow-hidden">
+    // Header propio + borde lila de marca: por eso hideCloseButton.
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="md"
+      hideCloseButton
+      className="border-t-4 border-t-milokira-lila"
+    >
+      <div className="flex flex-col -m-4 sm:-m-5">
         {/* Header */}
         <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-stone-100 shrink-0">
           <div className="flex items-center gap-2 text-stone-800">
@@ -510,8 +592,9 @@ export default function AgregarPlantaModal({
                         onPointerMove={handlePointerMove}
                         onPointerUp={handlePointerUp}
                         onPointerCancel={handlePointerUp}
+                        onWheel={handleWheelZoom}
                         className="relative w-32 aspect-[4/5] rounded-lg overflow-hidden border border-stone-200 shadow-sm group cursor-grab active:cursor-grabbing select-none touch-none bg-stone-100"
-                        title="Arrastra para reposicionar"
+                        title="Arrastra para reposicionar · rueda para zoom"
                       >
                         <img
                           src={formData.imagenUrl}
@@ -524,11 +607,19 @@ export default function AgregarPlantaModal({
                               h: el.naturalHeight,
                             });
                           }}
-                          style={{ objectPosition: formData.imagenPosition }}
+                          style={{
+                            objectPosition: formData.imagenPosition,
+                            transform: `scale(${formData.imagenZoom})`,
+                            // El origen sigue al encuadre para que el zoom
+                            // acerque hacia la zona elegida, no siempre al centro.
+                            transformOrigin: formData.imagenPosition,
+                          }}
                           className="object-cover w-full h-full pointer-events-none"
                         />
                         <div className="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[9px] text-center py-0.5 font-bold uppercase tracking-wider pointer-events-none">
-                          Arrastra
+                          {formData.imagenZoom > 1
+                            ? `Zoom ${formData.imagenZoom.toFixed(1)}x`
+                            : "Arrastra"}
                         </div>
                         <button
                           type="button"
@@ -538,12 +629,45 @@ export default function AgregarPlantaModal({
                               ...prev,
                               imagenUrl: "",
                               imagenPosition: "50% 50%",
+                              imagenZoom: 1,
                             }))
                           }
                           className="absolute top-1 right-1 bg-rose-500 text-white p-1 rounded-full shadow-md hover:bg-rose-600 transition-colors z-10"
                           title="Quitar imagen"
                         >
                           <X size={12} strokeWidth={3} />
+                        </button>
+                      </div>
+
+                      {/* Control de zoom: se guarda con la planta junto al encuadre */}
+                      <div className="w-32 flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => aplicarZoom(formData.imagenZoom - 0.1)}
+                          disabled={formData.imagenZoom <= ZOOM_MIN}
+                          className="shrink-0 w-5 h-5 grid place-items-center rounded bg-stone-100 text-stone-600 hover:bg-stone-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          aria-label="Alejar"
+                        >
+                          <span className="text-xs font-black leading-none">−</span>
+                        </button>
+                        <input
+                          type="range"
+                          min={ZOOM_MIN}
+                          max={ZOOM_MAX}
+                          step={0.1}
+                          value={formData.imagenZoom}
+                          onChange={(e) => aplicarZoom(Number(e.target.value))}
+                          aria-label="Zoom de la imagen"
+                          className="flex-1 h-1 accent-milokira-verde cursor-pointer"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => aplicarZoom(formData.imagenZoom + 0.1)}
+                          disabled={formData.imagenZoom >= ZOOM_MAX}
+                          className="shrink-0 w-5 h-5 grid place-items-center rounded bg-stone-100 text-stone-600 hover:bg-stone-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          aria-label="Acercar"
+                        >
+                          <span className="text-xs font-black leading-none">+</span>
                         </button>
                       </div>
                     </div>
@@ -836,6 +960,68 @@ export default function AgregarPlantaModal({
                 )}
               </div>
             )}
+
+            {/* Costo de compra: solo lectura, y solo si la planta vino de
+                mercadería. Se edita desde Inventario, no desde acá. */}
+            {costoCompra && (
+              <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 sm:p-4 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">
+                    Costo de compra
+                  </span>
+                  {ivaCompra > 0 ? (
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded">
+                      IVA {ivaCompra}%
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-black uppercase tracking-wider text-stone-500 bg-stone-100 border border-stone-300 px-1.5 py-0.5 rounded">
+                      Sin IVA
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-baseline justify-between gap-2 text-sm">
+                  <span className="text-stone-500">Precio compra (neto)</span>
+                  <span className="font-medium text-stone-600 tabular-nums">
+                    $
+                    {Math.round(
+                      Number(plantaAEditar?.precioCompraUnitaria) || 0,
+                    ).toLocaleString("es-CL")}
+                  </span>
+                </div>
+
+                <div className="flex items-baseline justify-between gap-2 text-sm">
+                  <span className="text-stone-500">
+                    Costo por planta {ivaCompra > 0 ? "c/IVA" : ""}
+                  </span>
+                  <span className="font-bold text-stone-800 tabular-nums">
+                    ${Math.round(costoCompra.costoPorPlanta).toLocaleString("es-CL")}
+                  </span>
+                </div>
+
+                {precioVentaActual > 0 && (
+                  <div className="flex items-baseline justify-between gap-2 text-sm pt-2 border-t border-stone-200">
+                    <span className="text-stone-500">
+                      Ganancia por planta
+                      {hayOfertaValida && (
+                        <span className="ml-1 text-[10px] font-black uppercase tracking-wider text-rose-600">
+                          en oferta
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className={`font-bold tabular-nums ${gananciaUnitaria >= 0 ? "text-emerald-700" : "text-rose-600"}`}
+                    >
+                      ${Math.round(gananciaUnitaria).toLocaleString("es-CL")}
+                      <span className="ml-1 text-xs font-medium">
+                        ({margenPorcentaje >= 0 ? "+" : ""}
+                        {margenPorcentaje.toFixed(0)}%)
+                      </span>
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </form>
         ) : (
           <div className="flex-1 overflow-y-auto px-5 sm:px-6 pb-4 pt-3 space-y-4">
@@ -881,6 +1067,6 @@ export default function AgregarPlantaModal({
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

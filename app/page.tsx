@@ -13,6 +13,7 @@ import { MdOutlinePets } from "react-icons/md";
 import { CartProvider } from "./context/CartContext";
 import CartDrawer from "./components/cart-drawer";
 import PlantChat from "./components/plant-chat";
+import { Modal } from "./components/ui";
 
 interface Planta {
   id: string;
@@ -20,11 +21,19 @@ interface Planta {
   descripcion: string;
   imagenUrl: string;
   imagenPosition?: string;
+  imagenZoom?: number;
   categorias: string[];
   stock?: number;
   dificultad?: "facil" | "media" | "dificil";
   aptaMascotas?: "apta" | "moderada" | "toxica" | "sin-info";
   oferta?: { activa: boolean; precioOriginal: number; porcentaje: number };
+  // Datos de compra: solo se usan en modo admin, para ver el costo real.
+  // No todas las plantas los tienen (las cargadas a mano no pasan por mercadería).
+  precioCompraUnitaria?: number;
+  unidadesCompradas?: number;
+  plantasPorMaceta?: number;
+  ivaCompra?: number;
+  costo?: number;
   precio: {
     valor: number;
     tipo: string;
@@ -181,7 +190,7 @@ export default function Home() {
               setPlantaAEditar(null);
               setIsModalOpen(true);
             }}
-            className="fixed bottom-6 right-6 z-50 bg-milokira-verde text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 hover:bg-green-700 transition-all duration-300 text-2xl pb-1"
+            className="fixed bottom-6 right-6 z-cabecera bg-milokira-verde text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 hover:bg-green-700 transition-all duration-300 text-2xl pb-1"
             title="Agregar nueva planta"
           >
             +
@@ -803,30 +812,12 @@ export default function Home() {
         </footer>
 
         {/* Modal de guía de iconos (mobile) */}
-        {isGuideOpen && (
-          <button
-            type="button"
-            onClick={() => setIsGuideOpen(false)}
-            aria-label="Cerrar guía"
-            className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in"
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto text-left"
-            >
-              <div className="flex items-center justify-between">
-                <h2 className="font-black text-stone-800 text-lg tracking-tight">
-                  Guía de iconos
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setIsGuideOpen(false)}
-                  className="text-stone-400 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-full transition-colors"
-                  aria-label="Cerrar"
-                >
-                  <X size={20} strokeWidth={2.5} />
-                </button>
-              </div>
+        <Modal
+          isOpen={isGuideOpen}
+          onClose={() => setIsGuideOpen(false)}
+          title="Guía de iconos"
+        >
+            <div className="space-y-4 text-left">
 
               <div>
                 <p className="text-xs font-bold text-stone-600 mb-2">
@@ -913,8 +904,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          </button>
-        )}
+        </Modal>
       </main>
       <CartDrawer />
       <PlantChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />

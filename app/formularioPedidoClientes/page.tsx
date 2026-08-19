@@ -43,6 +43,7 @@ type CatalogPlant = {
   disponible: boolean;
   imagenUrl: string;
   imagenPosition: string;
+  imagenZoom?: number;
 };
 
 type SelectedPlant = {
@@ -124,6 +125,7 @@ export default function PedidoPublicoPage() {
               disponible,
               imagenUrl: data.imagenUrl || "",
               imagenPosition: data.imagenPosition || "50% 50%",
+              imagenZoom: Number(data.imagenZoom) || 1,
             };
           })
           .filter((planta) => planta.disponible)
@@ -466,7 +468,14 @@ export default function PedidoPublicoPage() {
                             alt={planta.nombre}
                             loading="lazy"
                             decoding="async"
-                            style={{ objectPosition: planta.imagenPosition }}
+                            style={{
+                              objectPosition: planta.imagenPosition,
+                              transformOrigin: planta.imagenPosition,
+                              transform:
+                                planta.imagenZoom && planta.imagenZoom > 1
+                                  ? `scale(${planta.imagenZoom})`
+                                  : undefined,
+                            }}
                             onLoad={(e) => {
                               e.currentTarget.style.opacity = "1";
                             }}

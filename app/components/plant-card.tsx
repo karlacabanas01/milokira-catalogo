@@ -28,6 +28,7 @@ interface Planta {
   descripcion: string;
   imagenUrl: string;
   imagenPosition?: string;
+  imagenZoom?: number;
   categorias: string[];
   dificultad?: "facil" | "media" | "dificil";
   aptaMascotas?: "apta" | "moderada" | "toxica" | "sin-info";
@@ -56,10 +57,16 @@ const formatearPrecio = (precio: Precio): string => {
 };
 
 export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
-  const { id, nombre, descripcion, imagenUrl, imagenPosition, precio, categorias, dificultad, aptaMascotas } = planta;
+  const { id, nombre, descripcion, imagenUrl, imagenPosition, imagenZoom, precio, categorias, dificultad, aptaMascotas } = planta;
+  // Zoom elegido al editar la planta. Se multiplica por el 1.1 del hover para
+  // que ambos efectos se compongan en vez de pisarse.
+  const zoomBase = imagenZoom && imagenZoom > 1 ? imagenZoom : 1;
   const opcionesLitros = planta.opcionesLitros;
   const oferta = planta.oferta?.activa ? planta.oferta : null;
   const [isLoading, setIsLoading] = useState(true);
+  // El zoom guardado se compone con el hover, así que la escala se calcula en
+  // JS y no con group-hover (una clase de Tailwind pisaría el transform inline).
+  const [isHovered, setIsHovered] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const { addItem } = useCart();
@@ -75,6 +82,7 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
       precioTipo: precio.tipo,
       imagenUrl,
       imagenPosition,
+      imagenZoom,
     });
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1200);
@@ -106,6 +114,8 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
 
   return (
     <div
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
       className={`bg-white rounded-3xl overflow-hidden shadow-sm transition-all duration-300 flex flex-col h-full border-2 relative hover:-translate-y-1
       ${
         estaDisponible
@@ -120,8 +130,13 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
             alt={nombre}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
-            style={{ objectPosition: imagenPosition || "50% 50%" }}
-            className={`object-cover transition-transform duration-700 ${estaDisponible ? "group-hover:scale-110" : ""}`}
+            style={{
+              objectPosition: imagenPosition || "50% 50%",
+              transformOrigin: imagenPosition || "50% 50%",
+              // El hover acerca un 10% adicional sobre el zoom guardado.
+              transform: `scale(${estaDisponible && isHovered ? zoomBase * 1.1 : zoomBase})`,
+            }}
+            className="object-cover transition-transform duration-700"
             onLoad={() => setIsLoading(false)}
             onError={() => setIsLoading(false)}
           />
