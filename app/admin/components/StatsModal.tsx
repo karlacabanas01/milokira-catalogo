@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { X, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { Modal } from "../../components/ui";
 import {
   Area,
   AreaChart,
@@ -45,8 +46,8 @@ export default function StatsModal({
   month,
   week,
 }: Props) {
-  if (!isOpen) return null;
-
+  // Sin `if (!isOpen) return null` antes de los hooks: eso cambiaba la
+  // cantidad de hooks entre renders. El propio Modal decide si se monta.
   const [activeRange, setActiveRange] = useState<(typeof rangeOptions)[number]["key"]>(
     "week",
   );
@@ -72,26 +73,16 @@ export default function StatsModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-3xl border border-stone-200 bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-stone-200 px-4 sm:px-5 py-3 sm:py-4">
-          <div className="min-w-0">
-            <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.3em] text-stone-500 font-semibold">
-              Resumen financiero
-            </p>
-            <h3 className="text-base sm:text-lg font-black text-stone-900">
-              Estadísticas
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-xl p-2 text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="px-4 sm:px-5 pt-4">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      eyebrow="Resumen financiero"
+      title="Estadísticas"
+      size="full"
+      className="p-0"
+    >
+      <div>
+        <div className="pt-1">
           <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {rangeOptions.map((option) => (
               <button
@@ -208,6 +199,6 @@ export default function StatsModal({
           </ResponsiveContainer>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

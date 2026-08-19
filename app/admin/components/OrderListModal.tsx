@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig"; // Ajusta según tu estructura
 import { CheckCircle, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Modal, EmptyState, Button } from "../../components/ui";
 
 // Tipos adaptados a la estructura anidada de Firebase
 type OrderItem = {
@@ -137,31 +138,19 @@ export default function OrderListModal({ isOpen, onClose, onChange }: Props) {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-md rounded-2xl p-6 border border-stone-200 shadow-2xl h-[85vh] flex flex-col">
-        <div className="flex justify-between items-center mb-4 pb-4 border-b border-stone-200">
-          <h2 className="text-xl font-bold text-amber-500">
-            Pedidos Pendientes ({orders.length})
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 bg-stone-100 rounded-full text-stone-500 hover:text-stone-800 hover:bg-stone-200 transition-colors"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-          {loading ? (
-            <div className="text-center py-10 text-stone-500">Cargando...</div>
-          ) : orders.length === 0 ? (
-            <div className="text-center py-10 text-stone-400 border border-dashed border-stone-200 rounded-xl">
-              ¡Todo limpio!
-            </div>
-          ) : (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Pedidos Pendientes (${orders.length})`}
+      tall
+    >
+      <div className="space-y-3">
+        {loading ? (
+          <div className="text-center py-10 text-stone-500">Cargando...</div>
+        ) : orders.length === 0 ? (
+          <EmptyState>¡Todo limpio!</EmptyState>
+        ) : (
             orders.map((order) => (
               <div
                 key={order.idFirebase}
@@ -224,22 +213,22 @@ export default function OrderListModal({ isOpen, onClose, onChange }: Props) {
                         </li>
                       ))}
                     </ul>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCompleteOrder(order);
-                      }}
-                      className="w-full bg-emerald-600 text-white py-3 rounded-lg text-sm font-bold shadow-lg shadow-emerald-900/20 hover:bg-emerald-500 transition-all flex justify-center items-center gap-2"
-                    >
-                      <CheckCircle size={16} /> Completar Venta
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
+                  <Button
+                    variant="exito"
+                    fullWidth
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCompleteOrder(order);
+                    }}
+                  >
+                    <CheckCircle size={16} /> Completar Venta
+                  </Button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
-    </div>
+    </Modal>
   );
 }

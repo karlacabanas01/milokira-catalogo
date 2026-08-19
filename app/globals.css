@@ -10,9 +10,47 @@ body {
 
 @theme {
   --breakpoint-xs: 25rem;
+
+  /* --- Marca --- */
   --color-milokira-crema: #f7f4eb;
   --color-milokira-lila: #ecd4ff;
   --color-milokira-verde: #8da781;
+
+  /* --- Superficies ---
+     `superficie` es el fondo de paneles y tarjetas; `campo` es el fondo de
+     inputs (crema, para que se distingan del panel blanco). */
+  --color-superficie: #ffffff;
+  --color-campo: var(--color-milokira-crema);
+  --color-borde: var(--color-stone-200);
+
+  /* --- Intenciones semánticas ---
+     Cada acción del admin tiene un color fijo. Usa la intención, no el color:
+     así "vender" sigue siendo verde aunque cambie el verde. */
+  --color-intencion-primaria: var(--color-indigo-600);
+  --color-intencion-exito: var(--color-emerald-600);
+  --color-intencion-peligro: var(--color-rose-600);
+  --color-intencion-alerta: var(--color-amber-500);
+
+}
+
+/* --- Escala de z-index ---
+   Definidas como @utility (no como token @theme: el namespace --z-* no
+   genera utilidades en Tailwind v4). Ordenadas de menor a mayor; evita el
+   `z-[200]` suelto que ya apareció en agregar-planta-modal. */
+@utility z-cabecera {
+  z-index: 30;
+}
+@utility z-superposicion {
+  z-index: 40;
+}
+@utility z-modal {
+  z-index: 50;
+}
+@utility z-modal-anidado {
+  z-index: 60;
+}
+@utility z-aviso {
+  z-index: 70;
 }
 
 .patron-muro {

@@ -24,6 +24,7 @@ import {
   ShoppingBag,
   Package,
 } from "lucide-react";
+import { Modal } from "../../components/ui";
 
 // 2. TIPO UNIFICADO PARA FIREBASE
 type SaleItem = {
@@ -216,8 +217,6 @@ export default function SaleListModal({ isOpen, onClose, onChange }: Props) {
     }
   };
 
-  if (!isOpen) return null;
-
   const filtros: { key: Filtro; label: string }[] = [
     { key: "todas", label: "Todas" },
     { key: "pedido", label: "Pedidos" },
@@ -225,14 +224,16 @@ export default function SaleListModal({ isOpen, onClose, onChange }: Props) {
   ];
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 bg-stone-900/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm"
+    // Header con gradiente propio: por eso hideCloseButton.
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="md"
+      tall
+      hideCloseButton
+      className="p-0"
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl border border-stone-200 shadow-2xl h-[85vh] max-h-[85dvh] flex flex-col overflow-hidden"
-      >
+      <div className="flex flex-col h-full -m-4 sm:-m-5">
         {/* Header con gradiente */}
         <div className="relative bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 pt-3 pb-6 text-white shrink-0">
           {/* Grabber (arrastrar para cerrar, solo mobile) */}
@@ -428,6 +429,6 @@ export default function SaleListModal({ isOpen, onClose, onChange }: Props) {
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

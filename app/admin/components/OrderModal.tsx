@@ -18,6 +18,7 @@ import {
   Search,
   Leaf,
 } from "lucide-react";
+import { Modal } from "../../components/ui";
 import {
   collection,
   doc,
@@ -182,8 +183,6 @@ export default function OrderModal({
     setItemQty("1");
   }, [editingOrder, isOpen]);
 
-  if (!isOpen) return null;
-
   const addItem = () => {
     const name = itemName.trim();
     const price = Number(itemPrice) || 0;
@@ -291,8 +290,16 @@ export default function OrderModal({
       : `${totalItems} ${itemsLabel} en el pedido`;
 
   return (
-    <div className="fixed inset-0 bg-stone-900/40 z-50 flex items-end sm:items-center justify-center sm:p-6 backdrop-blur-sm animate-in fade-in">
-      <div className="relative bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border border-stone-200 shadow-2xl flex flex-col max-h-dvh sm:max-h-[90vh] h-dvh sm:h-auto overflow-hidden">
+    // Header propio (icono, subtítulo y fondo decorativo) dentro del shell
+    // compartido: por eso hideCloseButton y className="p-0".
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="md"
+      hideCloseButton
+      className="p-0"
+    >
+      <div className="relative flex flex-col -m-4 sm:-m-5">
         {/* Fondo decorativo */}
         <div className="pointer-events-none absolute inset-0 opacity-50">
           <div className="absolute -top-20 -left-20 w-64 h-64 bg-amber-300/30 rounded-full blur-3xl" />
@@ -776,6 +783,6 @@ export default function OrderModal({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

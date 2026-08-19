@@ -11,7 +11,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig"; // Ajusta la ruta si tu config está en otra carpeta
-import { X } from "lucide-react";
+import { Modal, EmptyState } from "../../components/ui";
 
 // 2. ACTUALIZAMOS EL TIPO AL FORMATO FIREBASE
 type Expense = {
@@ -88,63 +88,46 @@ export default function ExpenseListModal({ isOpen, onClose, onChange }: Props) {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-stone-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-md rounded-2xl p-6 border border-stone-200 shadow-2xl h-[80vh] flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold text-rose-400">
-            Historial de Gastos
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 bg-stone-100 rounded-full text-stone-500 hover:text-stone-800 hover:bg-stone-200 transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-          {loading ? (
-            <div className="text-center text-stone-500 py-10">Cargando...</div>
-          ) : expenses.length === 0 ? (
-            <div className="text-center text-stone-500 py-10 border border-dashed border-stone-200 rounded-xl">
-              Sin gastos.
-            </div>
-          ) : (
-            expenses.map((expense) => (
-              <div
-                key={expense.idFirebase}
-                className="bg-milokira-crema p-4 rounded-xl border border-stone-200 flex justify-between items-center"
-              >
-                <div>
-                  <p className="text-stone-800 font-medium">
-                    {expense.description}
-                  </p>
-                  <p className="text-xs text-stone-500 mt-1">
-                    {new Date(expense.created_at).toLocaleDateString("es-CL", {
-                      day: "2-digit",
-                      month: "short",
-                    })}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="block text-rose-400 font-bold">
-                    -${expense.amount.toLocaleString("es-CL")}
-                  </span>
-                  <button
-                    onClick={() => handleDelete(expense.idFirebase)}
-                    className="text-xs text-stone-400 hover:text-rose-400 mt-1 underline"
-                  >
-                    Borrar
-                  </button>
-                </div>
+    <Modal isOpen={isOpen} onClose={onClose} title="Historial de Gastos" tall>
+      <div className="space-y-2">
+        {loading ? (
+          <div className="text-center text-stone-500 py-10">Cargando...</div>
+        ) : expenses.length === 0 ? (
+          <EmptyState>Sin gastos.</EmptyState>
+        ) : (
+          expenses.map((expense) => (
+            <div
+              key={expense.idFirebase}
+              className="bg-campo p-4 rounded-xl border border-borde flex justify-between items-center"
+            >
+              <div>
+                <p className="text-stone-800 font-medium">
+                  {expense.description}
+                </p>
+                <p className="text-xs text-stone-500 mt-1">
+                  {new Date(expense.created_at).toLocaleDateString("es-CL", {
+                    day: "2-digit",
+                    month: "short",
+                  })}
+                </p>
               </div>
-            ))
-          )}
-        </div>
+              <div className="text-right">
+                <span className="block text-rose-600 font-bold">
+                  -${expense.amount.toLocaleString("es-CL")}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(expense.idFirebase)}
+                  className="text-xs text-stone-400 hover:text-rose-600 mt-1 underline"
+                >
+                  Borrar
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
-    </div>
+    </Modal>
   );
 }
