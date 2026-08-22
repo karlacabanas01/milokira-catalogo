@@ -4,7 +4,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../firebaseConfig";
 
 import { X, Leaf, Save, TerminalSquare, Plus } from "lucide-react";
-import { Modal } from "./ui";
+import { Modal, useNoWheelScroll } from "./ui";
 import { calcularCostoPlanta } from "../admin/mercaderia/helpers";
 
 type OpcionLitro = { litros: string; precio: string };
@@ -59,6 +59,7 @@ export default function AgregarPlantaModal({
   onClose,
   plantaAEditar,
 }: AgregarPlantaModalProps) {
+  const bloquearRueda = useNoWheelScroll();
   const [cargando, setCargando] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [pestaña, setPestaña] = useState<"manual" | "script">("manual");
@@ -876,6 +877,7 @@ export default function AgregarPlantaModal({
                 <input
                   required
                   type="number"
+                  onWheel={bloquearRueda}
                   name="precioValor"
                   value={formData.precioValor}
                   onChange={handleChange}
@@ -932,6 +934,7 @@ export default function AgregarPlantaModal({
                         </span>
                         <input
                           type="number"
+                          onWheel={bloquearRueda}
                           value={oferta.precioOferta}
                           onChange={(e) =>
                             setOferta({ ...oferta, precioOferta: e.target.value })

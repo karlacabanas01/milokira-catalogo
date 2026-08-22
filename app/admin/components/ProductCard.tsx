@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Pencil, Trash2, Plus, Minus } from "lucide-react";
+import { useNoWheelScroll } from "../../components/ui";
 
 type Product = {
   id: number;
@@ -23,6 +24,7 @@ export default function ProductCard({
   onDelete,
   onEdit,
 }: Props) {
+  const bloquearRueda = useNoWheelScroll();
   const [qty, setQty] = useState(1);
 
   const handleSale = () => {
@@ -101,6 +103,7 @@ export default function ProductCard({
 
           <input
             type="number"
+            onWheel={bloquearRueda}
             min="1"
             max={product.stock}
             value={qty}

@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { cn } from "./cn";
+import { useNoWheelScroll } from "./useNoWheelScroll";
 
 const BASE_CAMPO =
   "w-full bg-campo border border-borde rounded-xl text-stone-800 placeholder:text-stone-400 transition-all outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:opacity-60";
@@ -20,11 +21,17 @@ export function Input({
   prefix,
   id,
   className,
+  onWheel,
   ...props
 }: InputProps) {
   const idAuto = useId();
   const inputId = id ?? idAuto;
   const errorId = `${inputId}-error`;
+  // En los campos numéricos la rueda del mouse cambiaría el valor al pasar por
+  // encima; se bloquea salvo que quien lo use pase su propio onWheel.
+  const bloquearRueda = useNoWheelScroll();
+  const manejarRueda =
+    onWheel ?? (props.type === "number" ? bloquearRueda : undefined);
 
   return (
     <div className="space-y-1.5">
@@ -45,6 +52,7 @@ export function Input({
         )}
         <input
           id={inputId}
+          onWheel={manejarRueda}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
           className={cn(

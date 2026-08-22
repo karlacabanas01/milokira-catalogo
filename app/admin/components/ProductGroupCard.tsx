@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Pencil, Trash2, Plus, Minus, ChevronDown, ChevronUp } from "lucide-react";
+import { useNoWheelScroll } from "../../components/ui";
 
 type Product = {
   id: number;
@@ -25,6 +26,7 @@ export default function ProductGroupCard({
   onDelete,
   onEdit,
 }: Props) {
+  const bloquearRueda = useNoWheelScroll();
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [qty, setQty] = useState(1);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -106,6 +108,7 @@ export default function ProductGroupCard({
             </button>
             <input
               type="number"
+              onWheel={bloquearRueda}
               min="1"
               max={currentProduct.stock}
               value={qty}
@@ -238,6 +241,7 @@ export default function ProductGroupCard({
           </button>
           <input
             type="number"
+            onWheel={bloquearRueda}
             min="1"
             max={currentProduct.stock}
             value={qty}

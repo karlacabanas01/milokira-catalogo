@@ -5,7 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../../firebaseConfig";
 import { X, ImagePlus } from "lucide-react";
 import type { Product } from "./ProductListModal";
-import { Modal, Button } from "../../components/ui";
+import { Modal, Button, useNoWheelScroll } from "../../components/ui";
 import { calcularCostoPlanta } from "../mercaderia/helpers";
 
 const CATEGORIAS_DISPONIBLES = [
@@ -56,6 +56,7 @@ export default function ProductModal({
   isSaving,
   editingProduct,
 }: Props) {
+  const bloquearRueda = useNoWheelScroll();
   const [form, setForm] = useState({
     name: editingProduct?.name || "",
     unidadesCompradas: editingProduct?.unidadesCompradas
@@ -311,6 +312,7 @@ export default function ProductModal({
                 <input
                   required
                   type="number"
+                  onWheel={bloquearRueda}
                   min="1"
                   className="w-full p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-stone-800 placeholder:text-stone-400 outline-none focus:border-indigo-500 transition-colors text-center font-bold"
                   value={form.unidadesCompradas}
@@ -324,6 +326,7 @@ export default function ProductModal({
                 <input
                   required
                   type="number"
+                  onWheel={bloquearRueda}
                   placeholder="$"
                   className="w-full p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-stone-800 placeholder:text-stone-400 outline-none focus:border-indigo-500 transition-colors"
                   value={form.unitCost}
@@ -340,6 +343,7 @@ export default function ProductModal({
                 </label>
                 <input
                   type="number"
+                  onWheel={bloquearRueda}
                   min="0"
                   max="100"
                   className="w-full p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-stone-800 placeholder:text-stone-400 outline-none focus:border-indigo-500 transition-colors text-center font-bold"
@@ -380,6 +384,7 @@ export default function ProductModal({
                 <input
                   required
                   type="number"
+                  onWheel={bloquearRueda}
                   min="1"
                   className="w-full p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-stone-800 placeholder:text-stone-400 outline-none focus:border-indigo-500 transition-colors text-center font-bold"
                   value={form.plantsPerPot}
@@ -397,6 +402,7 @@ export default function ProductModal({
                 <input
                   required
                   type="number"
+                  onWheel={bloquearRueda}
                   placeholder="$"
                   className="w-full p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-bold outline-none focus:border-emerald-500 transition-colors"
                   value={form.price}
@@ -410,6 +416,7 @@ export default function ProductModal({
                 <input
                   required
                   type="number"
+                  onWheel={bloquearRueda}
                   placeholder="Cant."
                   className="w-full p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-stone-800 placeholder:text-stone-400 outline-none focus:border-indigo-500 transition-colors text-center font-bold"
                   value={form.stock}
