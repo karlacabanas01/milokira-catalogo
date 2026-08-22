@@ -1,11 +1,19 @@
 import React from "react";
-import { TrendingUp, TrendingDown, Wallet, CalendarDays } from "lucide-react";
+import {
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  CalendarDays,
+  HandCoins,
+} from "lucide-react";
 
 type Financials = {
   income: number;
   incomeWeek: number;
   expenses: number;
   profit: number;
+  /** Parte de las ventas que le corresponde a Robin: delivery + ítems marcados. */
+  incomeRobin: number;
 };
 
 type Props = {
@@ -13,6 +21,7 @@ type Props = {
   onExpensesClick: () => void;
   onSalesClick: () => void;
   onWeekClick: () => void;
+  onRobinClick: () => void;
 };
 
 const StatCard = ({
@@ -27,7 +36,7 @@ const StatCard = ({
   sublabel?: string;
   value: number;
   onClick?: () => void;
-  variant: "success" | "danger" | "info" | "week";
+  variant: "success" | "danger" | "info" | "week" | "robin";
   icon: React.ElementType;
 }) => {
   const styles = {
@@ -58,6 +67,15 @@ const StatCard = ({
       text: "text-purple-700",
       value: "text-purple-900",
       border: "border-milokira-lila",
+    },
+    // Rosado pálido: no lo usan las otras cards, y `pink` se distingue del
+    // `rose` que marca los pedidos muy atrasados.
+    robin: {
+      bg: "bg-pink-50",
+      hoverBg: "hover:bg-pink-100",
+      text: "text-pink-700",
+      value: "text-pink-900",
+      border: "border-pink-200",
     },
   };
 
@@ -106,9 +124,10 @@ export default function StatsOverview({
   onExpensesClick,
   onSalesClick,
   onWeekClick,
+  onRobinClick,
 }: Props) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 w-full">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 w-full">
       <StatCard
         label="Esta semana"
         sublabel="lun → dom"
@@ -139,6 +158,15 @@ export default function StatsOverview({
         value={financials.profit}
         variant="info"
         icon={Wallet}
+      />
+
+      <StatCard
+        label="Total Robin"
+        sublabel="desde 21-08"
+        value={financials.incomeRobin}
+        onClick={onRobinClick}
+        variant="robin"
+        icon={HandCoins}
       />
     </div>
   );

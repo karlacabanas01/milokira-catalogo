@@ -18,7 +18,7 @@ import {
   Search,
   Leaf,
 } from "lucide-react";
-import { Modal } from "../../components/ui";
+import { Modal, useNoWheelScroll } from "../../components/ui";
 import {
   collection,
   doc,
@@ -44,6 +44,9 @@ type CartItem = {
   name: string;
   price: number;
   quantity: number;
+  /** El monto de este ítem es del compañero de ventas, no ingreso del vivero.
+      El cliente igual lo paga dentro del total; solo cambia a quién le toca. */
+  esDeCompanero?: boolean;
 };
 
 type DeliveryType = "delivery" | "retiro";
@@ -71,6 +74,7 @@ type EditingOrderType = {
     nombre?: string;
     quantity: number;
     unit_price: number;
+    es_de_companero?: boolean;
   }[];
 };
 
@@ -90,6 +94,7 @@ export default function OrderModal({
   onSuccess,
   editingOrder,
 }: Props) {
+  const bloquearRueda = useNoWheelScroll();
   const [customer, setCustomer] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -163,6 +168,7 @@ export default function OrderModal({
         name: item.nombre || "Planta",
         price: item.unit_price,
         quantity: item.quantity,
+        esDeCompanero: item.es_de_companero ?? false,
       }));
       setCart(loadedCart);
     } else if (isOpen) {
@@ -211,15 +217,40 @@ export default function OrderModal({
     setCart((prev) => prev.filter((item) => item.id !== id));
   };
 
+  const toggleCompanero = (id: string) => {
+    setCart((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? { ...item, esDeCompanero: !item.esDeCompanero }
+          : item,
+      ),
+    );
+  };
+
   const subtotalCalculado = cart.reduce(
     (acc, item) => acc + item.price * item.quantity,
+    0,
+  );
+  // Ítems marcados como venta del compañero.
+  const itemsCompanero = cart.reduce(
+    (acc, item) =>
+      item.esDeCompanero ? acc + item.price * item.quantity : acc,
     0,
   );
   const manualTotalNum = Number(manualTotal);
   const usaManual = manualTotal.trim() !== "" && !Number.isNaN(manualTotalNum);
   const subtotalOrder = usaManual ? manualTotalNum : subtotalCalculado;
-  const totalOrder =
-    subtotalOrder + (deliveryType === "delivery" ? deliveryFee : 0);
+  const feeDelivery = deliveryType === "delivery" ? deliveryFee : 0;
+  const totalOrder = subtotalOrder + feeDelivery;
+
+  // El delivery siempre es del compañero; los ítems solo si se marcan. El
+  // cliente paga el total completo — esto solo dice a quién le toca cada monto.
+  // Con total manual el monto escrito a mano no se puede repartir entre los
+  // ítems, así que ahí solo se reparte el delivery.
+  const companeroItemsAplicable = usaManual ? 0 : itemsCompanero;
+  const totalCompanero = companeroItemsAplicable + feeDelivery;
+  const hayCompanero = totalCompanero > 0;
+  const totalVivero = totalOrder - totalCompanero;
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   const handleSaveOrder = async () => {
@@ -234,6 +265,7 @@ export default function OrderModal({
         nombre: item.name,
         quantity: item.quantity,
         unit_price: item.price,
+        es_de_companero: item.esDeCompanero ?? false,
       }));
 
       const deliveryData = {
@@ -383,7 +415,11 @@ export default function OrderModal({
                 {cart.map((item) => (
                   <div
                     key={item.id}
-                    className="bg-white border border-stone-200 rounded-xl p-2.5 shadow-sm"
+                    className={`bg-white border rounded-xl p-2.5 shadow-sm transition-colors ${
+                      item.esDeCompanero
+                        ? "border-milokira-lila bg-milokira-lila/5"
+                        : "border-stone-200"
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <p className="text-stone-800 text-base sm:text-lg font-bold leading-tight flex-1">
@@ -417,10 +453,32 @@ export default function OrderModal({
                           <Plus size={12} />
                         </button>
                       </div>
-                      <span className="text-emerald-700 font-black text-sm font-mono">
+                      <span
+                        className={`font-black text-sm font-mono ${
+                          item.esDeCompanero ? "text-purple-700" : "text-emerald-700"
+                        }`}
+                      >
                         {formatCLP(item.price * item.quantity)}
                       </span>
                     </div>
+
+                    {/* Marca el ítem como venta del compañero: el cliente lo
+                        paga igual, pero el monto no es ingreso del vivero. */}
+                    <label className="mt-2 pt-2 border-t border-stone-100 flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={item.esDeCompanero ?? false}
+                        onChange={() => toggleCompanero(item.id)}
+                        className="w-3.5 h-3.5 accent-milokira-lila cursor-pointer"
+                      />
+                      <span
+                        className={`text-[10px] font-bold uppercase tracking-wider ${
+                          item.esDeCompanero ? "text-purple-700" : "text-stone-400"
+                        }`}
+                      >
+                        Cobra el compañero
+                      </span>
+                    </label>
                   </div>
                 ))}
               </div>
@@ -540,6 +598,7 @@ export default function OrderModal({
                 <div className="flex gap-2">
                   <input
                     type="number"
+                    onWheel={bloquearRueda}
                     min="0"
                     placeholder="Precio $"
                     className="flex-1 px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 outline-none focus:bg-white focus:border-amber-400 text-xs sm:text-sm placeholder:text-stone-400"
@@ -548,6 +607,7 @@ export default function OrderModal({
                   />
                   <input
                     type="number"
+                    onWheel={bloquearRueda}
                     min="1"
                     placeholder="Cant"
                     className="w-20 px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-stone-700 text-center font-bold outline-none focus:bg-white focus:border-amber-400 text-xs sm:text-sm placeholder:text-stone-400"
@@ -636,6 +696,7 @@ export default function OrderModal({
               <div className="mt-2 space-y-2">
                 <input
                   type="number"
+                  onWheel={bloquearRueda}
                   min="0"
                   placeholder="Costo de delivery"
                   className="w-full px-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-milokira-lila text-xs sm:text-sm placeholder:text-stone-400"
@@ -659,7 +720,8 @@ export default function OrderModal({
                       <option value="miercoles">Miércoles</option>
                       <option value="jueves">Jueves</option>
                       <option value="viernes">Viernes</option>
-                      <option value="otro">Otro día</option>
+                      <option value="sabado">Sábado</option>
+                      <option value="domingo">Domingo</option>
                     </select>
                   </div>
                   <select
@@ -751,9 +813,31 @@ export default function OrderModal({
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-stone-500">Delivery</span>
-                  <span className="text-milokira-lila font-mono">
+                  <span className="text-stone-500">
+                    Delivery
+                    <span className="ml-1 text-[9px] font-black uppercase tracking-wider text-purple-700">
+                      (compañero)
+                    </span>
+                  </span>
+                  <span className="text-purple-700 font-mono">
                     {formatCLP(deliveryFee)}
+                  </span>
+                </div>
+              </>
+            )}
+            {/* Reparto interno: no altera el total que paga el cliente. */}
+            {hayCompanero && (
+              <>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-stone-500">Para el vivero</span>
+                  <span className="text-emerald-700 font-mono font-bold">
+                    {formatCLP(totalVivero)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-stone-500">Cobra el compañero</span>
+                  <span className="text-purple-700 font-mono font-bold">
+                    {formatCLP(totalCompanero)}
                   </span>
                 </div>
               </>

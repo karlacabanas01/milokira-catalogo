@@ -35,6 +35,8 @@ import StatsModal, { type ChartPoint } from "./components/StatsModal";
 import ExpenseModal from "./components/ExpenseModal";
 import SaleModal from "./components/SaleModal";
 import SaleListModal from "./components/SaleListModal";
+import RobinListModal from "./components/RobinListModal";
+import { ROBIN_DESDE, calcularAporteRobin } from "./robinHelpers";
 import ExpenseListModal from "./components/ExpenseListModal";
 import OrderModal from "./components/OrderModal";
 import ProductListModal from "./components/ProductListModal";
@@ -78,6 +80,7 @@ export default function AdminPage() {
     incomeWeek: 0,
     expenses: 0,
     profit: 0,
+    incomeRobin: 0,
   });
   const [statsSeries, setStatsSeries] = useState<{
     allTime: ChartPoint[];
@@ -97,6 +100,7 @@ export default function AdminPage() {
   const [isProductListOpen, setIsProductListOpen] = useState(false);
 
   const [isSaleListOpen, setIsSaleListOpen] = useState(false);
+  const [isRobinListOpen, setIsRobinListOpen] = useState(false);
   const [isExpenseListOpen, setIsExpenseListOpen] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
@@ -122,6 +126,9 @@ export default function AdminPage() {
         let totalIncome = 0;
         let weekIncome = 0;
         let totalExpenses = 0;
+        // Lo que le corresponde a Robin dentro de las ventas completadas:
+        // el delivery siempre, más los ítems marcados como suyos.
+        let totalRobin = 0;
         const pendingOrders: OrderType[] = [];
         const monthNames = [
           "Ene",
@@ -314,6 +321,12 @@ export default function AdminPage() {
 
           if (estado !== "pending") {
             totalIncome += monto;
+
+            // Mismo helper que usa el modal de detalle, para que el total de la
+            // card y el desglose no puedan divergir.
+            const aporteRobin = calcularAporteRobin(data);
+            if (aporteRobin) totalRobin += aporteRobin.total;
+
             const createdAt = data.created_at
               ? new Date(data.created_at).getTime()
               : 0;
@@ -342,6 +355,7 @@ export default function AdminPage() {
           incomeWeek: weekIncome,
           expenses: totalExpenses,
           profit: totalIncome - totalExpenses,
+          incomeRobin: totalRobin,
         });
         setStatsSeries({
           allTime: buildMonthlySeries(),
@@ -472,6 +486,7 @@ export default function AdminPage() {
             financials={financials}
             onExpensesClick={() => setIsExpenseListOpen(true)}
             onSalesClick={() => setIsSaleListOpen(true)}
+            onRobinClick={() => setIsRobinListOpen(true)}
             onWeekClick={() => setIsStatsModalOpen(true)}
           />
         )}
@@ -778,6 +793,14 @@ export default function AdminPage() {
             }
           }}
           isSaving={isSaving}
+        />
+      )}
+
+      {isRobinListOpen && (
+        <RobinListModal
+          isOpen={isRobinListOpen}
+          onClose={() => setIsRobinListOpen(false)}
+          desde={ROBIN_DESDE}
         />
       )}
 
