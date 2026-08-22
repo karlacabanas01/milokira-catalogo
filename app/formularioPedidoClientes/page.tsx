@@ -622,7 +622,8 @@ export default function PedidoPublicoPage() {
                     <option value="miercoles">Miércoles</option>
                     <option value="jueves">Jueves</option>
                     <option value="viernes">Viernes</option>
-                    <option value="otro">Otro día (lo coordinamos)</option>
+                    <option value="sabado">Sábado</option>
+                    <option value="domingo">Domingo</option>
                   </select>
                 </div>
               </div>

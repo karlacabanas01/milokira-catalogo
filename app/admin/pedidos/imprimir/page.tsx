@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../../firebaseConfig";
 
-type DeliveryDay = "martes" | "viernes" | "otro" | "";
+type DeliveryDay = string; // nombre del día de entrega, o "" si es retiro
 
 type OrderItem = {
   product_id?: string;
@@ -29,7 +29,7 @@ type Order = {
   items: OrderItem[];
 };
 
-type Filter = "todos" | "martes" | "viernes" | "retiro";
+type Filter = string; // "todos" | "retiro" | nombre de día
 
 const ORDER_STORAGE_KEY = "milokira-pedidos-order";
 
@@ -207,8 +207,13 @@ function applyFilter(orders: Order[], filter: Filter): Order[] {
 }
 
 const DAY_BADGE: Record<string, string> = {
+  lunes: "bg-sky-100 text-sky-800 border-sky-300",
   martes: "bg-indigo-100 text-indigo-800 border-indigo-300",
+  miercoles: "bg-teal-100 text-teal-800 border-teal-300",
+  jueves: "bg-amber-100 text-amber-800 border-amber-300",
   viernes: "bg-purple-100 text-purple-800 border-purple-300",
+  sabado: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  domingo: "bg-rose-100 text-rose-800 border-rose-300",
 };
 
 function Label({ order }: { readonly order: Order }) {

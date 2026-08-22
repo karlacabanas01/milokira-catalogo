@@ -11,6 +11,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
+import { repartirPedido } from "../robinHelpers";
 import OrderModal from "../components/OrderModal";
 import type { TicketOrder } from "./ticketImg";
 
@@ -42,7 +43,6 @@ import {
   Save,
   X,
   Edit3,
-  Layers,
   FileText,
   LayoutGrid,
   Table as TableIcon,
@@ -65,6 +65,8 @@ type OrderItem = {
   nombre?: string;
   quantity: number;
   unit_price: number;
+  /** El monto lo cobra el compañero de ventas; no es ingreso del vivero. */
+  es_de_companero?: boolean;
 };
 
 type Order = {
@@ -86,50 +88,28 @@ type Order = {
   items: OrderItem[];
 };
 
-type Filter = string; // "todos" | "retiro" | nombre de día (lunes, martes, etc.)
-type SortMode = "manual" | "sector" | "cercania";
+type Filter = string; // "todos" | "retiro" | "atrasados" | nombre de día
+
+// Un pedido pendiente con más de dos semanas se considera muy atrasado.
+const DIAS_PARA_ATRASO = 14;
+const MS_POR_DIA = 24 * 60 * 60 * 1000;
+
+/** Días transcurridos desde que se creó el pedido. */
+export const diasDesde = (createdAt: string, ahora = Date.now()): number => {
+  const creado = new Date(createdAt).getTime();
+  if (!creado || Number.isNaN(creado)) return 0;
+  return Math.floor((ahora - creado) / MS_POR_DIA);
+};
+
+/** true si el pedido lleva más de dos semanas esperando. */
+export const estaMuyAtrasado = (order: { created_at: string }, ahora = Date.now()): boolean =>
+  diasDesde(order.created_at, ahora) >= DIAS_PARA_ATRASO;
 
 // Punto base (Bicentenario, Talca)
 const HOME_LAT = -35.4364;
 const HOME_LNG = -71.6105;
 
-const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
-  const R = 6371;
-  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
-  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
-  const lat1 = (a.lat * Math.PI) / 180;
-  const lat2 = (b.lat * Math.PI) / 180;
-  const x =
-    Math.sin(dLat / 2) ** 2 +
-    Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
-  return 2 * R * Math.asin(Math.sqrt(x));
-};
 
-const nearestNeighborOrder = (
-  orders: Order[],
-  start: { lat: number; lng: number },
-): Order[] => {
-  const result: Order[] = [];
-  const remaining = orders.filter((o) => o.lat != null && o.lng != null);
-  let current = start;
-  while (remaining.length > 0) {
-    let bestIdx = 0;
-    let bestDist = Infinity;
-    for (let i = 0; i < remaining.length; i++) {
-      const o = remaining[i];
-      const d = haversineKm(current, { lat: o.lat!, lng: o.lng! });
-      if (d < bestDist) {
-        bestDist = d;
-        bestIdx = i;
-      }
-    }
-    const next = remaining.splice(bestIdx, 1)[0];
-    result.push(next);
-    current = { lat: next.lat!, lng: next.lng! };
-  }
-  // Pedidos sin coords al final
-  return [...result, ...orders.filter((o) => o.lat == null || o.lng == null)];
-};
 
 const ORDER_STORAGE_KEY = "milokira-pedidos-order";
 
@@ -137,48 +117,9 @@ export default function PedidosPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("todos");
-  const [sortMode, setSortMode] = useState<SortMode>("manual");
   const [vista, setVista] = useState<"cards" | "tabla">("cards");
-  const [geocoding, setGeocoding] = useState(false);
 
-  const ensureCoords = async () => {
-    const visibles = applyFilter(orders, filter).filter(
-      (o) => o.delivery_type === "delivery" && (o.lat == null || o.lng == null) && o.address,
-    );
-    if (visibles.length === 0) return;
-    setGeocoding(true);
-    try {
-      for (const o of visibles) {
-        try {
-          const res = await fetch(`/api/geocode?q=${encodeURIComponent(o.address!)}`);
-          if (!res.ok) continue;
-          const data = await res.json();
-          if (data.found && typeof data.lat === "number" && typeof data.lng === "number") {
-            await updateDoc(doc(db, "Transacciones", o.idFirebase), {
-              lat: data.lat,
-              lng: data.lng,
-            });
-            setOrders((prev) =>
-              prev.map((p) =>
-                p.idFirebase === o.idFirebase ? { ...p, lat: data.lat, lng: data.lng } : p,
-              ),
-            );
-          }
-          // Nominatim pide max 1 req/seg
-          await new Promise((r) => setTimeout(r, 1100));
-        } catch (err) {
-          console.warn("Geocoding falló para", o.idFirebase, err);
-        }
-      }
-    } finally {
-      setGeocoding(false);
-    }
-  };
 
-  const handleSortByCercania = async () => {
-    await ensureCoords();
-    setSortMode("cercania");
-  };
 
   const buildRouteUrl = (orders: Order[]) => {
     const stops = orders
@@ -249,7 +190,12 @@ export default function PedidosPage() {
 
   const moveOrder = (idFirebase: string, direction: -1 | 1) => {
     setOrders((prev) => {
-      const visible = applyFilter(prev, filter);
+      // Debe verse igual que la lista en pantalla: si no se aplica el mismo
+      // empuje de atrasados, los índices no calzan y la flecha mueve otro.
+      const visible =
+        filter === "atrasados"
+          ? applyFilter(prev, filter)
+          : empujarAtrasadosAlFinal(applyFilter(prev, filter));
       const idx = visible.findIndex((o) => o.idFirebase === idFirebase);
       if (idx === -1) return prev;
       const swapWith = idx + direction;
@@ -338,21 +284,19 @@ export default function PedidosPage() {
   };
 
   const filteredOrders = applyFilter(orders, filter);
+  // El orden es el que define el usuario con las flechas de cada pedido.
   let visibleOrders = filteredOrders;
-  if (sortMode === "sector") {
-    visibleOrders = [...filteredOrders].sort((a, b) =>
-      (a.sector || "zzz").localeCompare(b.sector || "zzz"),
-    );
-  } else if (sortMode === "cercania") {
-    visibleOrders = nearestNeighborOrder(filteredOrders, {
-      lat: HOME_LAT,
-      lng: HOME_LNG,
-    });
+  // Los muy atrasados van siempre al final, sin importar cómo se ordenó antes:
+  // así no se cuelan en medio de la ruta del día. Entre ellos, el más viejo
+  // primero. Se omite en el filtro "atrasados", donde son la lista completa.
+  if (filter !== "atrasados") {
+    visibleOrders = empujarAtrasadosAlFinal(visibleOrders);
   }
 
   const counts = {
     todos: orders.length,
     retiro: orders.filter((o) => o.delivery_type === "retiro").length,
+    atrasados: orders.filter((o) => estaMuyAtrasado(o)).length,
   };
 
   // Días con al menos un pedido, ordenados de lunes a domingo
@@ -457,58 +401,6 @@ export default function PedidosPage() {
           </button>
         </div>
 
-        {/* Orden */}
-        <div>
-          <h2 className="text-[10px] sm:text-xs font-bold text-stone-500 uppercase tracking-widest mb-3 px-1">
-            Ordenar por
-          </h2>
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={() => setSortMode("manual")}
-              className={`p-3 rounded-xl border text-left transition-all active:scale-[0.98] flex items-center gap-2 ${
-                sortMode === "manual"
-                  ? "bg-amber-50 border-amber-400 text-amber-700 shadow-md shadow-amber-200"
-                  : "bg-white border-stone-200 text-stone-500 hover:border-amber-300 hover:text-amber-600"
-              }`}
-            >
-              <ChevronUp size={14} className="shrink-0" />
-              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider truncate">
-                Manual
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSortMode("sector")}
-              className={`p-3 rounded-xl border text-left transition-all active:scale-[0.98] flex items-center gap-2 ${
-                sortMode === "sector"
-                  ? "bg-milokira-verde/10 border-milokira-verde text-milokira-verde shadow-md shadow-milokira-verde/20"
-                  : "bg-white border-stone-200 text-stone-500 hover:border-milokira-verde/50 hover:text-milokira-verde"
-              }`}
-            >
-              <Layers size={14} className="shrink-0" />
-              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider truncate">
-                Sector
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={handleSortByCercania}
-              disabled={geocoding}
-              className={`p-3 rounded-xl border text-left transition-all active:scale-[0.98] flex items-center gap-2 disabled:opacity-50 ${
-                sortMode === "cercania"
-                  ? "bg-milokira-lila/20 border-milokira-lila text-stone-700 shadow-md shadow-milokira-lila/40"
-                  : "bg-white border-stone-200 text-stone-500 hover:border-milokira-lila hover:text-stone-700"
-              }`}
-            >
-              <MapIcon size={14} className="shrink-0" />
-              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider truncate">
-                {geocoding ? "Calculando…" : "Cercanía"}
-              </span>
-            </button>
-          </div>
-        </div>
-
         {/* Filtros */}
         <div>
           <h2 className="text-[10px] sm:text-xs font-bold text-stone-500 uppercase tracking-widest mb-3 px-1">
@@ -529,6 +421,15 @@ export default function PedidosPage() {
               onClick={() => setFilter("retiro")}
               color="emerald"
             />
+            {counts.atrasados > 0 && (
+              <FilterChip
+                label="Muy atrasados"
+                count={counts.atrasados}
+                active={filter === "atrasados"}
+                onClick={() => setFilter("atrasados")}
+                color="rose"
+              />
+            )}
             {diasConPedidos.map((dia) => (
               <FilterChip
                 key={dia}
@@ -649,7 +550,7 @@ export default function PedidosPage() {
                   <table className="w-full text-xs sm:text-sm">
                     <thead className="bg-milokira-crema/60">
                       <tr className="text-[9px] sm:text-[10px] font-black text-stone-500 uppercase tracking-wider">
-                        {sortMode === "manual" && (
+                        {(
                           <th className="px-1 py-2 text-center w-10">Orden</th>
                         )}
                         <th className="px-2 sm:px-3 py-2 text-center w-8">#</th>
@@ -674,11 +575,11 @@ export default function PedidosPage() {
                     <tbody className="divide-y divide-stone-200">
                       {visibleOrders.map((order, idx) => {
                         const isExpanded = expanded === order.idFirebase;
-                        const colSpan = sortMode === "manual" ? 10 : 9;
+                        const colSpan = 10;
                         return (
                           <Fragment key={order.idFirebase}>
                             <tr className="hover:bg-milokira-crema/30 transition-colors">
-                              {sortMode === "manual" && (
+                              {(
                                 <td className="px-1 py-2">
                                   <div className="flex flex-col items-center gap-0.5">
                                     <button
@@ -927,8 +828,28 @@ export default function PedidosPage() {
   );
 }
 
+/**
+ * Mueve los pedidos muy atrasados al final, conservando el orden que traían
+ * los demás (el de la ruta, el sector o el manual). Entre los atrasados deja
+ * primero al que lleva más tiempo esperando.
+ */
+export function empujarAtrasadosAlFinal(orders: Order[]): Order[] {
+  const alDia: Order[] = [];
+  const atrasados: Order[] = [];
+  for (const o of orders) {
+    (estaMuyAtrasado(o) ? atrasados : alDia).push(o);
+  }
+  if (atrasados.length === 0) return orders;
+  atrasados.sort(
+    (a, b) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+  );
+  return [...alDia, ...atrasados];
+}
+
 function applyFilter(orders: Order[], filter: Filter): Order[] {
   if (filter === "todos") return orders;
+  if (filter === "atrasados") return orders.filter((o) => estaMuyAtrasado(o));
   if (filter === "retiro") return orders.filter((o) => o.delivery_type === "retiro");
   return orders.filter((o) => o.delivery_day === filter);
 }
@@ -944,7 +865,7 @@ function FilterChip({
   readonly count: number;
   readonly active: boolean;
   readonly onClick: () => void;
-  readonly color: "amber" | "indigo" | "emerald";
+  readonly color: "amber" | "indigo" | "emerald" | "rose";
 }) {
   const colorMap = {
     amber: active
@@ -956,6 +877,9 @@ function FilterChip({
     emerald: active
       ? "bg-milokira-verde/10 border-milokira-verde text-milokira-verde shadow-md shadow-milokira-verde/20"
       : "bg-white border-stone-200 text-stone-500 hover:border-milokira-verde/50 hover:text-milokira-verde",
+    rose: active
+      ? "bg-rose-50 border-rose-400 text-rose-700 shadow-md shadow-rose-200"
+      : "bg-white border-rose-200 text-rose-500 hover:border-rose-400 hover:text-rose-700",
   };
 
   return (
@@ -1004,6 +928,13 @@ function OrderCard({
   const [adminNoteDraft, setAdminNoteDraft] = useState(order.admin_notes || "");
 
   const isDelivery = order.delivery_type === "delivery";
+  // Mismo reparto que usa la card del panel, sin el filtro de estado/fecha:
+  // acá los pedidos son pendientes y también necesitan ver su desglose.
+  const totalCompanero =
+    repartirPedido(order as Parameters<typeof repartirPedido>[0])?.total ?? 0;
+
+  const diasEsperando = diasDesde(order.created_at);
+  const muyAtrasado = estaMuyAtrasado(order);
 
   const mapsUrl = order.address
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address)}`
@@ -1018,10 +949,20 @@ function OrderCard({
   const telUrl = cleanPhone ? `tel:${cleanPhone}` : null;
 
   return (
-    <li className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+    <li
+      className={`border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow ${
+        muyAtrasado ? "bg-rose-50 border-rose-300" : "bg-white border-stone-200"
+      }`}
+    >
       <div className="flex">
         {/* Columna de orden */}
-        <div className="flex flex-col items-center justify-center px-2 sm:px-3 py-3 border-r border-stone-100 bg-milokira-crema/40 shrink-0 gap-1">
+        <div
+          className={`flex flex-col items-center justify-center px-2 sm:px-3 py-3 border-r shrink-0 gap-1 ${
+            muyAtrasado
+              ? "border-rose-200 bg-rose-100/50"
+              : "border-stone-100 bg-milokira-crema/40"
+          }`}
+        >
           <button
             onClick={onMoveUp}
             disabled={isFirst}
@@ -1047,7 +988,11 @@ function OrderCard({
         <button
           type="button"
           onClick={onToggleExpand}
-          className="flex-1 p-3 sm:p-4 text-left hover:bg-milokira-crema/40 transition-colors min-w-0"
+          className={`flex-1 p-3 sm:p-4 text-left transition-colors min-w-0 ${
+            muyAtrasado
+              ? "hover:bg-rose-100/60"
+              : "hover:bg-milokira-crema/40"
+          }`}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
@@ -1064,6 +1009,14 @@ function OrderCard({
                 >
                   {isDelivery ? "Delivery" : "Retiro"}
                 </span>
+                {muyAtrasado && (
+                  <span
+                    className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-rose-100 text-rose-700 border border-rose-300 shrink-0"
+                    title={`Pendiente hace ${diasEsperando} días`}
+                  >
+                    ⏰ {diasEsperando} días
+                  </span>
+                )}
                 {order.delivery_day && (
                   <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-stone-100 text-stone-600 border border-stone-200 shrink-0">
                     {order.delivery_day}
@@ -1111,7 +1064,13 @@ function OrderCard({
       </div>
 
       {/* Acciones rápidas */}
-      <div className="px-3 sm:px-4 py-2 border-t border-stone-100 bg-milokira-crema/30 flex flex-wrap gap-2">
+      <div
+        className={`px-3 sm:px-4 py-2 border-t flex flex-wrap gap-2 ${
+          muyAtrasado
+            ? "border-rose-200 bg-rose-100/40"
+            : "border-stone-100 bg-milokira-crema/30"
+        }`}
+      >
         {mapsUrl && (
           <a
             href={mapsUrl}
@@ -1177,7 +1136,13 @@ function OrderCard({
       </div>
 
       {expanded && (
-        <div className="bg-milokira-crema/50 px-4 py-3 border-t border-stone-200">
+        <div
+          className={`px-4 py-3 border-t ${
+            muyAtrasado
+              ? "bg-rose-100/40 border-rose-200"
+              : "bg-milokira-crema/50 border-stone-200"
+          }`}
+        >
           <ul className="space-y-1.5">
             {order.items?.map((item) => (
               <li
@@ -1189,9 +1154,16 @@ function OrderCard({
                   {item.quantity > 1 && (
                     <span className="text-stone-500 text-[10px]"> (x{item.quantity})</span>
                   )}
+                  {item.es_de_companero && (
+                    <span className="ml-1 text-[9px] font-black uppercase tracking-wider text-purple-700 bg-purple-100 border border-purple-200 px-1 py-0.5 rounded">
+                      Compañero
+                    </span>
+                  )}
                 </span>
                 {item.unit_price > 0 && (
-                  <span className="shrink-0 font-mono text-stone-600">
+                  <span
+                    className={`shrink-0 font-mono ${item.es_de_companero ? "text-purple-700" : "text-stone-600"}`}
+                  >
                     ${(item.unit_price * item.quantity).toLocaleString("es-CL")}
                   </span>
                 )}
@@ -1199,9 +1171,22 @@ function OrderCard({
             ))}
           </ul>
           {isDelivery && order.delivery_fee != null && order.delivery_fee > 0 && (
-            <div className="flex justify-between text-xs sm:text-sm text-milokira-lila mt-2 pt-2 border-t border-stone-300/60">
-              <span>Delivery</span>
+            <div className="flex justify-between text-xs sm:text-sm text-purple-700 mt-2 pt-2 border-t border-stone-300/60">
+              <span>
+                Delivery
+                <span className="ml-1 text-[9px] font-black uppercase tracking-wider text-purple-700 bg-purple-100 border border-purple-200 px-1 py-0.5 rounded">
+                  Compañero
+                </span>
+              </span>
               <span>${order.delivery_fee.toLocaleString("es-CL")}</span>
+            </div>
+          )}
+          {/* Cuánto de este pedido le toca al compañero. El total no cambia:
+              el cliente paga todo junto. */}
+          {totalCompanero > 0 && (
+            <div className="flex justify-between text-xs sm:text-sm text-purple-700 font-bold mt-2 pt-2 border-t border-stone-300/60">
+              <span>Cobra el compañero</span>
+              <span>${totalCompanero.toLocaleString("es-CL")}</span>
             </div>
           )}
 
