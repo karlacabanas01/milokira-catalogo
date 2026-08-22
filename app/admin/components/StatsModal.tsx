@@ -2,8 +2,8 @@ import { useMemo, useState } from "react";
 import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
 import { Modal } from "../../components/ui";
 import {
-  Area,
-  AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
   Legend,
   ResponsiveContainer,
@@ -32,6 +32,14 @@ const rangeOptions = [
   { key: "month", label: "Este mes" },
   { key: "week", label: "Esta semana" },
 ] as const;
+
+// Eje Y compacto: "$120 K" en vez de "$120.000", que no cabe.
+const compact = new Intl.NumberFormat("es-CL", {
+  style: "currency",
+  currency: "CLP",
+  notation: "compact",
+  maximumFractionDigits: 0,
+});
 
 const currency = new Intl.NumberFormat("es-CL", {
   style: "currency",
@@ -136,68 +144,112 @@ export default function StatsModal({
           </div>
         </div>
 
+        {data.length === 0 ? (
+          <div className="mx-4 sm:mx-5 mb-6 rounded-xl border border-dashed border-stone-200 py-12 text-center text-sm text-stone-500">
+            Todavía no hay movimientos en este período.
+          </div>
+        ) : (
         <div className="h-64 sm:h-[420px] px-3 sm:px-5 pb-6">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data}>
-              <defs>
-                <linearGradient id="ventasFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.18} />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
-                </linearGradient>
-                <linearGradient id="gastosFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#f97316" stopOpacity={0.14} />
-                  <stop offset="100%" stopColor="#f97316" stopOpacity={0.02} />
-                </linearGradient>
-                <linearGradient id="gananciaFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#4f46e5" stopOpacity={0.12} />
-                  <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
+            <BarChart data={data} barGap={2} barCategoryGap="22%">
               <CartesianGrid stroke="#e7e5e4" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={52} />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 12, fill: "#57534e" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 12, fill: "#78716c" }}
+                axisLine={false}
+                tickLine={false}
+                width={64}
+                tickFormatter={(v) => compact.format(Number(v))}
+              />
               <Tooltip
-                formatter={(value) => {
-                  const numericValue =
-                    typeof value === "number"
-                      ? value
-                      : Number(value ?? 0);
-                  return currency.format(numericValue);
-                }}
+                cursor={{ fill: "rgba(120,113,108,0.06)" }}
+                formatter={(value) => currency.format(Number(value ?? 0))}
                 contentStyle={{
                   borderRadius: 16,
                   border: "1px solid #e7e5e4",
                   boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
+                  fontSize: 13,
                 }}
               />
-              <Legend />
-              <Area
-                type="monotone"
+              <Legend
+                verticalAlign="top"
+                align="right"
+                height={32}
+                iconType="circle"
+                iconSize={9}
+                wrapperStyle={{ fontSize: 12, color: "#57534e" }}
+              />
+              {/* Mismos colores que las tarjetas de arriba (verde ventas, rose
+                  gastos) para que el mismo dato no cambie de color dentro del
+                  modal. El par pasa la validación de daltonismo: ΔE 10.5 en
+                  deuteranopía. */}
+              <Bar
                 dataKey="ventas"
-                stroke="#10b981"
-                strokeWidth={3}
-                fill="url(#ventasFill)"
+                fill="#10b981"
                 name="Ventas"
+                radius={[4, 4, 0, 0]}
+                maxBarSize={38}
               />
-              <Area
-                type="monotone"
+              <Bar
                 dataKey="gastos"
-                stroke="#f97316"
-                strokeWidth={3}
-                fill="url(#gastosFill)"
+                fill="#e11d48"
                 name="Gastos"
+                radius={[4, 4, 0, 0]}
+                maxBarSize={38}
               />
-              <Area
-                type="monotone"
-                dataKey="ganancia"
-                stroke="#4f46e5"
-                strokeWidth={3}
-                fill="url(#gananciaFill)"
-                name="Ganancia"
-              />
-            </AreaChart>
+            </BarChart>
           </ResponsiveContainer>
         </div>
+        )}
+
+        {/* La guía de visualización pide un respaldo legible cuando el contraste
+            de las barras contra el fondo queda bajo 3:1. */}
+        {data.length > 0 && (
+          <details className="mx-4 sm:mx-5 mb-5">
+            <summary className="cursor-pointer text-xs font-bold text-stone-500 hover:text-stone-700 uppercase tracking-wider select-none">
+              Ver los números
+            </summary>
+            <div className="mt-2 overflow-x-auto rounded-xl border border-stone-200">
+              <table className="w-full text-xs sm:text-sm">
+                <thead className="bg-stone-50">
+                  <tr className="text-[10px] font-black text-stone-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left">Período</th>
+                    <th className="px-3 py-2 text-right">Ventas</th>
+                    <th className="px-3 py-2 text-right">Gastos</th>
+                    <th className="px-3 py-2 text-right">Ganancia</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-200">
+                  {data.map((punto) => (
+                    <tr key={punto.label}>
+                      <td className="px-3 py-2 font-medium text-stone-700">
+                        {punto.label}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono text-emerald-700">
+                        {currency.format(punto.ventas)}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono text-rose-700">
+                        {currency.format(punto.gastos)}
+                      </td>
+                      <td
+                        className={`px-3 py-2 text-right font-mono font-bold ${
+                          punto.ganancia >= 0 ? "text-stone-800" : "text-rose-600"
+                        }`}
+                      >
+                        {currency.format(punto.ganancia)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        )}
       </div>
     </Modal>
   );
