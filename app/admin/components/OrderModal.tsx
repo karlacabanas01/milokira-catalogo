@@ -39,6 +39,10 @@ type Planta = {
   };
 };
 
+/** Rubro del ítem dentro de lo que aporta el compañero. Separa las macetas
+    del resto para poder cuadrar cada parte por separado. */
+type RubroCompanero = "maceta" | "otro";
+
 type CartItem = {
   id: string;
   name: string;
@@ -47,6 +51,8 @@ type CartItem = {
   /** El monto de este ítem es del compañero de ventas, no ingreso del vivero.
       El cliente igual lo paga dentro del total; solo cambia a quién le toca. */
   esDeCompanero?: boolean;
+  /** Solo aplica si `esDeCompanero`. */
+  rubroCompanero?: RubroCompanero;
 };
 
 type DeliveryType = "delivery" | "retiro";
@@ -75,6 +81,7 @@ type EditingOrderType = {
     quantity: number;
     unit_price: number;
     es_de_companero?: boolean;
+    rubro_companero?: string;
   }[];
 };
 
@@ -169,6 +176,14 @@ export default function OrderModal({
         price: item.unit_price,
         quantity: item.quantity,
         esDeCompanero: item.es_de_companero ?? false,
+        // Sin rubro guardado queda undefined: la vista lo muestra como "Otro"
+        // pero no lo escribe, para no clasificar a ciegas un pedido viejo.
+        rubroCompanero:
+          item.rubro_companero === "maceta"
+            ? "maceta"
+            : item.rubro_companero === "otro"
+              ? "otro"
+              : undefined,
       }));
       setCart(loadedCart);
     } else if (isOpen) {
@@ -221,9 +236,20 @@ export default function OrderModal({
     setCart((prev) =>
       prev.map((item) =>
         item.id === id
-          ? { ...item, esDeCompanero: !item.esDeCompanero }
+          ? {
+              ...item,
+              esDeCompanero: !item.esDeCompanero,
+              // El rubro se elige a mano; hasta entonces queda sin clasificar.
+              rubroCompanero: item.rubroCompanero,
+            }
           : item,
       ),
+    );
+  };
+
+  const setRubroCompanero = (id: string, rubro: RubroCompanero) => {
+    setCart((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, rubroCompanero: rubro } : item)),
     );
   };
 
@@ -266,6 +292,11 @@ export default function OrderModal({
         quantity: item.quantity,
         unit_price: item.price,
         es_de_companero: item.esDeCompanero ?? false,
+        // Solo tiene sentido si el ítem es suyo. Si nunca se eligió rubro
+        // queda null: es "sin clasificar", distinto de un "otro" explícito.
+        rubro_companero: item.esDeCompanero
+          ? (item.rubroCompanero ?? null)
+          : null,
       }));
 
       const deliveryData = {
@@ -479,6 +510,39 @@ export default function OrderModal({
                         Cobra el compañero
                       </span>
                     </label>
+
+                    {/* Rubro: separa las macetas del resto de lo suyo para
+                        poder cuadrar cada parte por separado. */}
+                    {item.esDeCompanero && (
+                      <div className="mt-2 flex gap-1 bg-stone-100 rounded-lg p-0.5 border border-stone-200">
+                        {(
+                          [
+                            { valor: "maceta", texto: "Maceta" },
+                            { valor: "otro", texto: "Otro" },
+                          ] as const
+                        ).map((opcion) => {
+                          const activo =
+                            (item.rubroCompanero ?? "otro") === opcion.valor;
+                          return (
+                            <button
+                              key={opcion.valor}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRubroCompanero(item.id, opcion.valor);
+                              }}
+                              className={`flex-1 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${
+                                activo
+                                  ? "bg-white text-purple-700 shadow-sm"
+                                  : "text-stone-500 hover:text-stone-700"
+                              }`}
+                            >
+                              {opcion.texto}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

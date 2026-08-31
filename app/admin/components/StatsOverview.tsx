@@ -12,7 +12,8 @@ type Financials = {
   incomeWeek: number;
   expenses: number;
   profit: number;
-  /** Parte de las ventas que le corresponde a Robin: delivery + ítems marcados. */
+  /** Saldo pendiente con Robin: lo que le toca menos lo que ya se le pagó.
+   *  Negativo significa que se le pagó de más. */
   incomeRobin: number;
 };
 
@@ -161,9 +162,9 @@ export default function StatsOverview({
       />
 
       <StatCard
-        label="Total Robin"
+        label={financials.incomeRobin < 0 ? "Robin me debe" : "Le debo a Robin"}
         sublabel="desde 21-08"
-        value={financials.incomeRobin}
+        value={Math.abs(financials.incomeRobin)}
         onClick={onRobinClick}
         variant="robin"
         icon={HandCoins}

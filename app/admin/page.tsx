@@ -36,7 +36,12 @@ import ExpenseModal from "./components/ExpenseModal";
 import SaleModal from "./components/SaleModal";
 import SaleListModal from "./components/SaleListModal";
 import RobinListModal from "./components/RobinListModal";
-import { ROBIN_DESDE, calcularAporteRobin } from "./robinHelpers";
+import RobinPagoModal from "./components/RobinPagoModal";
+import {
+  ROBIN_DESDE,
+  calcularAporteRobin,
+  calcularSaldoRobin,
+} from "./robinHelpers";
 import ExpenseListModal from "./components/ExpenseListModal";
 import OrderModal from "./components/OrderModal";
 import ProductListModal from "./components/ProductListModal";
@@ -101,6 +106,9 @@ export default function AdminPage() {
 
   const [isSaleListOpen, setIsSaleListOpen] = useState(false);
   const [isRobinListOpen, setIsRobinListOpen] = useState(false);
+  const [isRobinPagoOpen, setIsRobinPagoOpen] = useState(false);
+  /** Saldo que el modal de pago ofrece como atajo "saldar todo". */
+  const [robinSaldoPendiente, setRobinSaldoPendiente] = useState(0);
   const [isExpenseListOpen, setIsExpenseListOpen] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
@@ -116,9 +124,10 @@ export default function AdminPage() {
       setLoading(true);
 
       try {
-        const [txSnap, gastosSnap] = await Promise.all([
+        const [txSnap, gastosSnap, pagosRobinSnap] = await Promise.all([
           getDocs(collection(db, "Transacciones")),
           getDocs(collection(db, "Gastos")),
+          getDocs(collection(db, "PagosRobin")),
         ]);
 
         if (isCancelled) return;
@@ -350,12 +359,18 @@ export default function AdminPage() {
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
         );
 
+        // Lo que queda por pagarle: su parte menos los abonos ya entregados.
+        const saldoRobin = calcularSaldoRobin(
+          totalRobin,
+          pagosRobinSnap.docs.map((d) => d.data()),
+        );
+
         setFinancials({
           income: totalIncome,
           incomeWeek: weekIncome,
           expenses: totalExpenses,
           profit: totalIncome - totalExpenses,
-          incomeRobin: totalRobin,
+          incomeRobin: saldoRobin.saldo,
         });
         setStatsSeries({
           allTime: buildMonthlySeries(),
@@ -801,6 +816,38 @@ export default function AdminPage() {
           isOpen={isRobinListOpen}
           onClose={() => setIsRobinListOpen(false)}
           desde={ROBIN_DESDE}
+          recargar={refreshKey}
+          onCambio={refreshData}
+          onPagar={(saldo) => {
+            setRobinSaldoPendiente(saldo);
+            setIsRobinPagoOpen(true);
+          }}
+        />
+      )}
+
+      {isRobinPagoOpen && (
+        <RobinPagoModal
+          isOpen={isRobinPagoOpen}
+          onClose={() => setIsRobinPagoOpen(false)}
+          saldoPendiente={robinSaldoPendiente}
+          onSave={async (data) => {
+            setIsSaving(true);
+            try {
+              // Colección aparte: no es un gasto del negocio, es plata que ya
+              // estaba contada como de Robin y solo cambia de manos.
+              await setDoc(doc(collection(db, "PagosRobin")), {
+                ...data,
+                created_at: new Date().toISOString(),
+              });
+              setIsRobinPagoOpen(false);
+              refreshData();
+            } catch (error) {
+              console.error(error);
+            } finally {
+              setIsSaving(false);
+            }
+          }}
+          isSaving={isSaving}
         />
       )}
 
