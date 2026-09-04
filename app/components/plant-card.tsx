@@ -14,6 +14,11 @@ import {
   Flame,
 } from "lucide-react";
 import { MdOutlinePets } from "react-icons/md";
+import {
+  trackLeerDescripcion,
+  trackAgregarCarrito,
+  trackConsultaPlanta,
+} from "../lib/analytics";
 import { useCart } from "../context/CartContext";
 
 interface Precio {
@@ -84,6 +89,7 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
       imagenPosition,
       imagenZoom,
     });
+    trackAgregarCarrito(nombre, precio.valor);
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1200);
   };
@@ -93,6 +99,7 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
     const numeroWhatsApp = "56994955949";
     const mensaje = `¡Hola! 🌿 Estaba viendo el catálogo de Milokira y me interesa mucho la planta *${nombre}*. ¿Aún la tienen disponible?`;
     const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
+    trackConsultaPlanta(nombre);
     window.open(urlWhatsApp, "_blank");
   };
 
@@ -231,7 +238,11 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
 
         <button
           type="button"
-          onClick={() => setIsExpanded((v) => !v)}
+          onClick={() => {
+            // Solo cuenta abrir: cerrar la card no es interés nuevo.
+            if (!isExpanded) trackLeerDescripcion(nombre);
+            setIsExpanded((v) => !v);
+          }}
           className="sm:hidden self-start mb-2 flex items-center gap-0.5 text-[11px] font-bold text-milokira-lila hover:text-milokira-verde transition-colors uppercase tracking-wider"
         >
           {isExpanded ? (

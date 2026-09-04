@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ShoppingBag, X, Plus, Minus, Trash2, Send } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import { trackConsultaCarrito } from "../lib/analytics";
 
 const WHATSAPP_NUMBER = "56994955949";
 
@@ -30,6 +31,7 @@ export default function CartDrawer() {
       "¿Tienen disponibilidad?",
     ].join("\n");
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(mensaje)}`;
+    trackConsultaCarrito(totalItems, totalPrice);
     window.open(url, "_blank");
   };
 

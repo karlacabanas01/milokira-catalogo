@@ -8,6 +8,7 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { db } from "../firebaseConfig";
+import { trackPedidoEnviado } from "../lib/analytics";
 import {
   Leaf,
   User,
@@ -226,6 +227,7 @@ export default function PedidoPublicoPage() {
       };
 
       await setDoc(ref, data);
+      trackPedidoEnviado(plantasSeleccionadas.length);
 
       const resumen = [
         `¡Hola Milokira! Acabo de hacer un pedido por la página.`,

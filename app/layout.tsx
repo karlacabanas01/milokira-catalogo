@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Geist, Geist_Mono, Quicksand, Fredoka } from "next/font/google";
 import "./globals.css";
 
@@ -42,11 +43,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es-CL">
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${quicksand.variable} ${fredoka.variable} antialiased`}
       >
         {children}
+        <Analytics />
       </body>
     </html>
   );
