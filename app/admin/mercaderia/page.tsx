@@ -321,6 +321,9 @@ export default function MercaderiaPage() {
 
       {detalleCompra && (
         <DetalleCompraModal
+          // Sin key, pasar de una compra a otra sin cerrar el modal reusa la
+          // instancia y `itemsEdit` conserva los precios de la compra anterior.
+          key={detalleCompra.idFirebase}
           compra={detalleCompra}
           onClose={() => setDetalleCompra(null)}
           onChange={() => {

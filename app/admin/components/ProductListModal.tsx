@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   collection,
   getDocs,
+  getDoc,
   doc,
   updateDoc,
   setDoc,
@@ -114,6 +115,44 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
   useEffect(() => {
     if (isOpen) fetchProducts();
   }, [isOpen]);
+
+  /**
+   * Abre el editor con el documento recién leído de Firestore.
+   *
+   * La lista se carga una sola vez al abrir el inventario, así que su copia
+   * queda vieja apenas otra pantalla toca la planta — típicamente el ingreso
+   * de mercadería, que actualiza precio y costo. Editando sobre esa copia, al
+   * guardar se reescribía el precio anterior encima del nuevo.
+   */
+  const abrirEditor = async (product: Product) => {
+    try {
+      const snap = await getDoc(doc(db, "Plantas", product.idFirebase));
+      if (snap.exists()) {
+        const data = snap.data();
+        setEditingProduct({
+          ...product,
+          name: data.nombre || product.name,
+          price: Number(data.precio?.valor) || 0,
+          stock: Number(data.stock) || 0,
+          cost: Number(data.costo) || 0,
+          margin: Number(data.margen) || 0,
+          costoOriginalTotal: Number(data.costoOriginalTotal) || 0,
+          unidadesCompradas: Number(data.unidadesCompradas) || 1,
+          precioCompraUnitaria: Number(data.precioCompraUnitaria) || 0,
+          ivaCompra:
+            data.ivaCompra === undefined ? 19 : Number(data.ivaCompra),
+          plantasPorMaceta: Number(data.plantasPorMaceta) || 1,
+        });
+      } else {
+        setEditingProduct(product);
+      }
+    } catch (error) {
+      // Si la relectura falla se edita con lo que hay: mejor que no abrir.
+      console.error("No se pudo releer la planta:", error);
+      setEditingProduct(product);
+    }
+    setIsProductModalOpen(true);
+  };
 
   const handleStockChange = async (
     idFirebase: string,
@@ -362,10 +401,7 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
                         <td className="px-2 py-2">
                           <div className="flex items-center justify-end gap-0.5">
                             <button
-                              onClick={() => {
-                                setEditingProduct(product);
-                                setIsProductModalOpen(true);
-                              }}
+                              onClick={() => abrirEditor(product)}
                               className="text-stone-500 hover:text-indigo-700 p-1.5 rounded hover:bg-indigo-50 transition-colors"
                               title="Editar"
                             >
@@ -448,10 +484,7 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
                 {/* Botones de Acción */}
                 <div className="flex flex-col border-l border-stone-200 pl-2 sm:pl-3 shrink-0">
                   <button
-                    onClick={() => {
-                      setEditingProduct(product);
-                      setIsProductModalOpen(true);
-                    }}
+                    onClick={() => abrirEditor(product)}
                     className="text-stone-500 hover:text-indigo-400 p-1 sm:p-1.5 transition-colors"
                     title="Editar producto"
                   >
