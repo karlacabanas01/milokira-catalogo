@@ -13,7 +13,7 @@ type OrderItem = {
 export type TicketOrder = {
   customer_name: string;
   total_amount: number;
-  delivery_type?: "delivery" | "retiro";
+  delivery_type?: "delivery" | "retiro" | "envio";
   delivery_fee?: number;
   delivery_day?: string;
   sector?: string;
@@ -79,7 +79,12 @@ export function renderTicket(order: TicketOrder): string {
     size: 32,
     align: "left",
   });
-  const tipo = order.delivery_type === "delivery" ? "DELIVERY" : "RETIRO";
+  const tipo =
+    order.delivery_type === "delivery"
+      ? "DELIVERY"
+      : order.delivery_type === "envio"
+        ? "ENVÍO"
+        : "RETIRO";
   const extras = [
     tipo,
     order.delivery_day ? order.delivery_day.toUpperCase() : null,

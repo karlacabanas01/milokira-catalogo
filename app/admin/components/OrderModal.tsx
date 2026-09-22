@@ -17,6 +17,9 @@ import {
   CalendarDays,
   Search,
   Leaf,
+  Package,
+  IdCard,
+  Mail,
 } from "lucide-react";
 import { Modal, useNoWheelScroll } from "../../components/ui";
 import {
@@ -27,6 +30,15 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
+import {
+  COURIERS,
+  REGIONES,
+  comunasDe,
+  formatearRut,
+  validarEmail,
+  validarRut,
+  type Courier,
+} from "../envios/helpers";
 
 type Planta = {
   idFirebase: string;
@@ -55,7 +67,7 @@ type CartItem = {
   rubroCompanero?: RubroCompanero;
 };
 
-type DeliveryType = "delivery" | "retiro";
+type DeliveryType = "delivery" | "retiro" | "envio";
 
 const SECTORES = [
   "Norte Oriente (Bicentenario, Las Rastras)",
@@ -75,6 +87,12 @@ type EditingOrderType = {
   notes?: string;
   delivery_day?: string;
   sector?: string;
+  /* Envío a regiones: datos del destinatario para la etiqueta del courier. */
+  envio_rut?: string;
+  envio_email?: string;
+  envio_comuna?: string;
+  envio_region?: string;
+  envio_courier?: string;
   items: {
     product_id?: string;
     nombre?: string;
@@ -115,6 +133,13 @@ export default function OrderModal({
   const [sectorOtro, setSectorOtro] = useState("");
   const [manualTotal, setManualTotal] = useState("");
 
+  // Envío a regiones
+  const [envioRut, setEnvioRut] = useState("");
+  const [envioEmail, setEnvioEmail] = useState("");
+  const [envioComuna, setEnvioComuna] = useState("");
+  const [envioRegion, setEnvioRegion] = useState("");
+  const [envioCourier, setEnvioCourier] = useState<Courier | "">("");
+
   // Inventario
   const [plantas, setPlantas] = useState<Planta[]>([]);
   const [busqueda, setBusqueda] = useState("");
@@ -147,6 +172,12 @@ export default function OrderModal({
       setPhone(editingOrder.phone || "");
       setNotes(editingOrder.notes || "");
       setDeliveryDay(editingOrder.delivery_day || "");
+      setEnvioRut(editingOrder.envio_rut || "");
+      setEnvioEmail(editingOrder.envio_email || "");
+      setEnvioComuna(editingOrder.envio_comuna || "");
+      setEnvioRegion(editingOrder.envio_region || "");
+      setEnvioCourier((editingOrder.envio_courier as Courier) || "");
+
       const sectorGuardado = editingOrder.sector || "";
       if (sectorGuardado && !SECTORES.includes(sectorGuardado)) {
         setSector("Otro sector");
@@ -198,6 +229,11 @@ export default function OrderModal({
       setSector("");
       setSectorOtro("");
       setManualTotal("");
+      setEnvioRut("");
+      setEnvioEmail("");
+      setEnvioComuna("");
+      setEnvioRegion("");
+      setEnvioCourier("");
     }
     setItemName("");
     setItemPrice("");
@@ -284,6 +320,31 @@ export default function OrderModal({
       alert("Falta el cliente o las plantas del pedido");
       return;
     }
+
+    if (deliveryType === "envio") {
+      // La etiqueta del courier no sirve si le falta cualquiera de estos.
+      if (!validarRut(envioRut)) {
+        alert("El RUT no es válido. Revísalo antes de guardar el envío.");
+        return;
+      }
+      if (!phone.trim()) {
+        alert("Falta el teléfono para el envío");
+        return;
+      }
+      if (!address.trim() || !envioComuna.trim() || !envioRegion) {
+        alert("Falta la dirección, la comuna o la región del envío");
+        return;
+      }
+      if (!validarEmail(envioEmail)) {
+        alert("El correo electrónico no es válido");
+        return;
+      }
+      if (!envioCourier) {
+        alert("Elige el courier del envío");
+        return;
+      }
+    }
+
     setIsSaving(true);
 
     try {
@@ -299,10 +360,21 @@ export default function OrderModal({
           : null,
       }));
 
+      const esEnvio = deliveryType === "envio";
+
       const deliveryData = {
         delivery_type: deliveryType,
+        // El envío a regiones lo paga el cliente al recibir, así que nunca
+        // suma al total del pedido.
         delivery_fee: deliveryType === "delivery" ? deliveryFee : 0,
-        address: deliveryType === "delivery" ? address.trim() : "",
+        address:
+          deliveryType === "delivery" || esEnvio ? address.trim() : "",
+        // Datos del destinatario: solo viajan si el pedido es un envío.
+        envio_rut: esEnvio ? formatearRut(envioRut) : "",
+        envio_email: esEnvio ? envioEmail.trim() : "",
+        envio_comuna: esEnvio ? envioComuna.trim() : "",
+        envio_region: esEnvio ? envioRegion : "",
+        envio_courier: esEnvio ? envioCourier : "",
         phone: phone.trim(),
         notes: notes.trim(),
         delivery_day: deliveryType === "delivery" ? deliveryDay : "",
@@ -730,7 +802,7 @@ export default function OrderModal({
             <span className="text-[10px] sm:text-xs text-stone-500 font-bold uppercase tracking-widest ml-1 mb-1.5 block">
               Entrega
             </span>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setDeliveryType("retiro")}
@@ -754,6 +826,18 @@ export default function OrderModal({
               >
                 <Truck size={14} />
                 Delivery
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeliveryType("envio")}
+                className={`flex items-center justify-center gap-1.5 py-3 rounded-xl text-xs font-bold border transition-all ${
+                  deliveryType === "envio"
+                    ? "bg-sky-500/10 text-sky-700 border-sky-500/40 shadow-md shadow-sky-200"
+                    : "bg-stone-50 text-stone-500 border-stone-200 hover:border-stone-300"
+                }`}
+              >
+                <Package size={14} />
+                Envío
               </button>
             </div>
             {deliveryType === "delivery" && (
@@ -819,6 +903,124 @@ export default function OrderModal({
                     onChange={(e) => setAddress(e.target.value)}
                   />
                 </div>
+              </div>
+            )}
+
+            {deliveryType === "envio" && (
+              <div className="mt-2 space-y-2">
+                {/* RUT: el courier lo exige y se valida antes de guardar. */}
+                <div className="relative">
+                  <IdCard
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
+                    size={14}
+                  />
+                  <input
+                    placeholder="RUT del destinatario"
+                    className={`w-full pl-9 pr-3 py-2.5 bg-stone-50 border rounded-xl text-stone-700 outline-none focus:bg-white text-xs sm:text-sm placeholder:text-stone-400 ${
+                      envioRut && !validarRut(envioRut)
+                        ? "border-rose-300 focus:border-rose-400"
+                        : "border-stone-200 focus:border-sky-400"
+                    }`}
+                    value={envioRut}
+                    onChange={(e) => setEnvioRut(e.target.value)}
+                    onBlur={() =>
+                      validarRut(envioRut) && setEnvioRut(formatearRut(envioRut))
+                    }
+                  />
+                </div>
+                {envioRut && !validarRut(envioRut) && (
+                  <p className="text-[10px] font-bold text-rose-600 ml-1">
+                    RUT inválido — revisa el dígito verificador.
+                  </p>
+                )}
+
+                <div className="relative">
+                  <Mail
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"
+                    size={14}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Correo electrónico"
+                    className="w-full pl-9 pr-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-sky-400 text-xs sm:text-sm placeholder:text-stone-400"
+                    value={envioEmail}
+                    onChange={(e) => setEnvioEmail(e.target.value)}
+                  />
+                </div>
+
+                {/* Dirección en tres partes, como la pide el courier. */}
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-3 text-stone-400" size={14} />
+                  <textarea
+                    rows={2}
+                    placeholder="Dirección (calle, número, depto)"
+                    className="w-full pl-9 pr-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-sky-400 text-xs sm:text-sm placeholder:text-stone-400 resize-none"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                  />
+                </div>
+
+                {/* Región primero: acota la lista de comunas de abajo. */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <select
+                    value={envioRegion}
+                    onChange={(e) => {
+                      setEnvioRegion(e.target.value);
+                      // La comuna elegida ya no pertenece a la región nueva.
+                      setEnvioComuna("");
+                    }}
+                    className="w-full px-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-sky-400 text-base appearance-none"
+                  >
+                    <option value="">Región...</option>
+                    {REGIONES.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={envioComuna}
+                    onChange={(e) => setEnvioComuna(e.target.value)}
+                    disabled={!envioRegion}
+                    className="w-full px-3 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-sky-400 text-base appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">
+                      {envioRegion ? "Comuna..." : "Elige la región"}
+                    </option>
+                    {comunasDe(envioRegion).map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Courier */}
+                <div>
+                  <span className="text-[10px] text-stone-500 font-bold uppercase tracking-widest ml-1 mb-1.5 block">
+                    Courier
+                  </span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {COURIERS.map((c) => (
+                      <button
+                        key={c.valor}
+                        type="button"
+                        onClick={() => setEnvioCourier(c.valor)}
+                        className={`py-2.5 rounded-xl text-[11px] font-bold border transition-all ${
+                          envioCourier === c.valor
+                            ? "bg-sky-500/10 text-sky-700 border-sky-500/40 shadow-sm"
+                            : "bg-stone-50 text-stone-500 border-stone-200 hover:border-stone-300"
+                        }`}
+                      >
+                        {c.nombre}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-stone-500 ml-1">
+                  El envío lo paga el cliente al recibir: no suma al total.
+                </p>
               </div>
             )}
           </div>

@@ -75,7 +75,7 @@ type Order = {
   total_amount: number;
   status: string;
   created_at: string;
-  delivery_type?: "delivery" | "retiro";
+  delivery_type?: "delivery" | "retiro" | "envio";
   delivery_fee?: number;
   address?: string;
   phone?: string;
@@ -83,12 +83,17 @@ type Order = {
   admin_notes?: string;
   delivery_day?: DeliveryDay;
   sector?: string;
+  envio_rut?: string;
+  envio_email?: string;
+  envio_comuna?: string;
+  envio_region?: string;
+  envio_courier?: string;
   lat?: number;
   lng?: number;
   items: OrderItem[];
 };
 
-type Filter = string; // "todos" | "retiro" | "atrasados" | nombre de día
+type Filter = string; // "todos" | "retiro" | "envios" | "atrasados" | nombre de día
 
 // Un pedido pendiente con más de dos semanas se considera muy atrasado.
 const DIAS_PARA_ATRASO = 14;
@@ -296,6 +301,7 @@ export default function PedidosPage() {
   const counts = {
     todos: orders.length,
     retiro: orders.filter((o) => o.delivery_type === "retiro").length,
+    envios: orders.filter((o) => o.delivery_type === "envio").length,
     atrasados: orders.filter((o) => estaMuyAtrasado(o)).length,
   };
 
@@ -421,6 +427,15 @@ export default function PedidosPage() {
               onClick={() => setFilter("retiro")}
               color="emerald"
             />
+            {counts.envios > 0 && (
+              <FilterChip
+                label="Envíos"
+                count={counts.envios}
+                active={filter === "envios"}
+                onClick={() => setFilter("envios")}
+                color="sky"
+              />
+            )}
             {counts.atrasados > 0 && (
               <FilterChip
                 label="Muy atrasados"
@@ -659,6 +674,21 @@ export default function PedidosPage() {
                               </td>
                               <td className="px-2 py-2">
                                 <div className="flex items-center justify-end gap-0.5">
+                                  {order.delivery_type === "envio" && (
+                                    <button
+                                      onClick={() =>
+                                        window.open(
+                                          `/admin/pedidos/etiqueta?id=${order.idFirebase}`,
+                                          "_blank",
+                                        )
+                                      }
+                                      className="text-sky-600 hover:text-sky-800 p-1.5 rounded hover:bg-sky-50 transition-colors"
+                                      title="Etiqueta de envío"
+                                      aria-label="Etiqueta de envío"
+                                    >
+                                      <Package size={14} />
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => openTicketPage([order])}
                                     className="text-stone-500 hover:text-stone-800 p-1.5 rounded hover:bg-stone-100 transition-colors"
@@ -851,6 +881,7 @@ function applyFilter(orders: Order[], filter: Filter): Order[] {
   if (filter === "todos") return orders;
   if (filter === "atrasados") return orders.filter((o) => estaMuyAtrasado(o));
   if (filter === "retiro") return orders.filter((o) => o.delivery_type === "retiro");
+  if (filter === "envios") return orders.filter((o) => o.delivery_type === "envio");
   return orders.filter((o) => o.delivery_day === filter);
 }
 
@@ -865,7 +896,7 @@ function FilterChip({
   readonly count: number;
   readonly active: boolean;
   readonly onClick: () => void;
-  readonly color: "amber" | "indigo" | "emerald" | "rose";
+  readonly color: "amber" | "indigo" | "emerald" | "rose" | "sky";
 }) {
   const colorMap = {
     amber: active
@@ -880,6 +911,9 @@ function FilterChip({
     rose: active
       ? "bg-rose-50 border-rose-400 text-rose-700 shadow-md shadow-rose-200"
       : "bg-white border-rose-200 text-rose-500 hover:border-rose-400 hover:text-rose-700",
+    sky: active
+      ? "bg-sky-50 border-sky-400 text-sky-700 shadow-md shadow-sky-200"
+      : "bg-white border-stone-200 text-stone-500 hover:border-sky-300 hover:text-sky-600",
   };
 
   return (
@@ -928,6 +962,7 @@ function OrderCard({
   const [adminNoteDraft, setAdminNoteDraft] = useState(order.admin_notes || "");
 
   const isDelivery = order.delivery_type === "delivery";
+  const isEnvio = order.delivery_type === "envio";
   // Mismo reparto que usa la card del panel, sin el filtro de estado/fecha:
   // acá los pedidos son pendientes y también necesitan ver su desglose.
   const totalCompanero =
@@ -1002,12 +1037,14 @@ function OrderCard({
                 </h3>
                 <span
                   className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide shrink-0 ${
-                    isDelivery
-                      ? "bg-milokira-lila/30 text-stone-700 border border-milokira-lila"
-                      : "bg-milokira-verde/15 text-milokira-verde border border-milokira-verde/40"
+                    isEnvio
+                      ? "bg-sky-100 text-sky-700 border border-sky-300"
+                      : isDelivery
+                        ? "bg-milokira-lila/30 text-stone-700 border border-milokira-lila"
+                        : "bg-milokira-verde/15 text-milokira-verde border border-milokira-verde/40"
                   }`}
                 >
-                  {isDelivery ? "Delivery" : "Retiro"}
+                  {isEnvio ? "Envío" : isDelivery ? "Delivery" : "Retiro"}
                 </span>
                 {muyAtrasado && (
                   <span
@@ -1033,6 +1070,16 @@ function OrderCard({
                 <div className="flex items-start gap-1.5 text-[11px] sm:text-xs text-stone-600 mb-1">
                   <MapPin size={11} className="shrink-0 mt-0.5 text-milokira-lila" />
                   <span className="line-clamp-2">{order.address}</span>
+                </div>
+              )}
+              {isEnvio && (order.envio_comuna || order.envio_region) && (
+                <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-sky-700 font-bold mb-1">
+                  <Package size={11} className="shrink-0" />
+                  <span>
+                    {[order.envio_comuna, order.envio_region]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </span>
                 </div>
               )}
               {order.phone && (
@@ -1109,6 +1156,21 @@ function OrderCard({
           <CheckCircle size={13} strokeWidth={2.5} />
           Entregado
         </button>
+        {order.delivery_type === "envio" && (
+          <button
+            onClick={() =>
+              window.open(
+                `/admin/pedidos/etiqueta?id=${order.idFirebase}`,
+                "_blank",
+              )
+            }
+            aria-label="Etiqueta de envío"
+            title="Etiqueta de envío para imprimir"
+            className="shrink-0 px-2.5 py-2 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-bold transition-all active:scale-95"
+          >
+            <Package size={13} />
+          </button>
+        )}
         <button
           onClick={onPdf}
           aria-label="Ver ticket"
