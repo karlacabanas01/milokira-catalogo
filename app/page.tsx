@@ -394,6 +394,13 @@ export default function Home() {
                   className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-stone-800 leading-[1.05] drop-shadow-sm"
                   style={{ fontFamily: "var(--font-fredoka), system-ui, sans-serif" }}
                 >
+                  {/* El buscador necesita leer el rubro y la ciudad en el H1.
+                      `sr-only` lo deja disponible para Google y los lectores
+                      de pantalla sin cambiar lo que se ve. */}
+                  <span className="sr-only">
+                    Milokira, vivero y venta de plantas en Talca, Región del
+                    Maule.{" "}
+                  </span>
                   <span className="block">Elige tu próxima</span>
                   <span className="relative inline-block mt-1 sm:mt-2">
                     <span className="relative z-10 text-milokira-verde">
