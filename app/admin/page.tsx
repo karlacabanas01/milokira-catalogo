@@ -34,15 +34,20 @@ import StatsOverview from "./components/StatsOverview";
 import StatsModal, { type ChartPoint } from "./components/StatsModal";
 import ExpenseModal from "./components/ExpenseModal";
 import SaleModal from "./components/SaleModal";
-import SaleListModal from "./components/SaleListModal";
 import RobinListModal from "./components/RobinListModal";
 import RobinPagoModal from "./components/RobinPagoModal";
 import {
   ROBIN_DESDE,
   calcularAporteRobin,
   calcularSaldoRobin,
+  totalSueldosRobin,
 } from "./robinHelpers";
-import ExpenseListModal from "./components/ExpenseListModal";
+import {
+  calcularGananciaMes,
+  finDePeriodo,
+  inicioDePeriodo,
+  rangoDelPeriodo,
+} from "./mesHelpers";
 import OrderModal from "./components/OrderModal";
 import ProductListModal from "./components/ProductListModal";
 
@@ -85,6 +90,9 @@ export default function AdminPage() {
     incomeWeek: 0,
     expenses: 0,
     profit: 0,
+    profitMes: 0,
+    ventasMes: 0,
+    gastosMes: 0,
     incomeRobin: 0,
   });
   const [statsSeries, setStatsSeries] = useState<{
@@ -104,12 +112,10 @@ export default function AdminPage() {
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isProductListOpen, setIsProductListOpen] = useState(false);
 
-  const [isSaleListOpen, setIsSaleListOpen] = useState(false);
   const [isRobinListOpen, setIsRobinListOpen] = useState(false);
   const [isRobinPagoOpen, setIsRobinPagoOpen] = useState(false);
   /** Saldo que el modal de pago ofrece como atajo "saldar todo". */
   const [robinSaldoPendiente, setRobinSaldoPendiente] = useState(0);
-  const [isExpenseListOpen, setIsExpenseListOpen] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -162,11 +168,6 @@ export default function AdminPage() {
         lunes.setDate(lunes.getDate() - offset);
         lunes.setHours(0, 0, 0, 0);
         const inicioSemana = lunes.getTime();
-
-        const monthStart = new Date();
-        monthStart.setDate(1);
-        monthStart.setHours(0, 0, 0, 0);
-        const monthStartTime = monthStart.getTime();
 
         const txData = txSnap.docs.map(
           (documento): TransactionData => ({
@@ -240,24 +241,23 @@ export default function AdminPage() {
           const reference = new Date();
           const isWeek = mode === "week";
 
-          const start = new Date(reference);
+          // El "mes" es el período contable del 25 al 24, igual que la card
+          // de ganancia: con rangos distintos los dos números se contradecían.
+          let start: Date;
+          let end: Date;
           if (isWeek) {
+            start = new Date(reference);
             const day = start.getDay();
             const offset = (day + 6) % 7;
             start.setDate(start.getDate() - offset);
-          } else {
-            start.setDate(1);
-          }
-          start.setHours(0, 0, 0, 0);
-
-          const end = new Date(start);
-          if (isWeek) {
+            start.setHours(0, 0, 0, 0);
+            end = new Date(start);
             end.setDate(end.getDate() + 6);
+            end.setHours(23, 59, 59, 999);
           } else {
-            end.setMonth(end.getMonth() + 1);
-            end.setDate(0);
+            start = inicioDePeriodo(reference);
+            end = finDePeriodo(reference);
           }
-          end.setHours(23, 59, 59, 999);
 
           const add = (key: string, label: string, type: "venta" | "gasto", amount: number) => {
             if (!grouped.has(key)) grouped.set(key, { ventas: 0, gastos: 0 });
@@ -274,7 +274,7 @@ export default function AdminPage() {
             if (createdAt < start || createdAt > end) return;
             const key = isWeek
               ? buildDateKey(createdAt)
-              : `${createdAt.getDate()}`;
+              : buildDateKey(createdAt);
             const label = isWeek
               ? dayNames[(createdAt.getDay() + 6) % 7]
               : `${createdAt.getDate()}`;
@@ -287,7 +287,7 @@ export default function AdminPage() {
             if (createdAt < start || createdAt > end) return;
             const key = isWeek
               ? buildDateKey(createdAt)
-              : `${createdAt.getDate()}`;
+              : buildDateKey(createdAt);
             const label = isWeek
               ? dayNames[(createdAt.getDay() + 6) % 7]
               : `${createdAt.getDate()}`;
@@ -308,17 +308,26 @@ export default function AdminPage() {
                   ganancia: values.ventas - values.gastos,
                 };
               })
-            : Array.from({ length: new Date(reference.getFullYear(), reference.getMonth() + 1, 0).getDate() }, (_, index) => {
-                const day = index + 1;
-                const key = `${day}`;
-                const values = grouped.get(key) || { ventas: 0, gastos: 0 };
-                return {
-                  label: `${day}`,
-                  ventas: values.ventas,
-                  gastos: values.gastos,
-                  ganancia: values.ventas - values.gastos,
-                };
-              });
+            : (() => {
+                // El período va del 25 al 24, así que cruza dos meses: se
+                // recorre día por día desde el inicio real, no 1..31.
+                const dias: ChartPoint[] = [];
+                const cursor = new Date(start);
+                while (cursor <= end) {
+                  const values = grouped.get(buildDateKey(cursor)) || {
+                    ventas: 0,
+                    gastos: 0,
+                  };
+                  dias.push({
+                    label: `${cursor.getDate()}`,
+                    ventas: values.ventas,
+                    gastos: values.gastos,
+                    ganancia: values.ventas - values.gastos,
+                  });
+                  cursor.setDate(cursor.getDate() + 1);
+                }
+                return dias;
+              })();
 
           return byLabel;
         };
@@ -359,17 +368,31 @@ export default function AdminPage() {
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
         );
 
+        // Lo que se le paga a Robin por trabajar es un gasto del negocio,
+        // así que entra en los gastos junto a los de la colección `Gastos`.
+        const pagosRobin = pagosRobinSnap.docs.map((d) => d.data());
+        const sueldosRobin = totalSueldosRobin(pagosRobin);
+        totalExpenses += sueldosRobin;
+
+        // Ganancia del mes en curso: la card "Ganancia" es de todo el
+        // historial, así que el mes se calcula aparte. Los sueldos van como
+        // gasto con la misma forma que un documento de `Gastos`.
+        const mes = calcularGananciaMes(txData, [
+          ...expenseData,
+          ...pagosRobin.filter((p) => p.tipo === "sueldo"),
+        ]);
+
         // Lo que queda por pagarle: su parte menos los abonos ya entregados.
-        const saldoRobin = calcularSaldoRobin(
-          totalRobin,
-          pagosRobinSnap.docs.map((d) => d.data()),
-        );
+        const saldoRobin = calcularSaldoRobin(totalRobin, pagosRobin);
 
         setFinancials({
           income: totalIncome,
           incomeWeek: weekIncome,
           expenses: totalExpenses,
           profit: totalIncome - totalExpenses,
+          profitMes: mes.ganancia,
+          ventasMes: mes.ventas,
+          gastosMes: mes.gastos,
           incomeRobin: saldoRobin.saldo,
         });
         setStatsSeries({
@@ -499,8 +522,7 @@ export default function AdminPage() {
         ) : (
           <StatsOverview
             financials={financials}
-            onExpensesClick={() => setIsExpenseListOpen(true)}
-            onSalesClick={() => setIsSaleListOpen(true)}
+            mesActual={rangoDelPeriodo()}
             onRobinClick={() => setIsRobinListOpen(true)}
             onWeekClick={() => setIsStatsModalOpen(true)}
           />
@@ -833,8 +855,9 @@ export default function AdminPage() {
           onSave={async (data) => {
             setIsSaving(true);
             try {
-              // Colección aparte: no es un gasto del negocio, es plata que ya
-              // estaba contada como de Robin y solo cambia de manos.
+              // Colección aparte: un abono es plata ya contada como de Robin
+              // que solo cambia de manos, y un sueldo sí es gasto del negocio
+              // —se suma a los gastos al leer la colección.
               await setDoc(doc(collection(db, "PagosRobin")), {
                 ...data,
                 created_at: new Date().toISOString(),
@@ -851,20 +874,6 @@ export default function AdminPage() {
         />
       )}
 
-      {isSaleListOpen && (
-        <SaleListModal
-          isOpen={isSaleListOpen}
-          onClose={() => setIsSaleListOpen(false)}
-          onChange={refreshData}
-        />
-      )}
-      {isExpenseListOpen && (
-        <ExpenseListModal
-          isOpen={isExpenseListOpen}
-          onClose={() => setIsExpenseListOpen(false)}
-          onChange={refreshData}
-        />
-      )}
       {isProductListOpen && (
         <ProductListModal
           isOpen={isProductListOpen}

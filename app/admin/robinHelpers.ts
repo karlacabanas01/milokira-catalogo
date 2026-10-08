@@ -140,25 +140,44 @@ export const calcularAporteRobin = (
  * ------------------------------------------------------------------ */
 
 /**
- * Un abono ya entregado a Robin. Vive en la colección `PagosRobin` y baja el
- * saldo pendiente. No toca las ventas ni los gastos del negocio: es plata que
- * ya estaba contada como suya, solo cambia de manos.
+ * Qué clase de plata se le entregó a Robin. Son dos cosas distintas y no se
+ * pueden sumar:
+ *
+ * - `abono`: paga lo que le corresponde de deliverys y ventas. Baja el saldo
+ *   pendiente y no toca la ganancia, porque ese monto nunca fue del vivero.
+ * - `sueldo`: le paga por trabajar. No baja el saldo —no cancela ninguna
+ *   comisión— y sí es un gasto del negocio, así que baja la ganancia.
+ */
+export type TipoPagoRobin = "abono" | "sueldo";
+
+/**
+ * Plata entregada a Robin. Vive en la colección `PagosRobin`.
+ *
+ * Los pagos guardados antes de que existiera el sueldo no traen `tipo`: esos
+ * cuentan como `abono`, que es lo único que se podía registrar entonces.
  */
 export type PagoRobin = {
   description?: unknown;
   amount?: unknown;
   created_at?: unknown;
+  tipo?: unknown;
 };
+
+/** Tipo de un pago, con `abono` como valor por omisión. */
+export const tipoDePago = (pago: PagoRobin): TipoPagoRobin =>
+  pago.tipo === "sueldo" ? "sueldo" : "abono";
 
 export type SaldoRobin = {
   /** Todo lo que le tocó a Robin desde el inicio del acuerdo. */
   acumulado: number;
-  /** Suma de los abonos ya entregados. */
+  /** Suma de los abonos ya entregados. Los sueldos no entran acá. */
   pagado: number;
   /** acumulado - pagado. Negativo significa que Robin quedó pagado de más. */
   saldo: number;
   /** true si se le pagó de más y ahora la deuda es al revés. */
   aFavor: boolean;
+  /** Suma de los sueldos pagados: es gasto del negocio, no baja el saldo. */
+  sueldos: number;
 };
 
 /**
@@ -181,7 +200,10 @@ export const montoPago = (
 };
 
 /**
- * Saldo pendiente con Robin: lo que le tocó menos lo que ya se le pagó.
+ * Saldo pendiente con Robin: lo que le tocó menos los abonos entregados.
+ *
+ * Los sueldos se suman aparte y no bajan el saldo: pagarle por trabajar no
+ * cancela las comisiones que le corresponden.
  *
  * El saldo puede quedar negativo a propósito — si se le pagó de más, la deuda
  * cambia de lado y la vista lo dice con todas sus letras en vez de esconderlo
@@ -192,8 +214,31 @@ export const calcularSaldoRobin = (
   pagos: PagoRobin[],
   desde: number = ROBIN_DESDE,
 ): SaldoRobin => {
-  const pagado = pagos.reduce((acc, p) => acc + montoPago(p, desde), 0);
+  let pagado = 0;
+  let sueldos = 0;
+  for (const p of pagos) {
+    const monto = montoPago(p, desde);
+    if (monto <= 0) continue;
+    if (tipoDePago(p) === "sueldo") sueldos += monto;
+    else pagado += monto;
+  }
+
   const saldo = acumulado - pagado;
 
-  return { acumulado, pagado, saldo, aFavor: saldo < 0 };
+  return { acumulado, pagado, saldo, aFavor: saldo < 0, sueldos };
 };
+
+/**
+ * Sueldos pagados a Robin, para sumarlos a los gastos del negocio.
+ *
+ * Toma los pagos sin filtrar por el inicio del acuerdo —ese corte existe para
+ * la cuenta de comisiones, no para los gastos— pero sí descarta los montos
+ * inválidos.
+ */
+export const totalSueldosRobin = (pagos: PagoRobin[]): number =>
+  pagos.reduce((acc, p) => {
+    if (tipoDePago(p) !== "sueldo") return acc;
+    const monto = Number(p.amount);
+    if (!Number.isFinite(monto) || monto <= 0) return acc;
+    return acc + monto;
+  }, 0);

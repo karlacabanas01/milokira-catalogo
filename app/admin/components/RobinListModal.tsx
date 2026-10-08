@@ -5,7 +5,13 @@ import { collection, deleteDoc, doc, getDocs } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
 import { Truck, Package, HandCoins, Trash2, Check } from "lucide-react";
 import { Modal, EmptyState, Badge, Button } from "../../components/ui";
-import { calcularAporteRobin, calcularSaldoRobin, montoPago } from "../robinHelpers";
+import {
+  calcularAporteRobin,
+  calcularSaldoRobin,
+  montoPago,
+  tipoDePago,
+  type TipoPagoRobin,
+} from "../robinHelpers";
 
 type Aporte = {
   idFirebase: string;
@@ -30,6 +36,8 @@ type Pago = {
   description: string;
   amount: number;
   created_at: string;
+  /** `abono` baja la deuda; `sueldo` es gasto del negocio. */
+  tipo: TipoPagoRobin;
 };
 
 type Props = {
@@ -106,6 +114,7 @@ export default function RobinListModal({
             description: data.description || "Pago a Robin",
             amount: Number(data.amount) || 0,
             created_at: String(data.created_at),
+            tipo: tipoDePago(data),
           });
         });
         listaPagos.sort(
@@ -143,7 +152,7 @@ export default function RobinListModal({
   const totalVentas = totalGeneral - totalDelivery;
 
   // Mismo cálculo que la card del panel: lo que le tocó menos lo ya pagado.
-  const { pagado, saldo, aFavor } = calcularSaldoRobin(
+  const { pagado, saldo, aFavor, sueldos } = calcularSaldoRobin(
     totalGeneral,
     pagos,
     desde,
@@ -235,6 +244,19 @@ export default function RobinListModal({
               </span>
             </div>
 
+            {/* Los sueldos van fuera del cálculo del saldo a propósito: son
+                gasto del negocio, no cancelan comisiones. */}
+            {sueldos > 0 && (
+              <div className="mt-2 pt-2 border-t border-pink-200 flex items-center justify-between gap-2 text-xs">
+                <span className="font-bold text-orange-700">
+                  Sueldos pagados
+                </span>
+                <span className="font-mono font-bold text-orange-700">
+                  {formatCLP(sueldos)}
+                </span>
+              </div>
+            )}
+
             <div className="mt-3">
               <Button
                 variant="primaria"
@@ -265,9 +287,18 @@ export default function RobinListModal({
                       <Check
                         size={13}
                         strokeWidth={3}
-                        className="text-emerald-600 shrink-0"
+                        className={`shrink-0 ${
+                          p.tipo === "sueldo"
+                            ? "text-orange-600"
+                            : "text-emerald-600"
+                        }`}
                       />
                       {p.description}
+                      {p.tipo === "sueldo" && (
+                        <span className="text-[9px] font-black uppercase tracking-wider text-orange-700 bg-orange-100 rounded px-1 py-0.5 shrink-0">
+                          Sueldo
+                        </span>
+                      )}
                     </p>
                     <p className="text-[11px] text-stone-500 pl-5">
                       {p.created_at
@@ -279,8 +310,16 @@ export default function RobinListModal({
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-black text-emerald-700 font-mono text-sm">
-                      − {formatCLP(p.amount)}
+                    {/* El "−" solo en los abonos: un sueldo no resta deuda. */}
+                    <span
+                      className={`font-black font-mono text-sm ${
+                        p.tipo === "sueldo"
+                          ? "text-orange-700"
+                          : "text-emerald-700"
+                      }`}
+                    >
+                      {p.tipo === "sueldo" ? "" : "− "}
+                      {formatCLP(p.amount)}
                     </span>
                     <button
                       type="button"

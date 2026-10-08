@@ -5,6 +5,8 @@ import {
   montoPago,
   repartirPedido,
   ROBIN_DESDE,
+  tipoDePago,
+  totalSueldosRobin,
 } from "./robinHelpers";
 
 const DESPUES = "2026-08-22T12:00:00";
@@ -336,5 +338,90 @@ describe("calcularSaldoRobin", () => {
     const r = calcularSaldoRobin(38000, pagosDeLaVista);
     expect(r.pagado).toBe(15000);
     expect(r.saldo).toBe(23000);
+  });
+});
+
+describe("tipoDePago", () => {
+  it("reconoce un sueldo", () => {
+    expect(tipoDePago({ tipo: "sueldo" })).toBe("sueldo");
+  });
+
+  it("los pagos sin tipo son abonos (los guardados antes del sueldo)", () => {
+    expect(tipoDePago({})).toBe("abono");
+    expect(tipoDePago({ tipo: undefined })).toBe("abono");
+    expect(tipoDePago({ tipo: "abono" })).toBe("abono");
+  });
+
+  it("un tipo desconocido cuenta como abono", () => {
+    expect(tipoDePago({ tipo: "propina" })).toBe("abono");
+  });
+});
+
+describe("sueldos vs abonos en el saldo", () => {
+  it("el sueldo no baja el saldo pendiente", () => {
+    const r = calcularSaldoRobin(40000, [
+      { amount: 30000, created_at: DESPUES, tipo: "sueldo" },
+    ]);
+    expect(r.pagado).toBe(0);
+    expect(r.saldo).toBe(40000);
+    expect(r.sueldos).toBe(30000);
+  });
+
+  it("separa abonos de sueldos en el mismo listado", () => {
+    const r = calcularSaldoRobin(40000, [
+      { amount: 15000, created_at: DESPUES, tipo: "abono" },
+      { amount: 50000, created_at: DESPUES, tipo: "sueldo" },
+      { amount: 5000, created_at: DESPUES },
+    ]);
+    // 15.000 + 5.000 de abonos; el sueldo queda afuera.
+    expect(r.pagado).toBe(20000);
+    expect(r.saldo).toBe(20000);
+    expect(r.sueldos).toBe(50000);
+  });
+
+  it("un mes de solo sueldos deja el saldo intacto", () => {
+    const r = calcularSaldoRobin(12000, [
+      { amount: 100000, created_at: DESPUES, tipo: "sueldo" },
+    ]);
+    expect(r.saldo).toBe(12000);
+    expect(r.aFavor).toBe(false);
+  });
+});
+
+describe("totalSueldosRobin", () => {
+  it("suma solo los sueldos", () => {
+    expect(
+      totalSueldosRobin([
+        { amount: 50000, created_at: DESPUES, tipo: "sueldo" },
+        { amount: 30000, created_at: DESPUES, tipo: "sueldo" },
+        { amount: 15000, created_at: DESPUES, tipo: "abono" },
+        { amount: 9000, created_at: DESPUES },
+      ]),
+    ).toBe(80000);
+  });
+
+  it("cuenta los sueldos anteriores al inicio del acuerdo", () => {
+    // El corte del 21-08 es para las comisiones; un sueldo pagado antes
+    // sigue siendo un gasto real del negocio.
+    expect(
+      totalSueldosRobin([{ amount: 40000, created_at: ANTES, tipo: "sueldo" }]),
+    ).toBe(40000);
+  });
+
+  it("descarta montos inválidos", () => {
+    expect(
+      totalSueldosRobin([
+        { amount: -5000, created_at: DESPUES, tipo: "sueldo" },
+        { amount: 0, created_at: DESPUES, tipo: "sueldo" },
+        { amount: "hola", created_at: DESPUES, tipo: "sueldo" },
+      ]),
+    ).toBe(0);
+  });
+
+  it("sin sueldos devuelve cero", () => {
+    expect(totalSueldosRobin([])).toBe(0);
+    expect(
+      totalSueldosRobin([{ amount: 15000, created_at: DESPUES }]),
+    ).toBe(0);
   });
 });

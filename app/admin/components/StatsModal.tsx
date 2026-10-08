@@ -29,7 +29,7 @@ type Props = {
 
 const rangeOptions = [
   { key: "allTime", label: "Desde que empezamos" },
-  { key: "month", label: "Este mes" },
+  { key: "month", label: "Mes (25 → 24)" },
   { key: "week", label: "Esta semana" },
 ] as const;
 
@@ -46,6 +46,16 @@ const currency = new Intl.NumberFormat("es-CL", {
   currency: "CLP",
   maximumFractionDigits: 0,
 });
+
+const sumar = (puntos: ChartPoint[]) =>
+  puntos.reduce(
+    (acc, item) => ({
+      ventas: acc.ventas + item.ventas,
+      gastos: acc.gastos + item.gastos,
+      ganancia: acc.ganancia + item.ganancia,
+    }),
+    { ventas: 0, gastos: 0, ganancia: 0 },
+  );
 
 export default function StatsModal({
   isOpen,
@@ -67,18 +77,11 @@ export default function StatsModal({
         ? month
         : week;
 
-  const totals = useMemo(
-    () =>
-      data.reduce(
-        (acc, item) => ({
-          ventas: acc.ventas + item.ventas,
-          gastos: acc.gastos + item.gastos,
-          ganancia: acc.ganancia + item.ganancia,
-        }),
-        { ventas: 0, gastos: 0, ganancia: 0 },
-      ),
-    [data],
-  );
+  const totals = useMemo(() => sumar(data), [data]);
+
+  // Totales de todo el proyecto: no dependen de la pestaña elegida, así que
+  // quedan fijos arriba como referencia mientras se mira un período.
+  const totalesGenerales = useMemo(() => sumar(allTime), [allTime]);
 
   return (
     <Modal
@@ -90,7 +93,50 @@ export default function StatsModal({
       className="p-0"
     >
       <div>
-        <div className="pt-1">
+        {/* Totales de todo el proyecto. Van fijos arriba: son la referencia
+            contra la que se lee cualquier período de abajo. */}
+        <div className="mx-4 sm:mx-5 mt-1 rounded-2xl border border-stone-200 bg-stone-50 p-3 sm:p-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-stone-500">
+            Desde que empezamos
+          </p>
+          <div className="mt-2 grid grid-cols-3 gap-2 sm:gap-3">
+            <div>
+              <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold uppercase text-emerald-700">
+                <TrendingUp size={12} className="shrink-0" />
+                Ventas
+              </span>
+              <p className="mt-0.5 text-sm sm:text-lg font-black text-emerald-900 tabular-nums break-words">
+                {currency.format(totalesGenerales.ventas)}
+              </p>
+            </div>
+            <div>
+              <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold uppercase text-rose-700">
+                <TrendingDown size={12} className="shrink-0" />
+                Gastos
+              </span>
+              <p className="mt-0.5 text-sm sm:text-lg font-black text-rose-900 tabular-nums break-words">
+                {currency.format(totalesGenerales.gastos)}
+              </p>
+            </div>
+            <div>
+              <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold uppercase text-indigo-700">
+                <Wallet size={12} className="shrink-0" />
+                Ganancia
+              </span>
+              <p
+                className={`mt-0.5 text-sm sm:text-lg font-black tabular-nums break-words ${
+                  totalesGenerales.ganancia < 0
+                    ? "text-rose-600"
+                    : "text-indigo-900"
+                }`}
+              >
+                {currency.format(totalesGenerales.ganancia)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-3">
           <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {rangeOptions.map((option) => (
               <button
@@ -108,7 +154,13 @@ export default function StatsModal({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 px-4 sm:px-5 py-4">
+        {/* Del período elegido arriba. Lleva su propio rótulo porque arriba
+            hay otro bloque con los mismos tres números. */}
+        <p className="px-4 sm:px-5 pt-4 text-[10px] font-black uppercase tracking-widest text-stone-500">
+          {rangeOptions.find((o) => o.key === activeRange)?.label}
+        </p>
+
+        <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 px-4 sm:px-5 pt-2 pb-4">
           <div className="rounded-2xl bg-emerald-50 p-3 sm:p-4">
             <div className="flex items-center gap-1.5 sm:gap-2 text-emerald-700">
               <TrendingUp size={16} className="shrink-0" />
