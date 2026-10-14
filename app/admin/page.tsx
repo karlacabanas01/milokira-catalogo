@@ -17,6 +17,7 @@ import { db } from "../firebaseConfig";
 import {
   ClipboardList,
   TrendingUp,
+  NotebookPen,
   TrendingDown,
   Package,
   Clock,
@@ -36,6 +37,7 @@ import ExpenseModal from "./components/ExpenseModal";
 import SaleModal from "./components/SaleModal";
 import RobinListModal from "./components/RobinListModal";
 import RobinPagoModal from "./components/RobinPagoModal";
+import NotasModal from "./components/NotasModal";
 import {
   ROBIN_DESDE,
   calcularAporteRobin,
@@ -114,6 +116,7 @@ export default function AdminPage() {
 
   const [isRobinListOpen, setIsRobinListOpen] = useState(false);
   const [isRobinPagoOpen, setIsRobinPagoOpen] = useState(false);
+  const [isNotasOpen, setIsNotasOpen] = useState(false);
   /** Saldo que el modal de pago ofrece como atajo "saldar todo". */
   const [robinSaldoPendiente, setRobinSaldoPendiente] = useState(0);
 
@@ -533,7 +536,7 @@ export default function AdminPage() {
           <h2 className="text-[10px] sm:text-xs font-bold text-stone-500 uppercase tracking-widest mb-3 sm:mb-4 px-1">
             Acciones rápidas
           </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-7 gap-3 sm:gap-4">
             <button
               onClick={() => setIsSaleModalOpen(true)}
               className="group relative overflow-hidden py-5 sm:py-6 bg-white border border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-stone-800 font-bold hover:border-emerald-500/40 hover:shadow-xl hover:shadow-emerald-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
@@ -584,6 +587,16 @@ export default function AdminPage() {
               </div>
               <span className="relative text-xs sm:text-sm tracking-wide text-center">Mercadería</span>
             </Link>
+            <button
+              onClick={() => setIsNotasOpen(true)}
+              className="group relative overflow-hidden py-5 sm:py-6 bg-white border border-stone-200 rounded-2xl flex flex-col items-center justify-center gap-2.5 text-stone-800 font-bold hover:border-amber-500/40 hover:shadow-xl hover:shadow-amber-900/20 hover:-translate-y-0.5 transition-all active:scale-[0.98]"
+            >
+              <div className="absolute inset-0 bg-linear-to-br from-amber-500/0 to-amber-500/0 group-hover:from-amber-500/10 group-hover:to-transparent transition-all" />
+              <div className="relative p-2.5 sm:p-3 bg-amber-500/10 rounded-xl text-amber-600 border border-amber-500/30 group-hover:scale-110 group-hover:bg-amber-500/20 transition-all">
+                <NotebookPen size={22} strokeWidth={2.5} />
+              </div>
+              <span className="relative text-xs sm:text-sm tracking-wide">Notas</span>
+            </button>
           </div>
         </div>
 
@@ -844,6 +857,13 @@ export default function AdminPage() {
             setRobinSaldoPendiente(saldo);
             setIsRobinPagoOpen(true);
           }}
+        />
+      )}
+
+      {isNotasOpen && (
+        <NotasModal
+          isOpen={isNotasOpen}
+          onClose={() => setIsNotasOpen(false)}
         />
       )}
 
