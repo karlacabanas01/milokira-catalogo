@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   fechaNota,
   filtrarNotas,
+  mapearNota,
   MAX_TEXTO,
   MAX_TITULO,
   ordenarNotas,
@@ -214,5 +215,40 @@ describe("título opcional", () => {
   it("el buscador sigue encontrando por texto en notas sin título", () => {
     const notas = [nota("b", "El proveedor sube en marzo", "2026-10-02T10:00:00")];
     expect(filtrarNotas(notas, "proveedor")).toHaveLength(1);
+  });
+});
+
+describe("mapearNota", () => {
+  it("mapea un documento completo", () => {
+    const r = mapearNota("abc", {
+      titulo: "Taller",
+      texto: "1. María",
+      created_at: "2026-10-01T10:00:00",
+      fijada: true,
+      updated_at: "2026-10-13T10:00:00",
+    });
+    expect(r).toEqual({
+      idFirebase: "abc",
+      titulo: "Taller",
+      texto: "1. María",
+      created_at: "2026-10-01T10:00:00",
+      fijada: true,
+      updated_at: "2026-10-13T10:00:00",
+    });
+  });
+
+  it("descarta un documento sin texto", () => {
+    expect(mapearNota("abc", {})).toBeNull();
+    expect(mapearNota("abc", { titulo: "solo título" })).toBeNull();
+  });
+
+  it("deja el título y la edición en undefined si no están", () => {
+    const r = mapearNota("abc", {
+      texto: "algo",
+      created_at: "2026-10-01T10:00:00",
+    });
+    expect(r?.titulo).toBeUndefined();
+    expect(r?.updated_at).toBeUndefined();
+    expect(r?.fijada).toBe(false);
   });
 });

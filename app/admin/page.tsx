@@ -38,6 +38,12 @@ import SaleModal from "./components/SaleModal";
 import RobinListModal from "./components/RobinListModal";
 import RobinPagoModal from "./components/RobinPagoModal";
 import NotasModal from "./components/NotasModal";
+import NotasPostits from "./components/NotasPostits";
+import {
+  mapearNota,
+  ordenarNotas,
+  type NotaNegocio,
+} from "./notasHelpers";
 import {
   ROBIN_DESDE,
   calcularAporteRobin,
@@ -117,6 +123,7 @@ export default function AdminPage() {
   const [isRobinListOpen, setIsRobinListOpen] = useState(false);
   const [isRobinPagoOpen, setIsRobinPagoOpen] = useState(false);
   const [isNotasOpen, setIsNotasOpen] = useState(false);
+  const [notas, setNotas] = useState<NotaNegocio[]>([]);
   /** Saldo que el modal de pago ofrece como atajo "saldar todo". */
   const [robinSaldoPendiente, setRobinSaldoPendiente] = useState(0);
 
@@ -133,11 +140,13 @@ export default function AdminPage() {
       setLoading(true);
 
       try {
-        const [txSnap, gastosSnap, pagosRobinSnap] = await Promise.all([
-          getDocs(collection(db, "Transacciones")),
-          getDocs(collection(db, "Gastos")),
-          getDocs(collection(db, "PagosRobin")),
-        ]);
+        const [txSnap, gastosSnap, pagosRobinSnap, notasSnap] =
+          await Promise.all([
+            getDocs(collection(db, "Transacciones")),
+            getDocs(collection(db, "Gastos")),
+            getDocs(collection(db, "PagosRobin")),
+            getDocs(collection(db, "NotasNegocio")),
+          ]);
 
         if (isCancelled) return;
 
@@ -371,6 +380,13 @@ export default function AdminPage() {
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
         );
 
+        const listaNotas: NotaNegocio[] = [];
+        notasSnap.forEach((documento) => {
+          const nota = mapearNota(documento.id, documento.data());
+          if (nota) listaNotas.push(nota);
+        });
+        setNotas(ordenarNotas(listaNotas));
+
         // Lo que se le paga a Robin por trabajar es un gasto del negocio,
         // así que entra en los gastos junto a los de la colección `Gastos`.
         const pagosRobin = pagosRobinSnap.docs.map((d) => d.data());
@@ -599,6 +615,11 @@ export default function AdminPage() {
             </button>
           </div>
         </div>
+
+        {/* Notas como post-its: a la vista, sin abrir nada */}
+        {!loading && (
+          <NotasPostits notas={notas} onAbrir={() => setIsNotasOpen(true)} />
+        )}
 
         {/* Sección de Pedidos Pendientes */}
         {!loading && (
@@ -863,7 +884,11 @@ export default function AdminPage() {
       {isNotasOpen && (
         <NotasModal
           isOpen={isNotasOpen}
-          onClose={() => setIsNotasOpen(false)}
+          onClose={() => {
+            setIsNotasOpen(false);
+            // Los post-its del panel reflejan lo que se escribió en el modal.
+            refreshData();
+          }}
         />
       )}
 

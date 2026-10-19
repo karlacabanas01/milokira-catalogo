@@ -29,6 +29,7 @@ import {
 } from "../../components/ui";
 import {
   filtrarNotas,
+  mapearNota,
   MAX_TEXTO,
   MAX_TITULO,
   ordenarNotas,
@@ -68,16 +69,8 @@ export default function NotasModal({ isOpen, onClose }: Props) {
         const snap = await getDocs(collection(db, "NotasNegocio"));
         const lista: NotaNegocio[] = [];
         snap.forEach((documento) => {
-          const data = documento.data();
-          if (!data.texto) return;
-          lista.push({
-            idFirebase: documento.id,
-            titulo: data.titulo ? String(data.titulo) : undefined,
-            texto: String(data.texto),
-            created_at: String(data.created_at ?? ""),
-            fijada: Boolean(data.fijada),
-            updated_at: data.updated_at ? String(data.updated_at) : undefined,
-          });
+          const nota = mapearNota(documento.id, documento.data());
+          if (nota) lista.push(nota);
         });
         setNotas(ordenarNotas(lista));
       } catch (e) {

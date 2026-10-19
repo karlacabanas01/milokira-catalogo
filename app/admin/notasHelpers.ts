@@ -29,6 +29,28 @@ export type NotaNueva = {
   fijada: boolean;
 };
 
+/**
+ * Mapea un documento de Firestore a una nota. Devuelve null si no tiene texto:
+ * una nota sin cuerpo no se puede mostrar.
+ *
+ * Lo usan el modal y los post-its del panel para que los dos lean igual.
+ */
+export const mapearNota = (
+  idFirebase: string,
+  data: Record<string, unknown>,
+): NotaNegocio | null => {
+  if (!data.texto) return null;
+
+  return {
+    idFirebase,
+    titulo: data.titulo ? String(data.titulo) : undefined,
+    texto: String(data.texto),
+    created_at: String(data.created_at ?? ""),
+    fijada: Boolean(data.fijada),
+    updated_at: data.updated_at ? String(data.updated_at) : undefined,
+  };
+};
+
 /** Límite del texto: una nota más larga que esto es un documento, no un apunte. */
 export const MAX_TEXTO = 2000;
 
