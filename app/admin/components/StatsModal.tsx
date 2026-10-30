@@ -1,6 +1,14 @@
 import { useMemo, useState } from "react";
 import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
-import { Modal } from "../../components/ui";
+import { Modal, EmptyState } from "../../components/ui";
+import {
+  aInputDate,
+  desdeInputDate,
+  DIA_CORTE,
+  inicioDePeriodo,
+  resumirRango,
+  type MovimientoMes,
+} from "../mesHelpers";
 import {
   Bar,
   BarChart,
@@ -25,12 +33,18 @@ type Props = {
   allTime: ChartPoint[];
   month: ChartPoint[];
   week: ChartPoint[];
+  /** Datos crudos: el rango a medida se calcula acá, no en el panel. */
+  transacciones: MovimientoMes[];
+  gastos: MovimientoMes[];
 };
 
+// El rango del mes se arma desde DIA_CORTE: con el número escrito a mano la
+// etiqueta queda desfasada apenas cambia el corte.
 const rangeOptions = [
   { key: "allTime", label: "Desde que empezamos" },
-  { key: "month", label: "Mes (25 → 24)" },
+  { key: "month", label: `Mes (${DIA_CORTE} → ${DIA_CORTE - 1})` },
   { key: "week", label: "Esta semana" },
+  { key: "custom", label: "Elegir fechas" },
 ] as const;
 
 // Eje Y compacto: "$120 K" en vez de "$120.000", que no cabe.
@@ -63,6 +77,8 @@ export default function StatsModal({
   allTime,
   month,
   week,
+  transacciones,
+  gastos,
 }: Props) {
   // Sin `if (!isOpen) return null` antes de los hooks: eso cambiaba la
   // cantidad de hooks entre renders. El propio Modal decide si se monta.
@@ -70,14 +86,37 @@ export default function StatsModal({
     "week",
   );
 
-  const data =
-    activeRange === "allTime"
-      ? allTime
-      : activeRange === "month"
-        ? month
-        : week;
+  // Arranca en el período en curso: es el rango que se mira más seguido.
+  const [desde, setDesde] = useState(() => aInputDate(inicioDePeriodo()));
+  const [hasta, setHasta] = useState(() => aInputDate(new Date()));
 
-  const totals = useMemo(() => sumar(data), [data]);
+  const esCustom = activeRange === "custom";
+
+  const rango = useMemo(() => {
+    if (!esCustom) return null;
+    const ini = desdeInputDate(desde);
+    const fin = desdeInputDate(hasta);
+    if (!ini || !fin) return null;
+    // Fechas al revés: se usan como vengan, para no mostrar un rango vacío
+    // mientras se está eligiendo la segunda.
+    const [a, b] = ini <= fin ? [ini, fin] : [fin, ini];
+    return resumirRango(transacciones, gastos, a, b);
+  }, [esCustom, desde, hasta, transacciones, gastos]);
+
+  const data = useMemo(
+    () =>
+      activeRange === "allTime"
+        ? allTime
+        : activeRange === "month"
+          ? month
+          : activeRange === "week"
+            ? week
+            : [],
+    [activeRange, allTime, month, week],
+  );
+
+  const totalsPeriodo = useMemo(() => sumar(data), [data]);
+  const totals = rango ?? totalsPeriodo;
 
   // Totales de todo el proyecto: no dependen de la pestaña elegida, así que
   // quedan fijos arriba como referencia mientras se mira un período.
@@ -152,12 +191,43 @@ export default function StatsModal({
               </button>
             ))}
           </div>
+
+          {esCustom && (
+            <div className="mt-3 flex flex-wrap items-end gap-2 sm:gap-3">
+              <label className="flex-1 min-w-[8.5rem]">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-1 ml-1">
+                  Desde
+                </span>
+                <input
+                  type="date"
+                  value={desde}
+                  max={hasta}
+                  onChange={(e) => setDesde(e.target.value)}
+                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-milokira-verde text-sm"
+                />
+              </label>
+              <label className="flex-1 min-w-[8.5rem]">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-1 ml-1">
+                  Hasta
+                </span>
+                <input
+                  type="date"
+                  value={hasta}
+                  min={desde}
+                  onChange={(e) => setHasta(e.target.value)}
+                  className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-stone-700 outline-none focus:bg-white focus:border-milokira-verde text-sm"
+                />
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Del período elegido arriba. Lleva su propio rótulo porque arriba
             hay otro bloque con los mismos tres números. */}
         <p className="px-4 sm:px-5 pt-4 text-[10px] font-black uppercase tracking-widest text-stone-500">
-          {rangeOptions.find((o) => o.key === activeRange)?.label}
+          {esCustom
+            ? `${desde || "—"} → ${hasta || "—"}`
+            : rangeOptions.find((o) => o.key === activeRange)?.label}
         </p>
 
         <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 px-4 sm:px-5 pt-2 pb-4">
@@ -196,7 +266,50 @@ export default function StatsModal({
           </div>
         </div>
 
-        {data.length === 0 ? (
+        {/* Con fechas a medida se lista el detalle en vez del gráfico por
+            día: el rango puede ser de un día o de un año, y las barras dejan
+            de significar lo mismo. */}
+        {esCustom ? (
+          !rango || rango.detalle.length === 0 ? (
+            <div className="px-4 sm:px-5 pb-6">
+              <EmptyState>
+                No hay movimientos entre esas fechas.
+              </EmptyState>
+            </div>
+          ) : (
+            <div className="px-4 sm:px-5 pb-6 space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">
+                {rango.detalle.length}{" "}
+                {rango.detalle.length === 1 ? "movimiento" : "movimientos"}
+              </p>
+              {rango.detalle.map((m, i) => (
+                <div
+                  key={`${m.fecha}-${i}`}
+                  className="flex items-center justify-between gap-2 rounded-xl border border-borde bg-campo p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-stone-800 truncate">
+                      {m.descripcion}
+                    </p>
+                    <p className="text-[11px] text-stone-500">
+                      {new Date(m.fecha).toLocaleDateString("es-CL", {
+                        day: "2-digit",
+                        month: "short",
+                      })}
+                    </p>
+                  </div>
+                  <span
+                    className={`shrink-0 font-mono font-black text-sm ${
+                      m.tipo === "venta" ? "text-emerald-700" : "text-rose-600"
+                    }`}
+                  >
+                    {m.tipo === "venta" ? "+" : "−"} {currency.format(m.monto)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )
+        ) : data.length === 0 ? (
           <div className="mx-4 sm:mx-5 mb-6 rounded-xl border border-dashed border-stone-200 py-12 text-center text-sm text-stone-500">
             Todavía no hay movimientos en este período.
           </div>

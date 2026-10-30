@@ -103,6 +103,12 @@ export default function AdminPage() {
     gastosMes: 0,
     incomeRobin: 0,
   });
+  // Datos crudos para el rango a medida del modal de estadísticas: ahí se
+  // elige cualquier par de fechas, así que no sirve una serie precalculada.
+  const [movimientos, setMovimientos] = useState<{
+    transacciones: TransactionData[];
+    gastos: ExpenseData[];
+  }>({ transacciones: [], gastos: [] });
   const [statsSeries, setStatsSeries] = useState<{
     allTime: ChartPoint[];
     month: ChartPoint[];
@@ -253,7 +259,7 @@ export default function AdminPage() {
           const reference = new Date();
           const isWeek = mode === "week";
 
-          // El "mes" es el período contable del 25 al 24, igual que la card
+          // El "mes" es el período contable (ver DIA_CORTE), igual que la card
           // de ganancia: con rangos distintos los dos números se contradecían.
           let start: Date;
           let end: Date;
@@ -321,7 +327,7 @@ export default function AdminPage() {
                 };
               })
             : (() => {
-                // El período va del 25 al 24, así que cruza dos meses: se
+                // El período corta a mitad de mes, así que cruza dos meses: se
                 // recorre día por día desde el inicio real, no 1..31.
                 const dias: ChartPoint[] = [];
                 const cursor = new Date(start);
@@ -414,6 +420,7 @@ export default function AdminPage() {
           gastosMes: mes.gastos,
           incomeRobin: saldoRobin.saldo,
         });
+        setMovimientos({ transacciones: txData, gastos: expenseData });
         setStatsSeries({
           allTime: buildMonthlySeries(),
           month: buildPeriodSeries("month"),
@@ -802,6 +809,8 @@ export default function AdminPage() {
           isOpen={isStatsModalOpen}
           onClose={() => setIsStatsModalOpen(false)}
           allTime={statsSeries.allTime}
+          transacciones={movimientos.transacciones}
+          gastos={movimientos.gastos}
           month={statsSeries.month}
           week={statsSeries.week}
         />

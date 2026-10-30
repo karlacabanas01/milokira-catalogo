@@ -14,7 +14,7 @@ type Financials = {
   /** Saldo pendiente con Robin: lo que le toca menos lo que ya se le pagó.
    *  Negativo significa que se le pagó de más. */
   incomeRobin: number;
-  /** Ganancia del período en curso (del 25 al 24), no del mes calendario. */
+  /** Ganancia del período contable en curso, no del mes calendario. */
   profitMes: number;
   /** Ventas del período en curso. */
   ventasMes: number;
