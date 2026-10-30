@@ -20,6 +20,7 @@ import {
   trackConsultaPlanta,
 } from "../lib/analytics";
 import { useCart } from "../context/CartContext";
+import { estaDisponible as disponibleEnCatalogo } from "../catalogoHelpers";
 
 interface Precio {
   valor: number;
@@ -39,6 +40,7 @@ interface Planta {
   aptaMascotas?: "apta" | "moderada" | "toxica" | "sin-info";
   opcionesLitros?: { litros: number; precio: number }[];
   oferta?: { activa: boolean; precioOriginal: number; porcentaje: number };
+  stock?: number;
   precio: Precio;
 }
 
@@ -48,8 +50,8 @@ interface PlantCardProps {
   readonly onEdit: () => void;
 }
 
-const formatearPrecio = (precio: Precio): string => {
-  if (precio.disponible === false) return "Agotado por ahora";
+const formatearPrecio = (precio: Precio, hayStock = true): string => {
+  if (precio.disponible === false || !hayStock) return "Agotado por ahora";
 
   const montoFormateado = new Intl.NumberFormat("es-CL", {
     style: "currency",
@@ -75,7 +77,8 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const { addItem } = useCart();
-  const estaDisponible = precio.disponible !== false;
+  // Mismo criterio que el orden del catálogo: sin stock está agotada.
+  const estaDisponible = disponibleEnCatalogo(planta);
   const esTutor = categorias?.some((c) => c.toUpperCase() === "IMPLEMENTOS");
 
   const agregarAlCarrito = () => {
@@ -281,7 +284,7 @@ export default function PlantCard({ planta, isAdmin, onEdit }: PlantCardProps) {
                   </span>
                 )}
                 <div className={`font-black text-lg sm:text-2xl tracking-tight leading-none ${estaDisponible ? (oferta ? "text-rose-500" : "text-milokira-verde") : "text-gray-400 italic"}`}>
-                  {formatearPrecio(precio)}
+                  {formatearPrecio(precio, estaDisponible)}
                 </div>
               </div>
             )}

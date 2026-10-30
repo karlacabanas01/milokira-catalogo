@@ -370,6 +370,9 @@ export default function AgregarPlantaModal({
 
     try {
       const dataParaSubir: Record<string, unknown> = {
+        // Marca cuándo se actualizó el catálogo: la home muestra la más
+        // reciente de todas las plantas.
+        updated_at: new Date().toISOString(),
         nombre: formData.nombre,
         descripcion: formData.descripcion,
         categorias: formData.categorias,

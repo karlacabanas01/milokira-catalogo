@@ -1192,6 +1192,8 @@ function DetalleCompraModal({
           const stockFinal =
             modoStock === "sumar" ? stockActual + stockEntrante : stockEntrante;
           await updateDoc(plantaRef, {
+            // Ingresar mercadería actualiza el catálogo.
+            updated_at: new Date().toISOString(),
             nombre: item.nombre,
             stock: stockFinal,
             costo: costoUnitario,
@@ -1209,6 +1211,7 @@ function DetalleCompraModal({
         } else {
           // Planta nueva: la creamos con los defaults.
           await setDoc(plantaRef, {
+            updated_at: new Date().toISOString(),
             nombre: item.nombre,
             stock: stockEntrante,
             costo: costoUnitario,
@@ -1361,6 +1364,7 @@ function DetalleCompraModal({
               )
             : 0;
         await updateDoc(plantaRef, {
+          updated_at: new Date().toISOString(),
           costo: costoUnitario,
           margen,
           costoOriginalTotal: costoCompraTotal,

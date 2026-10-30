@@ -215,6 +215,8 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
     setIsSaving(true);
     try {
       const payload = {
+        // Editar una planta actualiza el catálogo.
+        updated_at: new Date().toISOString(),
         nombre: data.name,
         "precio.valor": data.price,
         "precio.tipo": data.precioTipo,
@@ -244,6 +246,7 @@ export default function ProductListModal({ isOpen, onClose }: Props) {
           .replace(/\s+/g, "-");
 
         await setDoc(doc(db, "Plantas", nuevoId), {
+          updated_at: new Date().toISOString(),
           nombre: data.name,
           stock: data.stock,
           costo: data.cost,

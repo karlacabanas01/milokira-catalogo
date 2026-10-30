@@ -14,6 +14,12 @@ import { CartProvider } from "./context/CartContext";
 import CartDrawer from "./components/cart-drawer";
 import PlantChat from "./components/plant-chat";
 import { Modal } from "./components/ui";
+import {
+  estaDisponible,
+  ordenarCatalogo,
+  textoActualizacion,
+  ultimaActualizacion,
+} from "./catalogoHelpers";
 
 interface Planta {
   id: string;
@@ -27,6 +33,8 @@ interface Planta {
   dificultad?: "facil" | "media" | "dificil";
   aptaMascotas?: "apta" | "moderada" | "toxica" | "sin-info";
   oferta?: { activa: boolean; precioOriginal: number; porcentaje: number };
+  /** Última vez que se tocó. Las cargadas antes del campo no lo traen. */
+  updated_at?: string;
   // Datos de compra: solo se usan en modo admin, para ver el costo real.
   // No todas las plantas los tienen (las cargadas a mano no pasan por mercadería).
   precioCompraUnitaria?: number;
@@ -107,10 +115,9 @@ export default function Home() {
     IMPLEMENTOS: "🪢",
   };
 
-  const plantasFiltradas = plantas
-    .filter((planta) => {
-      const estaDisponible =
-        planta.precio?.disponible !== false && (planta.stock ?? 1) > 0;
+  const plantasFiltradas = ordenarCatalogo(
+    plantas.filter((planta) => {
+      const disponible = estaDisponible(planta);
       const coincideCategoria =
         categoriaActiva === "TODAS" ||
         (categoriaActiva === "OFERTAS"
@@ -122,17 +129,14 @@ export default function Home() {
         busqueda.trim() === "" ||
         planta.nombre.toLowerCase().includes(busqueda.toLowerCase());
       // En modo admin se ven todas (incluso las agotadas); en público solo las disponibles.
-      const visiblePorEstado = isAdmin || estaDisponible;
+      const visiblePorEstado = isAdmin || disponible;
       return visiblePorEstado && coincideCategoria && coincideBusqueda;
-    })
-    .sort((a, b) =>
-      a.nombre
-        .trim()
-        .slice(0, 3)
-        .localeCompare(b.nombre.trim().slice(0, 3), "es", {
-          sensitivity: "base",
-        }),
-    );
+    }),
+  );
+
+  // Sobre todas las plantas y no sobre las filtradas: la fecha del catálogo
+  // no cambia según la categoría que se esté mirando.
+  const actualizado = ultimaActualizacion(plantas);
 
   const [plantaAEditar, setPlantaAEditar] = useState<Planta | null>(null);
 
@@ -431,6 +435,14 @@ export default function Home() {
                     Envíos a todo Chile
                   </span>
                 </a>
+
+                {/* Solo aparece cuando hay fecha: las plantas cargadas antes
+                    de que existiera el campo no tienen ninguna. */}
+                {actualizado && (
+                  <p className="mt-2 text-[11px] sm:text-xs text-stone-500 font-medium">
+                    Catálogo actualizado {textoActualizacion(actualizado)}
+                  </p>
+                )}
               </div>
             </div>
           </div>
