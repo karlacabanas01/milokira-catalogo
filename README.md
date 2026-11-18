@@ -123,7 +123,7 @@ Es un proyecto real, en producción, que usa mi mamá 💚 para gestionar el dí
 | **Lenguaje** | TypeScript 5 |
 | **Estilos** | Tailwind CSS 4 |
 | **Backend / DB** | Firebase Firestore (NoSQL) + Firebase Storage |
-| **Autenticación** | Sesión con contraseña en `sessionStorage` (proyecto familiar, sin OAuth) |
+| **Autenticación** | Firebase Authentication (correo y clave) |
 | **IA** | Google Gemini API (`@google/generative-ai`) |
 | **Geocoding** | Nominatim (OpenStreetMap) — gratuito, sin API key |
 | **Mapas** | Google Maps Directions URL — multi-stop sin API key |
@@ -183,7 +183,6 @@ NEXT_PUBLIC_FIREBASE_API_KEY=tu_key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=tu_dominio
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=tu_proyecto
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=tu_bucket
-NEXT_PUBLIC_ADMIN_PASSWORD=tu_clave_admin
 GEMINI_API_KEY=tu_gemini_key
 EOF
 
@@ -195,9 +194,16 @@ Abre [http://localhost:3000](http://localhost:3000).
 
 ### Acceder al panel admin
 
-1. En la home, haz **5 clics rápidos al logo de Milokira**.
-2. Introduce la clave configurada en `NEXT_PUBLIC_ADMIN_PASSWORD`.
+El panel usa **Firebase Authentication**. Crea el usuario una sola vez en la
+consola de Firebase → Authentication → Users → *Add user* (correo y clave).
+
+1. Entra a `/admin` — o haz **5 clics rápidos al logo** en la home.
+2. Inicia sesión con ese correo y clave.
 3. Aparece el botón **"Admin"** en el header.
+
+La sesión es la que reconocen las security rules: sin ella Firestore no
+entrega los pedidos, gastos ni notas. Las reglas están versionadas en
+`firestore.rules` y `storage.rules`.
 
 ---
 
@@ -259,8 +265,10 @@ Para que Kira (la IA) hable como experta del catálogo sin alucinaciones:
 
 Sin embeddings, sin vector DB, sin costos. Suficiente para un dominio acotado.
 
-### 4. Seguridad client-side honesta
-El panel admin se protege con clave en `sessionStorage` — sé que **no es seguridad real**. Para evitar accesos directos a Firestore agrego security rules estrictas. El gate es solo para que un usuario casual no descubra `/admin` por URL.
+### 4. De una clave en el bundle a autenticación real
+El panel se protegía con una clave en `NEXT_PUBLIC_ADMIN_PASSWORD`, comparada en el navegador. Ese prefijo hace que Next escriba el valor literal en el JavaScript que se sirve a todo el mundo, así que la clave era pública y el gate solo cosmético: bastaba un `sessionStorage.setItem` desde la consola.
+
+Ahora entra por **Firebase Authentication**, y esa sesión es la que las security rules reconocen. La diferencia que importa no es la pantalla de login: es que sin sesión Firestore no entrega los pedidos, aunque se consulte su API directamente sin pasar por la web. Las reglas viven en `firestore.rules` y `storage.rules`, versionadas junto al código.
 
 ### 5. Parser tolerante a 3 formatos de recibo
 El recibo del proveedor llega en HTML→texto plano con quiebres de línea inconsistentes. En vez de pedirle al usuario que normalice, hice un parser que reconoce:

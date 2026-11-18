@@ -1,0 +1,65 @@
+rules_version = '2';
+
+/**
+ * Reglas de Firestore de Milokira.
+ *
+ * El criterio: el catálogo es público y todo lo demás es del negocio. Los
+ * pedidos llevan nombre, teléfono, dirección, RUT y correo de clientes, así
+ * que solo los lee quien entró con su cuenta.
+ *
+ * Desplegar con:  firebase deploy --only firestore:rules
+ * (o pegando este archivo en consola de Firebase → Firestore → Reglas)
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /** Dueña del negocio: cualquier usuario autenticado del proyecto. No hay
+        registro público, las cuentas se crean a mano en la consola. */
+    function esAdmin() {
+      return request.auth != null;
+    }
+
+    // --- Catálogo -----------------------------------------------------
+    // Lo lee cualquiera: es la vitrina. Solo el negocio lo modifica.
+    match /Plantas/{plantaId} {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+
+    // --- Pedidos y ventas ---------------------------------------------
+    // El formulario público puede crear un pedido, pero no leer ninguno:
+    // acá viven los datos personales de las clientas.
+    match /Transacciones/{transaccionId} {
+      allow read, update, delete: if esAdmin();
+      allow create: if esAdmin() || esPedidoPublicoValido();
+    }
+
+    /** Un pedido del formulario público: nace pendiente, sin montos de
+        venta y marcado como tal, para que no se pueda falsear una venta. */
+    function esPedidoPublicoValido() {
+      let d = request.resource.data;
+      return d.source == "publico"
+        && d.status == "pending"
+        && d.tipo == "pedido"
+        && d.customer_name is string
+        && d.customer_name.size() > 0
+        && d.customer_name.size() <= 120
+        && d.total_amount is number
+        && d.total_amount >= 0;
+    }
+
+    // --- Datos internos del negocio -----------------------------------
+    // Gastos, pagos a Robin, compras a proveedores y notas: nada de esto
+    // sale del panel.
+    match /Gastos/{id}       { allow read, write: if esAdmin(); }
+    match /PagosRobin/{id}   { allow read, write: if esAdmin(); }
+    match /Compras/{id}      { allow read, write: if esAdmin(); }
+    match /NotasNegocio/{id} { allow read, write: if esAdmin(); }
+
+    // --- Todo lo demás -------------------------------------------------
+    // Cerrado por defecto: una colección nueva no queda abierta por olvido.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

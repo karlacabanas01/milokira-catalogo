@@ -14,6 +14,9 @@ import { CartProvider } from "./context/CartContext";
 import CartDrawer from "./components/cart-drawer";
 import PlantChat from "./components/plant-chat";
 import { Modal } from "./components/ui";
+import { useRouter } from "next/navigation";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebaseConfig";
 import {
   estaDisponible,
   ordenarCatalogo,
@@ -56,7 +59,16 @@ export default function Home() {
   const [busqueda, setBusqueda] = useState("");
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Modo admin = sesión real de Firebase. Antes era un flag que se activaba
+  // con una clave incrustada en el bundle, así que cualquiera podía ponerlo.
   const [isAdmin, setIsAdmin] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Quien ya entró al panel ve el catálogo en modo admin sin volver a entrar.
+    const cancelar = onAuthStateChanged(auth, (user) => setIsAdmin(!!user));
+    return cancelar;
+  }, []);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // Reset visibleCount cuando cambia filtro/búsqueda — patrón derived state.
@@ -162,23 +174,15 @@ export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
-  // FUNCIÓN SECRETA PARA ACTIVAR EL MODO ADMIN
+  // Cinco clics en el logo llevan al panel, donde se entra con la cuenta.
+  // Ya no hay clave acá: la que había viajaba en el bundle a la vista de todos.
   const handleLogoClick = () => {
     const nuevosClics = logoClicks + 1;
     setLogoClicks(nuevosClics);
 
-    // Si haces 5 clics seguidos en el logo...
     if (nuevosClics === 5) {
-      const password = prompt("🔒 Ingresa la clave secreta de Milokira:");
-
-      if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
-        setIsAdmin(true);
-        alert("¡Modo Administrador Activado! Ya puedes agregar plantas. 🌿");
-      } else {
-        alert("Clave incorrecta. Intento bloqueado.");
-      }
-
       setLogoClicks(0);
+      router.push("/admin");
     }
   };
 

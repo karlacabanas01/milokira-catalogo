@@ -2,35 +2,48 @@
 
 import { useEffect, useState, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Leaf } from "lucide-react";
+import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../firebaseConfig";
+import { Lock, Leaf, Mail } from "lucide-react";
 
-const SESSION_KEY = "milokira-admin-auth";
-
+/**
+ * Puerta del panel.
+ *
+ * Usa Firebase Auth y no una clave en el código: la sesión que crea es la que
+ * las security rules de Firestore reconocen para dejar leer los pedidos y lo
+ * demás del negocio. Sin esa sesión la base no entrega nada, así que esto no
+ * es solo una pantalla de por medio.
+ */
 export default function AdminGuard({ children }: { readonly children: ReactNode }) {
   const router = useRouter();
   const [status, setStatus] = useState<"checking" | "authed" | "denied">("checking");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [entrando, setEntrando] = useState(false);
 
   useEffect(() => {
-    const authed = sessionStorage.getItem(SESSION_KEY) === "true";
-    setStatus(authed ? "authed" : "denied");
+    // Firebase mantiene la sesión entre recargas y la renueva sola.
+    const cancelar = onAuthStateChanged(auth, (user) => {
+      setStatus(user ? "authed" : "denied");
+    });
+    return cancelar;
   }, []);
 
-  const handleSubmit = (e: { preventDefault: () => void }) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const expected = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-    if (!expected) {
-      setError("Configuración faltante. Contacta al administrador.");
-      return;
-    }
-    if (password === expected) {
-      sessionStorage.setItem(SESSION_KEY, "true");
-      setStatus("authed");
-      setError("");
-    } else {
-      setError("Clave incorrecta");
+    setEntrando(true);
+    setError("");
+    try {
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+      // `onAuthStateChanged` se encarga de dejar pasar.
+    } catch {
+      // Un mensaje único para credenciales malas: decir cuál de los dos campos
+      // falló revelaría qué correos existen.
+      setError("Correo o clave incorrectos");
       setPassword("");
+    } finally {
+      setEntrando(false);
     }
   };
 
@@ -59,17 +72,33 @@ export default function AdminGuard({ children }: { readonly children: ReactNode 
             Acceso restringido
           </h1>
           <p className="text-center text-stone-500 text-sm mb-6">
-            Ingresa la clave para continuar al panel.
+            Entra con tu cuenta para continuar al panel.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
+            <div className="relative">
+              <Mail
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"
+                size={15}
+              />
               <input
                 autoFocus
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Correo"
+                className="w-full pl-10 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-800 placeholder-stone-400 outline-none focus:bg-white focus:border-milokira-verde transition-colors text-sm"
+              />
+            </div>
+
+            <div>
+              <input
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Clave secreta"
+                placeholder="Clave"
                 className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-stone-800 placeholder-stone-400 outline-none focus:bg-white focus:border-milokira-verde transition-colors text-sm"
               />
               {error && (
@@ -81,10 +110,11 @@ export default function AdminGuard({ children }: { readonly children: ReactNode 
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-emerald-900/40 transition-all active:scale-95 flex items-center justify-center gap-2"
+              disabled={entrando}
+              className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold py-3 rounded-xl text-sm shadow-lg shadow-emerald-900/40 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60"
             >
               <Leaf size={16} strokeWidth={2.5} />
-              Entrar
+              {entrando ? "Entrando..." : "Entrar"}
             </button>
 
             <button
