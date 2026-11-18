@@ -176,11 +176,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // El detalle del error queda en el log del servidor (console.error de más
+    // arriba). Al navegador solo va el mensaje de Kira: los errores del SDK de
+    // Gemini traen rutas, nombres de modelo y a veces fragmentos del prompt.
     return NextResponse.json(
-      {
-        error: "Guau 🐶 me perdí un momento. Intenta de nuevo en unos segundos 🌿",
-        debug: message,
-      },
+      { error: "Guau 🐶 me perdí un momento. Intenta de nuevo en unos segundos 🌿" },
       { status: 500 },
     );
   }

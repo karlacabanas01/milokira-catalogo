@@ -41,7 +41,9 @@ export async function GET(req: NextRequest) {
       display: first.display_name,
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "error";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    // El detalle va al log, no al navegador: un error de red puede delatar
+    // cómo está armado el servidor.
+    console.error("Error en /api/geocode:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "no se pudo geocodificar" }, { status: 500 });
   }
 }
