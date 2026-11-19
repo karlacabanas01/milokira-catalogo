@@ -1187,7 +1187,7 @@ function DetalleCompraModal({
         if (plantaSnap.exists()) {
           // Planta ya existe: solo actualizamos lo que viene de esta compra.
           // No tocamos descripcion, categorias, imagenUrl, imagenPosition,
-          // dificultad, aptaMascotas, ni el flag `precio.disponible`.
+          // dificultad ni aptaMascotas.
           const stockActual = Number(plantaSnap.data().stock) || 0;
           const stockFinal =
             modoStock === "sumar" ? stockActual + stockEntrante : stockEntrante;
@@ -1207,6 +1207,11 @@ function DetalleCompraModal({
             plantasPorMaceta: item.plantasPorMaceta,
             "precio.valor": precioVenta,
             "precio.tipo": "fijo",
+            // Si llegó mercadería hay plantas que vender, así que vuelve al
+            // catálogo aunque se hubiera marcado agotada a mano cuando se
+            // acabó. Sin esto entra el stock pero la clienta la sigue viendo
+            // agotada, que es justo lo contrario de reponer.
+            "precio.disponible": stockFinal > 0,
           });
         } else {
           // Planta nueva: la creamos con los defaults.
