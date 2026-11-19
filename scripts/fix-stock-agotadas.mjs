@@ -1,21 +1,22 @@
 /**
- * Reactiva en el catálogo las plantas que tienen stock pero quedaron marcadas
- * como no disponibles.
+ * Pone stock 0 a las plantas marcadas como no disponibles que todavía
+ * arrastran stock registrado.
  *
- * El catálogo público esconde una planta si `precio.disponible === false` O si
- * `stock <= 0`. La marca se pone a mano cuando algo se agota, pero nada la
- * volvía a encender al reponer, así que plantas con stock seguían saliendo
- * "Agotado por ahora".
+ * Esos números son restos de mercaderías viejas que nunca se depuraron: la
+ * planta ya no está a la venta, se marcó agotada a mano, pero el stock quedó
+ * como estaba. Dejarlo en cero hace que el inventario diga la verdad y que el
+ * catálogo y el panel cuenten lo mismo.
  *
  * Por defecto solo informa. Para escribir hay que pasar --aplicar, y antes de
- * tocar nada guarda un respaldo JSON del estado actual.
+ * tocar nada guarda un respaldo JSON con el stock previo de cada planta, por
+ * si alguna hay que devolverla.
  *
- *   node scripts/fix-disponibles.mjs                   # solo mira
- *   node scripts/fix-disponibles.mjs --aplicar         # corrige
+ *   node scripts/fix-stock-agotadas.mjs              # solo mira
+ *   node scripts/fix-stock-agotadas.mjs --aplicar    # corrige
  *
  * Pide correo y clave del panel: las reglas de Firestore no dejan escribir sin
  * sesión. Se pueden pasar por entorno para no tipearlos:
- *   MILOKIRA_EMAIL=... MILOKIRA_PASS=... node scripts/fix-disponibles.mjs --aplicar
+ *   MILOKIRA_EMAIL=... MILOKIRA_PASS=... node scripts/fix-stock-agotadas.mjs --aplicar
  */
 import { initializeApp } from "firebase/app";
 import {
@@ -68,55 +69,57 @@ const main = async () => {
   const snap = await getDocs(collection(db, "Plantas"));
 
   const porArreglar = [];
-  let agotadasDeVerdad = 0;
-  let coherentes = 0;
+  let yaEnCero = 0;
+  let aLaVenta = 0;
 
   snap.forEach((d) => {
     const data = d.data();
     const stock = Number(data.stock) || 0;
     const disponible = data.precio?.disponible;
-    if (stock > 0 && disponible === false) {
+    if (disponible === false && stock > 0) {
       porArreglar.push({ id: d.id, nombre: data.nombre ?? d.id, stock });
-    } else if (stock <= 0) {
-      agotadasDeVerdad++;
+    } else if (disponible === false) {
+      yaEnCero++;
     } else {
-      coherentes++;
+      aLaVenta++;
     }
   });
 
   console.log(`Catálogo: ${snap.size} plantas`);
-  console.log(`  ${coherentes} visibles y correctas`);
-  console.log(`  ${agotadasDeVerdad} sin stock (agotadas de verdad, se quedan así)`);
-  console.log(`  ${porArreglar.length} CON STOCK pero escondidas como agotadas\n`);
+  console.log(`  ${aLaVenta} a la venta`);
+  console.log(`  ${yaEnCero} agotadas y ya con stock 0 (nada que hacer)`);
+  console.log(`  ${porArreglar.length} agotadas pero con stock fantasma\n`);
 
   if (porArreglar.length === 0) {
     console.log("Nada que corregir.");
     return;
   }
 
+  const total = porArreglar.reduce((s, p) => s + p.stock, 0);
   porArreglar
     .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"))
-    .forEach((p) => console.log(`  ${p.nombre}  (stock: ${p.stock})`));
+    .forEach((p) => console.log(`  ${p.nombre}  ${p.stock} → 0`));
+  console.log(`\n  ${total} unidades fantasma en total.`);
 
   if (!APLICAR) {
     console.log(`\nSolo miré, no cambié nada.`);
-    console.log(`Para reactivarlas:  node scripts/fix-disponibles.mjs --aplicar`);
+    console.log(`Para corregir:  node scripts/fix-stock-agotadas.mjs --aplicar`);
     return;
   }
 
-  const respaldo = `/tmp/milokira-disponibles-${Date.now()}.json`;
+  const respaldo = `/tmp/milokira-stock-previo-${Date.now()}.json`;
   writeFileSync(respaldo, JSON.stringify(porArreglar, null, 2));
-  console.log(`\nRespaldo del estado previo: ${respaldo}`);
+  console.log(`\nRespaldo del stock previo: ${respaldo}`);
 
   let ok = 0;
   for (const p of porArreglar) {
     await updateDoc(doc(db, "Plantas", p.id), {
-      "precio.disponible": true,
+      stock: 0,
       updated_at: new Date().toISOString(),
     });
     ok++;
   }
-  console.log(`\n${ok} plantas vuelven al catálogo.`);
+  console.log(`\n${ok} plantas quedaron en stock 0.`);
 };
 
 main()
